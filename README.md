@@ -1,0 +1,1 @@
+# Client Frontend for Error Analysis App
