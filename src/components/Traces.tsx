@@ -7,13 +7,13 @@ import {
   List,
   ListItem,
 } from "@mui/material";
-import type { Trace } from "../types/types";
+import type { AnnotatedTrace } from "../types/types";
 
 interface tracesProps {
-  traces: Trace[];
+  annotatedTraces: AnnotatedTrace[];
 }
 
-const Traces = ({ traces }: tracesProps) => {
+const Traces = ({ annotatedTraces }: tracesProps) => {
   const navigate = useNavigate();
   
   const filters = ['Annotated', 'Not Annotated']
@@ -50,9 +50,9 @@ const Traces = ({ traces }: tracesProps) => {
           }}
         >
           <List sx={{ flexGrow: 1, pr: 2, padding: 0, margin: 0 }}>
-            {traces.map((trace) => (
+            {annotatedTraces.map((annotatedTrace) => (
               <ListItem
-                key={trace.id}
+                key={annotatedTrace.traceId}
                 sx={{
                   borderRadius: 2,
                   border: "2px solid",
@@ -63,7 +63,7 @@ const Traces = ({ traces }: tracesProps) => {
                   mb: 1,
                 }}
               >
-                Trace: {trace.id}
+                Trace: {annotatedTrace.traceId}
               </ListItem>
             ))}
           </List>

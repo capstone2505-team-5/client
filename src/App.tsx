@@ -2,29 +2,49 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Traces from './components/Traces'
 import Annotation from './components/Annotation'
-import type { Trace } from './types/types';
-import { fetchTraces } from './services/services';
+import type { AnnotatedTrace } from './types/types';
+import { fetchTraces, fetchAnnotations } from './services/services';
 
 const App = () => {
-  const [traces, setTraces] = useState<Trace[]>([])
+  const [annotatedTraces, setAnnotatedTraces] = useState<AnnotatedTrace[]>([])
 
   useEffect(() => {
-    const getTraces = async () => {
+    const fetchData = async () => {
       try {
-        const traces = await fetchTraces()
-        setTraces(traces)
+        const [traces, annotations] = await Promise.all([
+          fetchTraces(),
+          fetchAnnotations(),
+        ]);
+
+        const combined: AnnotatedTrace[] = traces.map(trace => {
+          const match = annotations.find(annotation => annotation.traceId === trace.id);
+
+          return {
+            traceId: trace.id,
+            input: trace.input,
+            output: trace.output,
+            note: match?.note ?? "",
+            rating: match?.rating ?? "",
+            categories: match?.categories ?? [],
+          };
+        })
+
+        setAnnotatedTraces(combined)
       } catch (error) {
-        console.error(`Error fetching traces: ${error}`)
+        console.error("Failed to fetch traces or annotations", error)
       }
     }
 
-    getTraces()
+    fetchData()
   }, []);
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Traces traces={traces} />} />
+        <Route
+          path="/"
+          element={<Traces annotatedTraces={annotatedTraces} />}
+        />
         <Route path="/annotation" element={<Annotation />} />
       </Routes>
     </BrowserRouter>
