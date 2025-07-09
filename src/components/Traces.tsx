@@ -15,6 +15,10 @@ interface tracesProps {
 
 const Traces = ({ annotatedTraces }: tracesProps) => {
   const navigate = useNavigate();
+
+  const handleView = (annotatedTrace: AnnotatedTrace) => {
+    navigate(`/traces/${annotatedTrace.traceId}`)
+  }
   
   const filters = ['Annotated', 'Not Annotated']
 
@@ -53,6 +57,7 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
             {annotatedTraces.map((annotatedTrace) => (
               <ListItem
                 key={annotatedTrace.traceId}
+                onClick={() => handleView(annotatedTrace)}
                 sx={{
                   borderRadius: 2,
                   border: "2px solid",
@@ -107,7 +112,6 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
             <Button
               fullWidth
               variant="contained"
-              onClick={() => navigate("/annotation")}
               sx={{ mr: 2, mt: 2 }}
             >
               Categorize!
