@@ -4,12 +4,22 @@ import Traces from './components/Traces'
 import Annotation from './components/Annotation'
 import { sampleTraces } from './sampleData/traces';
 import type { Trace } from './types/types';
+import { fetchTraces } from './services/services';
 
 const App = () => {
   const [traces, setTraces] = useState<Trace[]>([])
 
   useEffect(() => {
-    setTraces(sampleTraces)
+    const getTraces = async () => {
+      try {
+        const traces = await fetchTraces()
+        setTraces(traces)
+      } catch (error) {
+        console.error(`Error fetching traces: ${error}`)
+      }
+    }
+    
+    getTraces()
   }, []);
 
   return (
