@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Traces from './components/Traces'
 import Annotation from './components/Annotation'
-import { sampleTraces } from './sampleData/traces';
 import type { Trace } from './types/types';
 import { fetchTraces } from './services/services';
 
@@ -18,7 +17,7 @@ const App = () => {
         console.error(`Error fetching traces: ${error}`)
       }
     }
-    
+
     getTraces()
   }, []);
 
