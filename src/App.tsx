@@ -45,7 +45,7 @@ const App = () => {
           path="/"
           element={<Traces annotatedTraces={annotatedTraces} />}
         />
-        <Route path="/annotation" element={<Annotation />} />
+        <Route path="/annotation" element={<Annotation traces={traces} />} />
       </Routes>
     </BrowserRouter>
   );
