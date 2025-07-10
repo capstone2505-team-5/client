@@ -10,32 +10,33 @@ import { createAnnotation } from './services/services';
 const App = () => {
   const [annotatedTraces, setAnnotatedTraces] = useState<AnnotatedTrace[]>([])
 
-  const fetchData = async () => {
-    try {
-      const [traces, annotations] = await Promise.all([
-        fetchTraces(),
-        fetchAnnotations(),
-      ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [traces, annotations] = await Promise.all([
+          fetchTraces(),
+          fetchAnnotations(),
+        ]);
 
-      const combined: AnnotatedTrace[] = traces.map(trace => {
-        const match = annotations.find(annotation => annotation.traceId === trace.id);
+        const combined: AnnotatedTrace[] = traces.map(trace => {
+          const match = annotations.find(annotation => annotation.traceId === trace.id);
 
-          return {
-            traceId: trace.id,
-            input: trace.input,
-            output: trace.output,
-            note: match?.note ?? "",
-            rating: match?.rating ?? "none",
-            categories: match?.categories ?? [],
-          };
-        })
+            return {
+              traceId: trace.id,
+              input: trace.input,
+              output: trace.output,
+              note: match?.note ?? "",
+              rating: match?.rating ?? "none",
+              categories: match?.categories ?? [],
+            };
+          })
 
-        setAnnotatedTraces(combined)
-      } catch (error) {
-        console.error("Failed to fetch traces or annotations", error)
+          setAnnotatedTraces(combined)
+        } catch (error) {
+          console.error("Failed to fetch traces or annotations", error)
+        }
       }
-    }
-    
+      
     fetchData()
   }, []);
 
