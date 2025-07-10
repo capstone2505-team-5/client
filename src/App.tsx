@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Traces from './components/Traces'
 import Annotation from './components/Annotation'
+import TraceDetails from './components/TraceDetails'
 import type { AnnotatedTrace } from './types/types';
 import { fetchTraces, fetchAnnotations } from './services/services';
 
@@ -44,6 +45,10 @@ const App = () => {
         <Route
           path="/"
           element={<Traces annotatedTraces={annotatedTraces} />}
+        />
+        <Route
+          path="/traces/:id"
+          element={<TraceDetails />}
         />
         <Route path="/annotation" element={<Annotation annotatedTraces={annotatedTraces} />} />
       </Routes>
