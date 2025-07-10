@@ -7,7 +7,7 @@ export const fetchTraces = async (): Promise<Trace[]> => {
 };
 
 export const fetchTrace = async (id: string): Promise<Trace> => {
-  const response = await axios.get<Trace>(`api/traces/${id}`)
+  const response = await axios.get<Trace>(`/api/traces/${id}`)
   return response.data
 }
 
