@@ -1,12 +1,12 @@
-interface Trace {
+export interface Trace {
   id: string;
   input: string;
   output: string;
 }
 
-type Rating = "good" | "bad" | "none";
+export type Rating = "good" | "bad" | "none";
 
-interface Annotation {
+export interface Annotation {
   id: string;
   traceId: string;
   note: string;

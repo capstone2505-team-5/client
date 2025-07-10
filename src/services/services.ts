@@ -22,7 +22,7 @@ export const fetchAnnotation = async (id: string): Promise<Annotation> => {
 }
 
 export const createAnnotation = async (traceId: string, note: string, rating: string) => {
-  const response = await axios.post(`/api/annotations}`, {traceId, note, rating})
+  const response = await axios.post(`/api/annotations`, {traceId, note, rating})
   return response.data
 }
 

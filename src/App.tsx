@@ -2,41 +2,53 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Traces from './components/Traces'
 import Annotation from './components/Annotation'
-import type { AnnotatedTrace } from './types/types';
+import type { AnnotatedTrace, Rating } from './types/types';
 import { fetchTraces, fetchAnnotations } from './services/services';
+import { createAnnotation } from './services/services';
 
 const App = () => {
   const [annotatedTraces, setAnnotatedTraces] = useState<AnnotatedTrace[]>([])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [traces, annotations] = await Promise.all([
-          fetchTraces(),
-          fetchAnnotations(),
-        ]);
+  const fetchData = async () => {
+    try {
+      const [traces, annotations] = await Promise.all([
+        fetchTraces(),
+        fetchAnnotations(),
+      ]);
 
-        const combined: AnnotatedTrace[] = traces.map(trace => {
-          const match = annotations.find(annotation => annotation.traceId === trace.id);
+      const combined: AnnotatedTrace[] = traces.map(trace => {
+        const match = annotations.find(annotation => annotation.traceId === trace.id);
 
-          return {
-            traceId: trace.id,
-            input: trace.input,
-            output: trace.output,
-            note: match?.note ?? "",
-            rating: match?.rating ?? "",
-            categories: match?.categories ?? [],
-          };
-        })
+        return {
+          traceId: trace.id,
+          input: trace.input,
+          output: trace.output,
+          note: match?.note ?? "",
+          rating: match?.rating ?? "none",
+          categories: match?.categories ?? [],
+        };
+      })
 
-        setAnnotatedTraces(combined)
-      } catch (error) {
-        console.error("Failed to fetch traces or annotations", error)
-      }
+      setAnnotatedTraces(combined)
+    } catch (error) {
+      console.error("Failed to fetch traces or annotations", error)
     }
+  }
 
+  useEffect(() => {
     fetchData()
   }, []);
+
+  const handleSaveAnnotation = async (traceId: string, note: string, rating: Rating): Promise<void> => {
+    try {
+      console.log(traceId, note);
+      await createAnnotation(traceId, note || 'none', rating || 'none');
+      console.log('Annotation saved:', { traceId, note, rating });
+      await fetchData();
+    } catch (err) {
+      console.error('Failed to save annotation', err);
+    }
+  };
 
   return (
     <BrowserRouter>
@@ -45,7 +57,7 @@ const App = () => {
           path="/"
           element={<Traces annotatedTraces={annotatedTraces} />}
         />
-        <Route path="/annotation" element={<Annotation annotatedTraces={annotatedTraces} />} />
+        <Route path="/annotation" element={<Annotation annotatedTraces={annotatedTraces} onSave={handleSaveAnnotation} />} />
       </Routes>
     </BrowserRouter>
   );
