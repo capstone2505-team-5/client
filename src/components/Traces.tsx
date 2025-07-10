@@ -8,6 +8,10 @@ import {
   List,
   ListItem,
 } from "@mui/material";
+import { IconButton } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
 import type { AnnotatedTrace } from "../types/types";
 
 interface tracesProps {
@@ -53,9 +57,6 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
       return;
     }
 
-    
-
-
     const filteredTraces = annotatedTraces.filter((trace) => {
       const annotationFilters = activeFilters.filter(
         (f) => f === "Annotated" || f === "Not Annotated"
@@ -66,19 +67,27 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
 
       let passesAnnotationFilter = true;
       if (annotationFilters.length > 0) {
-        if (annotationFilters.includes('Annotated') && annotationFilters.length === 1) {
+        if (
+          annotationFilters.includes("Annotated") &&
+          annotationFilters.length === 1
+        ) {
           passesAnnotationFilter = trace.note !== "";
-        } else if (annotationFilters.includes("Not Annotated") && annotationFilters.length === 1) {
+        } else if (
+          annotationFilters.includes("Not Annotated") &&
+          annotationFilters.length === 1
+        ) {
           passesAnnotationFilter = trace.note === "";
         }
       }
-      
+
       let passesCategoryFilter = true;
       if (categoryFilters.length > 0) {
-        passesCategoryFilter = categoryFilters.some(categoryFilter => trace.categories.includes(categoryFilter))
+        passesCategoryFilter = categoryFilters.some((categoryFilter) =>
+          trace.categories.includes(categoryFilter)
+        );
       }
 
-      return passesAnnotationFilter && passesCategoryFilter
+      return passesAnnotationFilter && passesCategoryFilter;
     });
 
     setFilteredAnnotatedTraces(filteredTraces);
@@ -99,7 +108,7 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
         filter === "Not Annotated" &&
         activeFilters.includes("Annotated")
       ) {
-        setActiveFilters(['Not Annotated'])
+        setActiveFilters(["Not Annotated"]);
       }
 
       if (activeFilters.includes(filter)) {
@@ -112,8 +121,8 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
         setActiveFilters((prev) => prev.filter((f) => f !== filter));
       } else {
         setActiveFilters((prev) => {
-          const filtered = prev.filter(p => p === 'Not Annotated')
-          return [...filtered, filter, "Annotated"]
+          const filtered = prev.filter((p) => p === "Not Annotated");
+          return [...filtered, filter, "Annotated"];
         });
       }
     }
@@ -156,21 +165,41 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
         >
           <List sx={{ flexGrow: 1, pr: 2, padding: 0, margin: 0 }}>
             {filteredAnnotatedTraces.map((annotatedTrace) => (
-              <ListItem
+              <Box
                 key={annotatedTrace.traceId}
-                onClick={() => handleView(annotatedTrace)}
                 sx={{
-                  borderRadius: 2,
-                  border: "2px solid",
-                  borderColor: "primary.light",
-                  "&:hover": { backgroundColor: "grey.200" },
-                  py: 1.5,
-                  px: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
                   mb: 1,
                 }}
               >
-                Trace: {annotatedTrace.traceId}
-              </ListItem>
+                <ListItem
+                  key={annotatedTrace.traceId}
+                  onClick={() => handleView(annotatedTrace)}
+                  sx={{
+                    borderRadius: 2,
+                    border: "2px solid",
+                    borderColor: "primary.light",
+                    "&:hover": { backgroundColor: "grey.200" },
+                    py: 1.5,
+                    px: 2,
+                    mb: 1,
+                  }}
+                  secondaryAction={
+                    annotatedTrace.note ? (
+                      <CheckCircleIcon />
+                    ) : (
+                      <CheckCircleOutlineIcon />
+                    )
+                  }
+                >
+                  Trace: {annotatedTrace.traceId}
+                </ListItem>
+                <IconButton>
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
             ))}
           </List>
           <Box>
