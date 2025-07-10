@@ -1,23 +1,26 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Container, Typography, Button, Box, TextField } from '@mui/material';
-import type { Trace } from "../types/types";
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import type { AnnotatedTrace } from "../types/types";
 
 interface tracesProps {
-  traces: Trace[];
+  annotatedTraces: AnnotatedTrace[];
 }
 
-const Annotation = ({ traces }: tracesProps) => {
+const Annotation = ({ annotatedTraces }: tracesProps) => {
   const navigate = useNavigate();
   const [currentTraceIndex, setCurrentTraceIndex] = useState<number>(0);
   const [annotation, setAnnotation] = useState<string>('');
-  const trace = traces[currentTraceIndex] ?? { id: '', input: '', output: '' };
+  const [rating, setRating] = useState<'good' | 'bad' | null>(null);
+  const trace = annotatedTraces[currentTraceIndex] ?? { id: '', input: '', output: '' };
 
   const handlePrev = (): void => setCurrentTraceIndex((i) => Math.max(0, i - 1));
-  const handleNext = (): void => setCurrentTraceIndex((i) => Math.min(traces.length - 1, i + 1));
+  const handleNext = (): void => setCurrentTraceIndex((i) => Math.min(annotatedTraces.length - 1, i + 1));
   const handleSaveAnnotation = (): void => {
     // TODO: implement save logic
-    console.log('Saved annotation for', trace.id, annotation);
+    console.log('Saved annotation for', trace.traceId, annotation);
   };
 
   return (
@@ -71,6 +74,24 @@ const Annotation = ({ traces }: tracesProps) => {
             <Typography variant="h4" component="h2" gutterBottom>
               Annotation
             </Typography>
+            <Box sx={{ textAlign: 'left', mb: 2 }}>
+              <Typography variant="h5" component="h3" gutterBottom>Rate Response</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
+                <Button
+                  variant={rating === 'good' ? 'contained' : 'outlined'}
+                  color="success"
+                  startIcon={<ThumbUpIcon />}
+                  onClick={() => setRating('good')}
+                >Good</Button>
+                <Button
+                  variant={rating === 'bad' ? 'contained' : 'outlined'}
+                  color="error"
+                  startIcon={<ThumbDownIcon />}
+                  onClick={() => setRating('bad')}
+                >Bad</Button>
+              </Box>
+            </Box>
+            <Typography variant="h5" component="h3" gutterBottom>Notes</Typography>
             <TextField
               multiline
               rows={12}
@@ -82,7 +103,7 @@ const Annotation = ({ traces }: tracesProps) => {
             <Button variant="contained" onClick={handleSaveAnnotation} sx={{ mt: 2, alignSelf: 'flex-end' }}>
               Save Annotation
             </Button>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'left', alignItems: 'center', gap: 2, mt: 2 }}>
               <Button
                 variant="outlined"
                 onClick={handlePrev}
@@ -91,12 +112,12 @@ const Annotation = ({ traces }: tracesProps) => {
                 Previous
               </Button>
               <Typography>
-                {currentTraceIndex + 1} of {traces.length}
+                {currentTraceIndex + 1} of {annotatedTraces.length}
               </Typography>
               <Button
                 variant="outlined"
                 onClick={handleNext}
-                disabled={currentTraceIndex === traces.length - 1}
+                disabled={currentTraceIndex === annotatedTraces.length - 1}
               >
                 Next
               </Button>
