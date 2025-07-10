@@ -35,6 +35,7 @@ const App = () => {
         console.error("Failed to fetch traces or annotations", error)
       }
     }
+    
     fetchData()
   }, []);
 
