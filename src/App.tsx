@@ -9,42 +9,56 @@ import { createAnnotation } from './services/services';
 const App = () => {
   const [annotatedTraces, setAnnotatedTraces] = useState<AnnotatedTrace[]>([])
 
-  const fetchData = async () => {
-    try {
-      const [traces, annotations] = await Promise.all([
-        fetchTraces(),
-        fetchAnnotations(),
-      ]);
-
-      const combined: AnnotatedTrace[] = traces.map(trace => {
-        const match = annotations.find(annotation => annotation.traceId === trace.id);
-
-        return {
-          traceId: trace.id,
-          input: trace.input,
-          output: trace.output,
-          note: match?.note ?? "",
-          rating: match?.rating ?? "none",
-          categories: match?.categories ?? [],
-        };
-      })
-
-      setAnnotatedTraces(combined)
-    } catch (error) {
-      console.error("Failed to fetch traces or annotations", error)
-    }
-  }
-
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [traces, annotations] = await Promise.all([
+          fetchTraces(),
+          fetchAnnotations(),
+        ]);
+
+        const combined: AnnotatedTrace[] = traces.map(trace => {
+          const match = annotations.find(annotation => annotation.traceId === trace.id);
+
+          return {
+            traceId: trace.id,
+            input: trace.input,
+            output: trace.output,
+            note: match?.note ?? "",
+            rating: match?.rating ?? "none",
+            categories: match?.categories ?? [],
+          };
+        })
+
+        setAnnotatedTraces(combined)
+      } catch (error) {
+        console.error("Failed to fetch traces or annotations", error)
+      }
+    }
     fetchData()
   }, []);
 
   const handleSaveAnnotation = async (traceId: string, note: string, rating: Rating): Promise<void> => {
     try {
-      console.log(traceId, note);
       await createAnnotation(traceId, note || 'none', rating || 'none');
+      setAnnotatedTraces((prev) => {
+        return prev.map((trace) => {
+          if (trace.traceId === traceId) {
+          return {
+            traceId: traceId,
+            input: trace.input,
+            output: trace.output,
+            note: note,
+            rating: rating,
+            categories: trace.categories ?? [],
+          };
+        } else {
+          return trace;
+        }
+        });
+      });
+      
       console.log('Annotation saved:', { traceId, note, rating });
-      await fetchData();
     } catch (err) {
       console.error('Failed to save annotation', err);
     }
