@@ -10,16 +10,15 @@ import { createAnnotation } from './services/services';
 const App = () => {
   const [annotatedTraces, setAnnotatedTraces] = useState<AnnotatedTrace[]>([])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [traces, annotations] = await Promise.all([
-          fetchTraces(),
-          fetchAnnotations(),
-        ]);
+  const fetchData = async () => {
+    try {
+      const [traces, annotations] = await Promise.all([
+        fetchTraces(),
+        fetchAnnotations(),
+      ]);
 
-        const combined: AnnotatedTrace[] = traces.map(trace => {
-          const match = annotations.find(annotation => annotation.traceId === trace.id);
+      const combined: AnnotatedTrace[] = traces.map(trace => {
+        const match = annotations.find(annotation => annotation.traceId === trace.id);
 
           return {
             traceId: trace.id,
