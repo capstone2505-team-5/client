@@ -1,26 +1,44 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Typography, Button, Box, TextField } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import type { AnnotatedTrace } from "../types/types";
+import type { AnnotatedTrace, Rating } from "../types/types";
+
+
 
 interface tracesProps {
   annotatedTraces: AnnotatedTrace[];
+  onSave: (traceId: string, note: string, rating: Rating) => Promise<void>;
 }
 
-const Annotation = ({ annotatedTraces }: tracesProps) => {
+const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
   const navigate = useNavigate();
   const [currentTraceIndex, setCurrentTraceIndex] = useState<number>(0);
-  const [annotation, setAnnotation] = useState<string>('');
+  const [note, setNote] = useState<string>('');
   const [rating, setRating] = useState<'good' | 'bad' | null>(null);
-  const trace = annotatedTraces[currentTraceIndex] ?? { id: '', input: '', output: '' };
+  const trace = annotatedTraces[currentTraceIndex] ?? {
+    traceId: '',
+    input: '',
+    output: '',
+    note: '',
+    rating: '',
+    categories: [],
+  };
+  
+  console.log(trace);
+
+  useEffect(() => {
+    if (trace) {
+      setNote(trace.note || '');
+      setRating(trace.rating === 'good' || trace.rating === 'bad' ? trace.rating : null);
+    }
+  }, [trace]);
 
   const handlePrev = (): void => setCurrentTraceIndex((i) => Math.max(0, i - 1));
   const handleNext = (): void => setCurrentTraceIndex((i) => Math.min(annotatedTraces.length - 1, i + 1));
-  const handleSaveAnnotation = (): void => {
-    // TODO: implement save logic
-    console.log('Saved annotation for', trace.traceId, annotation);
+  const handleSaveAnnotation = async (): Promise<void> => {
+    onSave(trace.traceId, note, rating || 'none');
   };
 
   return (
@@ -97,8 +115,8 @@ const Annotation = ({ annotatedTraces }: tracesProps) => {
               rows={12}
               fullWidth
               variant="outlined"
-              value={annotation}
-              onChange={e => setAnnotation(e.target.value)}
+              value={note}
+              onChange={e => setNote(e.target.value)}
             />
             <Button variant="contained" onClick={handleSaveAnnotation} sx={{ mt: 2, alignSelf: 'flex-end' }}>
               Save Annotation
