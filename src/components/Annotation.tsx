@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Container, Typography, Button, Box, TextField } from '@mui/material';
+import { Container, Typography, Button, Box, TextField, Chip } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import type { AnnotatedTrace, Rating } from "../types/types";
@@ -43,7 +43,9 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header + all three columns */}
       <Box>
+        {/* Header - Title and back button */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h3" component="h1" gutterBottom>
             Annotation Queue
@@ -53,7 +55,9 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
           </Button>
         </Box>
 
+        {/* All three columns - Input | Output | Annotate */}
         <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* Input */}
           <Box
             sx={{
               width: '30%',
@@ -71,6 +75,7 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
             <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{trace.input}</pre>
           </Box>
 
+          {/* Output */}
           <Box
             sx={{
               width: '40%',
@@ -88,10 +93,13 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
             <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{trace.output}</pre>
           </Box>
 
+          {/* Annotation + Rate Responses + Notes + Save + Navigation */}
           <Box>
             <Typography variant="h4" component="h2" gutterBottom>
               Annotation
             </Typography>
+
+            {/* Rate Responses */}
             <Box sx={{ textAlign: 'left', mb: 2 }}>
               <Typography variant="h5" component="h3" gutterBottom>Rate Response</Typography>
               <Box sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
@@ -109,6 +117,8 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
                 >Bad</Button>
               </Box>
             </Box>
+
+            {/* Notes */}
             <Typography variant="h5" component="h3" gutterBottom>Notes</Typography>
             <TextField
               multiline
@@ -118,9 +128,13 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
               value={note}
               onChange={e => setNote(e.target.value)}
             />
+
+            {/* Save */}
             <Button variant="contained" onClick={handleSaveAnnotation} sx={{ mt: 2, alignSelf: 'flex-end' }}>
               Save Annotation
             </Button>
+
+            {/* Navigation */}
             <Box sx={{ display: 'flex', justifyContent: 'left', alignItems: 'center', gap: 2, mt: 2 }}>
               <Button
                 variant="outlined"
@@ -140,12 +154,8 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
                 Next
               </Button>
             </Box>
-            
           </Box>
-          
-
         </Box>
-
       </Box>
     </Container>
   );
