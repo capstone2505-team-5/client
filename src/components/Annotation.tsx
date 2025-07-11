@@ -99,6 +99,19 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
               Annotation
             </Typography>
 
+            <Box sx={{ textAlign: 'left', mb: 2 }}>
+              <Typography variant="h5" component="h3" gutterBottom>Categories</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {trace.categories.length > 0 ? (
+                  trace.categories.map(category => (
+                    <Chip key={category} label={category} variant="outlined" />
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">None</Typography>
+                )}
+              </Box>
+            </Box>
+
             {/* Rate Responses */}
             <Box sx={{ textAlign: 'left', mb: 2 }}>
               <Typography variant="h5" component="h3" gutterBottom>Rate Response</Typography>
