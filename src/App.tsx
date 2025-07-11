@@ -21,16 +21,16 @@ const App = () => {
         const combined: AnnotatedTrace[] = traces.map(trace => {
           const match = annotations.find(annotation => annotation.traceId === trace.id);
 
-            return {
-              annotationId: match?.id || "",
-              traceId: trace.id,
-              input: trace.input,
-              output: trace.output,
-              note: match?.note ?? "",
-              rating: match?.rating ?? "none",
-              categories: match?.categories ?? [],
-            };
-          })
+          return {
+            traceId: trace.id,
+            input: trace.input,
+            output: trace.output,
+            annotationId: match?.id ?? "",
+            note: match?.note ?? "",
+            rating: match?.rating ?? "",
+            categories: match?.categories ?? [],
+          };
+        })
 
           setAnnotatedTraces(combined)
         } catch (error) {

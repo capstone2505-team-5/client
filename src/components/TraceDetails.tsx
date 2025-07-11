@@ -1,51 +1,20 @@
-import { useNavigate, useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { fetchTrace, fetchAnnotation } from "../services/services";
+import { useLocation } from "react-router-dom";
 import type { AnnotatedTrace } from "../types/types";
 import { Container, Typography, Box } from "@mui/material";
 
 const TraceDetail = () => {
-  const [traceDetails, setTraceDetails] = useState<AnnotatedTrace | null>(null);
-  const { id } = useParams();
+  const location = useLocation();
+  const annotatedTrace = location.state as AnnotatedTrace;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!id) return;
 
-      try {
-        const trace = await fetchTrace(id);
-
-        let annotation
-        try {
-          annotation = await fetchAnnotation(id);
-        } catch (error) {
-          console.warn("Annotation not found", error)
-        }
-
-        setTraceDetails({
-          traceId: trace.id,
-          input: trace.input,
-          output: trace.output,
-          note: annotation?.note ?? "",
-          rating: annotation?.rating ?? "",
-          categories: annotation?.categories ?? [],
-        });
-      } catch (error) {
-        console.error("Error fetching specified trace", error);
-      }
-    };
-
-    fetchData();
-  }, [id]);
-
-  if (!traceDetails) {
+  if (!annotatedTrace) {
     return <Box>Loading...</Box>;
   }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h3" component="h1">
-        Trace ID: {traceDetails.traceId}
+        Trace ID: {annotatedTrace.traceId}
       </Typography>
       <Box
         sx={{
@@ -60,7 +29,7 @@ const TraceDetail = () => {
         <Typography variant="h5" component="h2" sx={{ mr: 1 }}>
           Input:
         </Typography>
-        <p>{traceDetails.input}</p>
+        <p>{annotatedTrace.input}</p>
       </Box>
       <Box
         sx={{
@@ -76,7 +45,7 @@ const TraceDetail = () => {
           Output:
         </Typography>
         <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>
-          {traceDetails.output}
+          {annotatedTrace.output}
         </pre>
       </Box>
       <Box
@@ -91,17 +60,17 @@ const TraceDetail = () => {
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
           <Box>
             <h2>Note:</h2>
-            <p>{traceDetails.note || "No note"}</p>
+            <p>{annotatedTrace.note || "No note"}</p>
           </Box>
           <Box>
             <h2>Rating:</h2>
-            <p>{traceDetails.rating || "No rating"}</p>
+            <p>{annotatedTrace.rating || "No rating"}</p>
           </Box>
           <Box>
             <h2>Categories:</h2>
             <p>
-              {traceDetails.categories.length > 0
-                ? traceDetails.categories.join(", ")
+              {annotatedTrace.categories.length > 0
+                ? annotatedTrace.categories.join(", ")
                 : "No categories"}
             </p>
           </Box>

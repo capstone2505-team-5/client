@@ -94,7 +94,7 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
   }, [activeFilters, annotatedTraces]);
 
   const handleView = (annotatedTrace: AnnotatedTrace) => {
-    navigate(`/traces/${annotatedTrace.traceId}`);
+    navigate(`/traces/${annotatedTrace.traceId}`, {state: annotatedTrace});
   };
 
   const handleFilter = (filter: string) => {
