@@ -5,7 +5,7 @@ import Annotation from './components/Annotation'
 import TraceDetails from './components/TraceDetails'
 import type { AnnotatedTrace, Rating } from './types/types';
 import { fetchTraces, fetchAnnotations } from './services/services';
-import { createAnnotation } from './services/services';
+import { createAnnotation, updateAnnotation } from './services/services';
 
 const App = () => {
   const [annotatedTraces, setAnnotatedTraces] = useState<AnnotatedTrace[]>([])
@@ -22,6 +22,7 @@ const App = () => {
           const match = annotations.find(annotation => annotation.traceId === trace.id);
 
             return {
+              annotationId: match?.id || "",
               traceId: trace.id,
               input: trace.input,
               output: trace.output,
@@ -40,19 +41,26 @@ const App = () => {
     fetchData()
   }, []);
 
-  const handleSaveAnnotation = async (traceId: string, note: string, rating: Rating): Promise<void> => {
+  const handleSaveAnnotation = async (annotationId: string, traceId: string, note: string, rating: Rating): Promise<void> => {
     try {
-      await createAnnotation(traceId, note || 'none', rating || 'none');
+      let res;
+      if (annotationId === '') {
+        res = await createAnnotation(traceId, note || '', rating || 'none');
+      } else {
+        res = await updateAnnotation(annotationId, note || '', rating || 'none');
+      }
+  
       setAnnotatedTraces((prev) => {
         return prev.map((trace) => {
           if (trace.traceId === traceId) {
           return {
-            traceId: traceId,
+            annotationId: res.id,
+            traceId: res.traceId,
             input: trace.input,
             output: trace.output,
-            note: note,
-            rating: rating,
-            categories: trace.categories ?? [],
+            note: res.note,
+            rating: res.rating,
+            categories: res.categories,
           };
         } else {
           return trace;
@@ -60,7 +68,7 @@ const App = () => {
         });
       });
       
-      console.log('Annotation saved:', { traceId, note, rating });
+      console.log(annotationId ? 'Annotation updated:' : 'Annotation created:', res);
     } catch (err) {
       console.error('Failed to save annotation', err);
     }

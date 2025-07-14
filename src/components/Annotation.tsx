@@ -9,7 +9,11 @@ import type { AnnotatedTrace, Rating } from "../types/types";
 
 interface tracesProps {
   annotatedTraces: AnnotatedTrace[];
-  onSave: (traceId: string, note: string, rating: Rating) => Promise<void>;
+  onSave: (
+    annotationId: string,
+    traceId: string,
+    note: string,
+    rating: Rating) => Promise<void>;
 }
 
 const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
@@ -17,7 +21,8 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
   const [currentTraceIndex, setCurrentTraceIndex] = useState<number>(0);
   const [note, setNote] = useState<string>('');
   const [rating, setRating] = useState<'good' | 'bad' | null>(null);
-  const trace = annotatedTraces[currentTraceIndex] ?? {
+  const annotatedTrace = annotatedTraces[currentTraceIndex] ?? {
+    annotationId: '',
     traceId: '',
     input: '',
     output: '',
@@ -26,18 +31,25 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
     categories: [],
   };
 
+  console.log(annotatedTrace.annotationId);
+
   useEffect(() => {
-    if (trace) {
-      setNote(trace.note || '');
-      setRating(trace.rating === 'good' || trace.rating === 'bad' ? trace.rating : null);
+    if (annotatedTrace) {
+      setNote(annotatedTrace.note || '');
+      setRating(annotatedTrace.rating === 'good' || annotatedTrace.rating === 'bad' ? annotatedTrace.rating : null);
     }
-  }, [trace]);
+  }, [annotatedTrace]);
 
   const isSaveDisabled = rating === 'bad' && !note.trim();
   const handlePrev = (): void => setCurrentTraceIndex((i) => Math.max(0, i - 1));
   const handleNext = (): void => setCurrentTraceIndex((i) => Math.min(annotatedTraces.length - 1, i + 1));
   const handleSaveAnnotation = async (): Promise<void> => {
-    onSave(trace.traceId, note, rating || 'none');
+    onSave(
+      annotatedTrace.annotationId,
+      annotatedTrace.traceId,
+      note,
+      rating || 'none'
+    );
   };
 
 
@@ -65,7 +77,7 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
               borderRadius: 2,
               border: '2px solid',
               borderColor: 'primary.light',
-              height: '70vh',
+              height: '110vh',
               p: 2,
               overflow: 'auto',
             }}
@@ -73,7 +85,7 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
             <Typography variant="h4" component="h2" gutterBottom>
               Input
             </Typography>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{trace.input}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{annotatedTrace.input}</pre>
           </Box>
 
           {/* Output */}
@@ -83,7 +95,7 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
               borderRadius: 2,
               border: '2px solid',
               borderColor: 'primary.light',
-              height: '70vh',
+              height: '110vh',
               p: 2,
               overflow: 'auto',
             }}
@@ -91,7 +103,7 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
             <Typography variant="h4" component="h2" gutterBottom>
               Output
             </Typography>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{trace.output}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{annotatedTrace.output}</pre>
           </Box>
 
           {/* Annotation + Rate Responses + Notes + Save + Navigation */}
@@ -103,8 +115,8 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
             <Box sx={{ textAlign: 'left', mb: 2 }}>
               <Typography variant="h5" component="h3" gutterBottom>Categories</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {trace.categories.length > 0 ? (
-                  trace.categories.map(category => (
+                {annotatedTrace.categories.length > 0 ? (
+                  annotatedTrace.categories.map(category => (
                     <Chip key={category} label={category} variant="outlined" />
                   ))
                 ) : (
