@@ -42,9 +42,6 @@ const Traces = ({ annotatedTraces, onCategorize }: tracesProps) => {
       });
     });
 
-    console.log("hey");
-    console.log(categoryCountMap);
-
     const categoriesTemp: category[] = Array.from(
       categoryCountMap.entries()
     ).map(([name, count]) => ({ name, count }));
@@ -128,8 +125,6 @@ const Traces = ({ annotatedTraces, onCategorize }: tracesProps) => {
       }
     }
   };
-
-  console.log(activeFilters);
 
   const filtersCategories = ["Annotated", "Not Annotated"];
 
