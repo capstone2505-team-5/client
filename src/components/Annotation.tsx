@@ -31,8 +31,6 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
     categories: [],
   };
 
-  console.log(annotatedTrace.annotationId);
-
   useEffect(() => {
     if (annotatedTrace) {
       setNote(annotatedTrace.note || '');
@@ -40,7 +38,7 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
     }
   }, [annotatedTrace]);
 
-  const isSaveDisabled = rating === 'bad' && !note.trim();
+  const isSaveDisabled = rating === null || (rating === 'bad' && !note.trim());
   const handlePrev = (): void => setCurrentTraceIndex((i) => Math.max(0, i - 1));
   const handleNext = (): void => setCurrentTraceIndex((i) => Math.min(annotatedTraces.length - 1, i + 1));
   const handleSaveAnnotation = async (): Promise<void> => {
@@ -127,7 +125,7 @@ const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
 
             {/* Rate Responses */}
             <Box sx={{ textAlign: 'left', mb: 2 }}>
-              <Typography variant="h5" component="h3" gutterBottom>Rate Response</Typography>
+              <Typography variant="h5" component="h3" gutterBottom>Rate Response (Required)</Typography>
               <Box sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
                 <Button
                   variant={rating === 'good' ? 'contained' : 'outlined'}
