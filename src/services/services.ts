@@ -31,3 +31,9 @@ export const updateAnnotation = async (annotationId: string, note: string, ratin
   return response.data
 }
 
+export const categorizeAnnotations = async (): Promise<
+  { traceId: string; categories: string[] }[]
+> => {
+  const response = await axios.post("/api/categorize");
+  return response.data;
+};

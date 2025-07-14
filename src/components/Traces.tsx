@@ -16,6 +16,7 @@ import type { AnnotatedTrace } from "../types/types";
 
 interface tracesProps {
   annotatedTraces: AnnotatedTrace[];
+  onCategorize: () => Promise<void>;
 }
 
 interface category {
@@ -23,7 +24,7 @@ interface category {
   count: number;
 }
 
-const Traces = ({ annotatedTraces }: tracesProps) => {
+const Traces = ({ annotatedTraces, onCategorize }: tracesProps) => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [categories, setCategories] = useState<category[] | null>(null);
   const [filteredAnnotatedTraces, setFilteredAnnotatedTraces] = useState<
@@ -243,7 +244,9 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
                 ))}
               </List>
             </Box>
-            <Button fullWidth variant="contained" sx={{ mr: 2, mt: 2 }}>
+            <Button fullWidth variant="contained" sx={{ mr: 2, mt: 2 }}
+              onClick={() => onCategorize()}
+            >
               Categorize!
             </Button>
             <Box
