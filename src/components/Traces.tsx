@@ -14,8 +14,9 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
 import type { AnnotatedTrace } from "../types/types";
 
-interface tracesProps {
+interface TracesProps {
   annotatedTraces: AnnotatedTrace[];
+  onCategorize: () => Promise<void>;
 }
 
 interface category {
@@ -23,7 +24,7 @@ interface category {
   count: number;
 }
 
-const Traces = ({ annotatedTraces }: tracesProps) => {
+const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [categories, setCategories] = useState<category[] | null>(null);
   const [filteredAnnotatedTraces, setFilteredAnnotatedTraces] = useState<
@@ -40,9 +41,6 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
         categoryCountMap.set(category, currentCount + 1);
       });
     });
-
-    console.log("hey");
-    console.log(categoryCountMap);
 
     const categoriesTemp: category[] = Array.from(
       categoryCountMap.entries()
@@ -66,18 +64,16 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
       );
 
       let passesAnnotationFilter = true;
-      if (annotationFilters.length > 0) {
-        if (
-          annotationFilters.includes("Annotated") &&
-          annotationFilters.length === 1
-        ) {
-          passesAnnotationFilter = trace.note !== "";
-        } else if (
-          annotationFilters.includes("Not Annotated") &&
-          annotationFilters.length === 1
-        ) {
-          passesAnnotationFilter = trace.note === "";
-        }
+      if (
+        annotationFilters.includes("Annotated") &&
+        annotationFilters.length === 1
+      ) {
+        passesAnnotationFilter = trace.note !== "";
+      } else if (
+        annotationFilters.includes("Not Annotated") &&
+        annotationFilters.length === 1
+      ) {
+        passesAnnotationFilter = trace.note === "";
       }
 
       let passesCategoryFilter = true;
@@ -94,7 +90,7 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
   }, [activeFilters, annotatedTraces]);
 
   const handleView = (annotatedTrace: AnnotatedTrace) => {
-    navigate(`/traces/${annotatedTrace.traceId}`);
+    navigate(`/traces/${annotatedTrace.traceId}`, { state: annotatedTrace });
   };
 
   const handleFilter = (filter: string) => {
@@ -127,8 +123,6 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
       }
     }
   };
-
-  console.log(activeFilters);
 
   const filtersCategories = ["Annotated", "Not Annotated"];
 
@@ -243,7 +237,12 @@ const Traces = ({ annotatedTraces }: tracesProps) => {
                 ))}
               </List>
             </Box>
-            <Button fullWidth variant="contained" sx={{ mr: 2, mt: 2 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{ mr: 2, mt: 2 }}
+              onClick={() => onCategorize()}
+            >
               Categorize!
             </Button>
             <Box

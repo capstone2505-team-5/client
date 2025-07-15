@@ -26,3 +26,14 @@ export const createAnnotation = async (traceId: string, note: string, rating: st
   return response.data
 }
 
+export const updateAnnotation = async (annotationId: string, note: string, rating: string) => {
+  const response = await axios.patch(`/api/annotations/${annotationId}`, {annotationId, note, rating})
+  return response.data
+}
+
+export const categorizeAnnotations = async (): Promise<
+  { traceId: string; categories: string[] }[]
+> => {
+  const response = await axios.post("/api/categorize");
+  return response.data;
+};

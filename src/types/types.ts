@@ -15,5 +15,6 @@ export interface Annotation {
 }
 
 export type AnnotatedTrace = Omit<Trace, "id"> & {
+  annotationId: string;
   traceId: string;
 } & Pick<Annotation, "note" | "rating" | "categories">;
