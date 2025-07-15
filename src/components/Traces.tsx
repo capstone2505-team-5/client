@@ -64,18 +64,16 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
       );
 
       let passesAnnotationFilter = true;
-      if (annotationFilters.length > 0) {
-        if (
-          annotationFilters.includes("Annotated") &&
-          annotationFilters.length === 1
-        ) {
-          passesAnnotationFilter = trace.note !== "";
-        } else if (
-          annotationFilters.includes("Not Annotated") &&
-          annotationFilters.length === 1
-        ) {
-          passesAnnotationFilter = trace.note === "";
-        }
+      if (
+        annotationFilters.includes("Annotated") &&
+        annotationFilters.length === 1
+      ) {
+        passesAnnotationFilter = trace.note !== "";
+      } else if (
+        annotationFilters.includes("Not Annotated") &&
+        annotationFilters.length === 1
+      ) {
+        passesAnnotationFilter = trace.note === "";
       }
 
       let passesCategoryFilter = true;
@@ -92,7 +90,7 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
   }, [activeFilters, annotatedTraces]);
 
   const handleView = (annotatedTrace: AnnotatedTrace) => {
-    navigate(`/traces/${annotatedTrace.traceId}`, {state: annotatedTrace});
+    navigate(`/traces/${annotatedTrace.traceId}`, { state: annotatedTrace });
   };
 
   const handleFilter = (filter: string) => {
@@ -239,7 +237,10 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
                 ))}
               </List>
             </Box>
-            <Button fullWidth variant="contained" sx={{ mr: 2, mt: 2 }}
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{ mr: 2, mt: 2 }}
               onClick={() => onCategorize()}
             >
               Categorize!
