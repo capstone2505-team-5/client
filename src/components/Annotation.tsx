@@ -7,7 +7,7 @@ import type { AnnotatedTrace, Rating } from "../types/types";
 
 
 
-interface tracesProps {
+interface TracesProps {
   annotatedTraces: AnnotatedTrace[];
   onSave: (
     annotationId: string,
@@ -16,7 +16,7 @@ interface tracesProps {
     rating: Rating) => Promise<void>;
 }
 
-const Annotation = ({ annotatedTraces, onSave }: tracesProps) => {
+const Annotation = ({ annotatedTraces, onSave }: TracesProps) => {
   const navigate = useNavigate();
   const [currentTraceIndex, setCurrentTraceIndex] = useState<number>(0);
   const [note, setNote] = useState<string>('');

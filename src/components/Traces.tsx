@@ -14,7 +14,7 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
 import type { AnnotatedTrace } from "../types/types";
 
-interface tracesProps {
+interface TracesProps {
   annotatedTraces: AnnotatedTrace[];
   onCategorize: () => Promise<void>;
 }
@@ -24,7 +24,7 @@ interface category {
   count: number;
 }
 
-const Traces = ({ annotatedTraces, onCategorize }: tracesProps) => {
+const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [categories, setCategories] = useState<category[] | null>(null);
   const [filteredAnnotatedTraces, setFilteredAnnotatedTraces] = useState<
