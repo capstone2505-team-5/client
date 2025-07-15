@@ -48,27 +48,23 @@ const App = () => {
   }, []);
 
   const handleCategorize = async () => {
-    const fetchCategorizedAnnotations = async () => {
-      try {
-        const traceCategories = await categorizeAnnotations();
+    try {
+      const traceCategories = await categorizeAnnotations();
 
-        const updatedAnnotatedTraces = annotatedTraces.map((annotatedTrace) => {
-          const match = traceCategories.find(
-            ({traceId}) => traceId === annotatedTrace.traceId
-          );
-          const categories = match ? match.categories : annotatedTrace.categories;
-          return {
-            ...annotatedTrace,
-            categories,
-          };
-        });
-        setAnnotatedTraces(updatedAnnotatedTraces);
-      } catch (error) {
-        console.log("Error categorizing annotations", error);
-      }
-    };
-
-    fetchCategorizedAnnotations();
+      const updatedAnnotatedTraces = annotatedTraces.map((annotatedTrace) => {
+        const match = traceCategories.find(
+          ({ traceId }) => traceId === annotatedTrace.traceId
+        );
+        const categories = match ? match.categories : annotatedTrace.categories;
+        return {
+          ...annotatedTrace,
+          categories,
+        };
+      });
+      setAnnotatedTraces(updatedAnnotatedTraces);
+    } catch (error) {
+      console.log("Error categorizing annotations", error);
+    }
   };
 
   const handleSaveAnnotation = async (
@@ -121,7 +117,12 @@ const App = () => {
       <Routes>
         <Route
           path="/"
-          element={<Traces annotatedTraces={annotatedTraces} onCategorize={handleCategorize} />}
+          element={
+            <Traces
+              annotatedTraces={annotatedTraces}
+              onCategorize={handleCategorize}
+            />
+          }
         />
         <Route path="/traces/:id" element={<TraceDetails />} />
         <Route
