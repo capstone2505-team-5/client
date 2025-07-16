@@ -1,20 +1,20 @@
 import { useLocation } from "react-router-dom";
-import type { AnnotatedTrace } from "../types/types";
+import type { AnnotatedRootSpan } from "../types/types";
 import { Container, Typography, Box } from "@mui/material";
 
-const TraceDetail = () => {
+const RootSpanDetail = () => {
   const location = useLocation();
-  const annotatedTrace = location.state as AnnotatedTrace;
+  const annotatedRootSpan = location.state as AnnotatedRootSpan;
 
 
-  if (!annotatedTrace) {
+  if (!annotatedRootSpan) {
     return <Box>Loading...</Box>;
   }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h3" component="h1">
-        Trace ID: {annotatedTrace.traceId}
+        Root Span ID: {annotatedRootSpan.id}
       </Typography>
       <Box
         sx={{
@@ -29,7 +29,7 @@ const TraceDetail = () => {
         <Typography variant="h5" component="h2" sx={{ mr: 1 }}>
           Input:
         </Typography>
-        <p>{annotatedTrace.input}</p>
+        <p>{annotatedRootSpan.input}</p>
       </Box>
       <Box
         sx={{
@@ -45,7 +45,7 @@ const TraceDetail = () => {
           Output:
         </Typography>
         <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>
-          {annotatedTrace.output}
+          {annotatedRootSpan.output}
         </pre>
       </Box>
       <Box
@@ -60,17 +60,17 @@ const TraceDetail = () => {
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
           <Box>
             <h2>Note:</h2>
-            <p>{annotatedTrace.note || "No note"}</p>
+            <p>{annotatedRootSpan.note || "No note"}</p>
           </Box>
           <Box>
             <h2>Rating:</h2>
-            <p>{annotatedTrace.rating || "No rating"}</p>
+            <p>{annotatedRootSpan.rating || "No rating"}</p>
           </Box>
           <Box>
             <h2>Categories:</h2>
             <p>
-              {annotatedTrace.categories.length > 0
-                ? annotatedTrace.categories.join(", ")
+              {annotatedRootSpan.categories.length > 0
+                ? annotatedRootSpan.categories.join(", ")
                 : "No categories"}
             </p>
           </Box>
@@ -80,4 +80,4 @@ const TraceDetail = () => {
   );
 };
 
-export default TraceDetail;
+export default RootSpanDetail;

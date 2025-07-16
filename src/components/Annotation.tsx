@@ -3,25 +3,26 @@ import { useState, useEffect } from 'react';
 import { Container, Typography, Button, Box, TextField, Chip } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import type { AnnotatedTrace, Rating } from "../types/types";
+import type { AnnotatedRootSpan, Rating } from "../types/types";
 
 
 
-interface TracesProps {
-  annotatedTraces: AnnotatedTrace[];
+interface RootSpanProps {
+  annotatedRootSpans: AnnotatedRootSpan[];
   onSave: (
     annotationId: string,
-    traceId: string,
+    rootSpanId: string,
     note: string,
-    rating: Rating) => Promise<void>;
+    rating: Rating
+  ) => Promise<void>;
 }
 
-const Annotation = ({ annotatedTraces, onSave }: TracesProps) => {
+const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
   const navigate = useNavigate();
-  const [currentTraceIndex, setCurrentTraceIndex] = useState<number>(0);
+  const [currentRootSpanIndex, setCurrentRootSpanIndex] = useState<number>(0);
   const [note, setNote] = useState<string>('');
   const [rating, setRating] = useState<'good' | 'bad' | null>(null);
-  const annotatedTrace = annotatedTraces[currentTraceIndex] ?? {
+  const annotatedRootSpan = annotatedRootSpans[currentRootSpanIndex] ?? {
     annotationId: '',
     traceId: '',
     input: '',
@@ -32,19 +33,19 @@ const Annotation = ({ annotatedTraces, onSave }: TracesProps) => {
   };
 
   useEffect(() => {
-    if (annotatedTrace) {
-      setNote(annotatedTrace.note || '');
-      setRating(annotatedTrace.rating === 'good' || annotatedTrace.rating === 'bad' ? annotatedTrace.rating : null);
+    if (annotatedRootSpan) {
+      setNote(annotatedRootSpan.note || '');
+      setRating(annotatedRootSpan.rating === 'good' || annotatedRootSpan.rating === 'bad' ? annotatedRootSpan.rating : null);
     }
-  }, [annotatedTrace]);
+  }, [annotatedRootSpan]);
 
   const isSaveDisabled = rating === null || (rating === 'bad' && !note.trim());
-  const handlePrev = (): void => setCurrentTraceIndex((i) => Math.max(0, i - 1));
-  const handleNext = (): void => setCurrentTraceIndex((i) => Math.min(annotatedTraces.length - 1, i + 1));
+  const handlePrev = (): void => setCurrentRootSpanIndex((i) => Math.max(0, i - 1));
+  const handleNext = (): void => setCurrentRootSpanIndex((i) => Math.min(annotatedRootSpans.length - 1, i + 1));
   const handleSaveAnnotation = async (): Promise<void> => {
     onSave(
-      annotatedTrace.annotationId,
-      annotatedTrace.traceId,
+      annotatedRootSpan.annotationId,
+      annotatedRootSpan.id,
       note,
       rating || 'none'
     );
@@ -62,7 +63,7 @@ const Annotation = ({ annotatedTraces, onSave }: TracesProps) => {
             Annotation Queue
           </Typography>
           <Button variant="contained" onClick={() => navigate('/')}>
-            Back to Traces
+            Back to Root Spans
           </Button>
         </Box>
 
@@ -83,7 +84,7 @@ const Annotation = ({ annotatedTraces, onSave }: TracesProps) => {
             <Typography variant="h4" component="h2" gutterBottom>
               Input
             </Typography>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{annotatedTrace.input}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{annotatedRootSpan.input}</pre>
           </Box>
 
           {/* Output */}
@@ -101,7 +102,7 @@ const Annotation = ({ annotatedTraces, onSave }: TracesProps) => {
             <Typography variant="h4" component="h2" gutterBottom>
               Output
             </Typography>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{annotatedTrace.output}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{annotatedRootSpan.output}</pre>
           </Box>
 
           {/* Annotation + Rate Responses + Notes + Save + Navigation */}
@@ -113,8 +114,8 @@ const Annotation = ({ annotatedTraces, onSave }: TracesProps) => {
             <Box sx={{ textAlign: 'left', mb: 2 }}>
               <Typography variant="h5" component="h3" gutterBottom>Categories</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {annotatedTrace.categories.length > 0 ? (
-                  annotatedTrace.categories.map(category => (
+                {annotatedRootSpan.categories.length > 0 ? (
+                  annotatedRootSpan.categories.map(category => (
                     <Chip key={category} label={category} variant="outlined" />
                   ))
                 ) : (
@@ -169,17 +170,17 @@ const Annotation = ({ annotatedTraces, onSave }: TracesProps) => {
               <Button
                 variant="outlined"
                 onClick={handlePrev}
-                disabled={currentTraceIndex === 0}
+                disabled={currentRootSpanIndex === 0}
               >
                 Previous
               </Button>
               <Typography>
-                {currentTraceIndex + 1} of {annotatedTraces.length}
+                {currentRootSpanIndex + 1} of {annotatedRootSpans.length}
               </Typography>
               <Button
                 variant="outlined"
                 onClick={handleNext}
-                disabled={currentTraceIndex === annotatedTraces.length - 1}
+                disabled={currentRootSpanIndex === annotatedRootSpans.length - 1}
               >
                 Next
               </Button>
