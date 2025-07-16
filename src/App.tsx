@@ -3,34 +3,39 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Traces from "./components/Traces";
 import Annotation from "./components/Annotation";
 import TraceDetails from "./components/TraceDetails";
-import type { AnnotatedTrace, Rating } from "./types/types";
+import type { AnnotatedRootSpan, Rating } from "./types/types";
 import {
-  fetchTraces,
+  fetchRootSpans,
   fetchAnnotations,
   categorizeAnnotations,
 } from "./services/services";
 import { createAnnotation, updateAnnotation } from "./services/services";
 
 const App = () => {
-  const [annotatedTraces, setAnnotatedTraces] = useState<AnnotatedTrace[]>([]);
+  const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [traces, annotations] = await Promise.all([
-          fetchTraces(),
+        const [rootSpans, annotations] = await Promise.all([
+          fetchRootSpans(),
           fetchAnnotations(),
         ]);
 
-        const combined: AnnotatedTrace[] = traces.map((trace) => {
+        const combined: AnnotatedRootSpan[] = rootSpans.map((rootSpan) => {
           const match = annotations.find(
-            (annotation) => annotation.traceId === trace.id
+            (annotation) => annotation.spanId === rootSpan.id
           );
 
           return {
-            traceId: trace.id,
-            input: trace.input,
-            output: trace.output,
+            id: rootSpan.id,
+            input: rootSpan.input,
+            output: rootSpan.output,
+            traceId: rootSpan.traceId,
+            startTime: rootSpan.startTime,
+            endTime: rootSpan.endTime,
+            projectName: rootSpan.projectName,
+            spanName: rootSpan.spanName,
             annotationId: match?.id ?? "",
             note: match?.note ?? "",
             rating: match?.rating ?? "none",
@@ -38,9 +43,9 @@ const App = () => {
           };
         });
 
-        setAnnotatedTraces(combined);
+        setAnnotatedRootSpans(combined);
       } catch (error) {
-        console.error("Failed to fetch traces or annotations", error);
+        console.error("Failed to fetch root spans or annotations", error);
       }
     };
 
@@ -51,17 +56,17 @@ const App = () => {
     try {
       const traceCategories = await categorizeAnnotations();
 
-      const updatedAnnotatedTraces = annotatedTraces.map((annotatedTrace) => {
+      const updatedAnnotatedRootSpans = annotatedRootSpans.map((annotatedRootSpan) => {
         const match = traceCategories.find(
-          ({ traceId }) => traceId === annotatedTrace.traceId
+          ({ rootSpanId }) => rootSpanId === annotatedRootSpan.traceId
         );
-        const categories = match ? match.categories : annotatedTrace.categories;
+        const categories = match ? match.categories : annotatedRootSpan.categories;
         return {
-          ...annotatedTrace,
+          ...annotatedRootSpan,
           categories,
         };
       });
-      setAnnotatedTraces(updatedAnnotatedTraces);
+      setAnnotatedRootSpans(updatedAnnotatedRootSpans);
     } catch (error) {
       console.log("Error categorizing annotations", error);
     }
@@ -85,20 +90,16 @@ const App = () => {
         );
       }
 
-      setAnnotatedTraces((prev) => {
-        return prev.map((trace) => {
-          if (trace.traceId === traceId) {
+      setAnnotatedRootSpans((prev) => {
+        return prev.map((rootSpan) => {
+          if (rootSpan.traceId === traceId) {
             return {
-              annotationId: res.id,
-              traceId: res.traceId,
-              input: trace.input,
-              output: trace.output,
-              note: res.note,
-              rating: res.rating,
-              categories: res.categories,
+              ...rootSpan,
+              note,
+              rating,
             };
           } else {
-            return trace;
+            return rootSpan;
           }
         });
       });
@@ -119,7 +120,7 @@ const App = () => {
           path="/"
           element={
             <Traces
-              annotatedTraces={annotatedTraces}
+              annotatedTraces={annotatedRootSpans}
               onCategorize={handleCategorize}
             />
           }
@@ -129,7 +130,7 @@ const App = () => {
           path="/annotation"
           element={
             <Annotation
-              annotatedTraces={annotatedTraces}
+              annotatedTraces={annotatedRootSpans}
               onSave={handleSaveAnnotation}
             />
           }
