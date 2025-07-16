@@ -12,10 +12,10 @@ import { IconButton } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
-import type { AnnotatedTrace } from "../types/types";
+import type { AnnotatedRootSpan } from "../types/types";
 
 interface TracesProps {
-  annotatedTraces: AnnotatedTrace[];
+  annotatedRootSpans: AnnotatedRootSpan[];
   onCategorize: () => Promise<void>;
 }
 
@@ -24,18 +24,18 @@ interface category {
   count: number;
 }
 
-const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
+const Traces = ({ annotatedRootSpans, onCategorize }: TracesProps) => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [categories, setCategories] = useState<category[] | null>(null);
-  const [filteredAnnotatedTraces, setFilteredAnnotatedTraces] = useState<
-    AnnotatedTrace[]
+  const [filteredAnnotatedRootSpans, setFilteredAnnotatedRootSpans] = useState<
+    AnnotatedRootSpan[]
   >([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const categoryCountMap = new Map<string, number>();
 
-    annotatedTraces.forEach((trace) => {
+    annotatedRootSpans.forEach((trace) => {
       trace.categories.forEach((category) => {
         const currentCount = categoryCountMap.get(category) || 0;
         categoryCountMap.set(category, currentCount + 1);
@@ -47,15 +47,15 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
     ).map(([name, count]) => ({ name, count }));
 
     setCategories(categoriesTemp);
-  }, [annotatedTraces]);
+  }, [annotatedRootSpans]);
 
   useEffect(() => {
     if (activeFilters.length === 0) {
-      setFilteredAnnotatedTraces(annotatedTraces);
+      setFilteredAnnotatedRootSpans(annotatedRootSpans);
       return;
     }
 
-    const filteredTraces = annotatedTraces.filter((trace) => {
+    const filteredTraces = annotatedRootSpans.filter((trace) => {
       const annotationFilters = activeFilters.filter(
         (f) => f === "Annotated" || f === "Not Annotated"
       );
@@ -86,10 +86,10 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
       return passesAnnotationFilter && passesCategoryFilter;
     });
 
-    setFilteredAnnotatedTraces(filteredTraces);
-  }, [activeFilters, annotatedTraces]);
+    setFilteredAnnotatedRootSpans(filteredTraces);
+  }, [activeFilters, annotatedRootSpans]);
 
-  const handleView = (annotatedTrace: AnnotatedTrace) => {
+  const handleView = (annotatedTrace: AnnotatedRootSpan) => {
     navigate(`/traces/${annotatedTrace.traceId}`, { state: annotatedTrace });
   };
 
@@ -137,7 +137,7 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
           }}
         >
           <Typography variant="h3" component="h1" gutterBottom>
-            Traces - {filteredAnnotatedTraces.length}
+            Traces - {filteredAnnotatedRootSpans.length}
           </Typography>
           <Box>
             <Button
@@ -158,7 +158,7 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
           }}
         >
           <List sx={{ flexGrow: 1, pr: 2, padding: 0, margin: 0 }}>
-            {filteredAnnotatedTraces.map((annotatedTrace) => (
+            {filteredAnnotatedRootSpans.map((annotatedTrace) => (
               <Box
                 key={annotatedTrace.traceId}
                 sx={{
