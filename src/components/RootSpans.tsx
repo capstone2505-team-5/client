@@ -12,10 +12,10 @@ import { IconButton } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
-import type { AnnotatedTrace } from "../types/types";
+import type { AnnotatedRootSpan } from "../types/types";
 
-interface TracesProps {
-  annotatedTraces: AnnotatedTrace[];
+interface RootSpansProps {
+  annotatedRootSpans: AnnotatedRootSpan[];
   onCategorize: () => Promise<void>;
 }
 
@@ -24,19 +24,19 @@ interface category {
   count: number;
 }
 
-const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
+const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [categories, setCategories] = useState<category[] | null>(null);
-  const [filteredAnnotatedTraces, setFilteredAnnotatedTraces] = useState<
-    AnnotatedTrace[]
+  const [filteredAnnotatedRootSpans, setFilteredAnnotatedRootSpans] = useState<
+    AnnotatedRootSpan[]
   >([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const categoryCountMap = new Map<string, number>();
 
-    annotatedTraces.forEach((trace) => {
-      trace.categories.forEach((category) => {
+    annotatedRootSpans.forEach((rootSpan) => {
+      rootSpan.categories.forEach((category) => {
         const currentCount = categoryCountMap.get(category) || 0;
         categoryCountMap.set(category, currentCount + 1);
       });
@@ -47,15 +47,15 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
     ).map(([name, count]) => ({ name, count }));
 
     setCategories(categoriesTemp);
-  }, [annotatedTraces]);
+  }, [annotatedRootSpans]);
 
   useEffect(() => {
     if (activeFilters.length === 0) {
-      setFilteredAnnotatedTraces(annotatedTraces);
+      setFilteredAnnotatedRootSpans(annotatedRootSpans);
       return;
     }
 
-    const filteredTraces = annotatedTraces.filter((trace) => {
+    const filteredRootSpans = annotatedRootSpans.filter((rootSpan) => {
       const annotationFilters = activeFilters.filter(
         (f) => f === "Annotated" || f === "Not Annotated"
       );
@@ -68,29 +68,29 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
         annotationFilters.includes("Annotated") &&
         annotationFilters.length === 1
       ) {
-        passesAnnotationFilter = trace.note !== "";
+        passesAnnotationFilter = rootSpan.note !== "";
       } else if (
         annotationFilters.includes("Not Annotated") &&
         annotationFilters.length === 1
       ) {
-        passesAnnotationFilter = trace.note === "";
+        passesAnnotationFilter = rootSpan.note === "";
       }
 
       let passesCategoryFilter = true;
       if (categoryFilters.length > 0) {
         passesCategoryFilter = categoryFilters.some((categoryFilter) =>
-          trace.categories.includes(categoryFilter)
+          rootSpan.categories.includes(categoryFilter)
         );
       }
 
       return passesAnnotationFilter && passesCategoryFilter;
     });
 
-    setFilteredAnnotatedTraces(filteredTraces);
-  }, [activeFilters, annotatedTraces]);
+    setFilteredAnnotatedRootSpans(filteredRootSpans);
+  }, [activeFilters, annotatedRootSpans]);
 
-  const handleView = (annotatedTrace: AnnotatedTrace) => {
-    navigate(`/traces/${annotatedTrace.traceId}`, { state: annotatedTrace });
+  const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
+    navigate(`/rootSpans/${annotatedRootSpan.traceId}`, { state: annotatedRootSpan });
   };
 
   const handleFilter = (filter: string) => {
@@ -137,7 +137,7 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
           }}
         >
           <Typography variant="h3" component="h1" gutterBottom>
-            Traces - {filteredAnnotatedTraces.length}
+            Root Spans - {filteredAnnotatedRootSpans.length}
           </Typography>
           <Box>
             <Button
@@ -158,9 +158,9 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
           }}
         >
           <List sx={{ flexGrow: 1, pr: 2, padding: 0, margin: 0 }}>
-            {filteredAnnotatedTraces.map((annotatedTrace) => (
+            {filteredAnnotatedRootSpans.map((annotatedRootSpan) => (
               <Box
-                key={annotatedTrace.traceId}
+                key={annotatedRootSpan.id}
                 sx={{
                   display: "flex",
                   alignItems: "center",
@@ -169,8 +169,8 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
                 }}
               >
                 <ListItem
-                  key={annotatedTrace.traceId}
-                  onClick={() => handleView(annotatedTrace)}
+                  key={annotatedRootSpan.id}
+                  onClick={() => handleView(annotatedRootSpan)}
                   sx={{
                     borderRadius: 2,
                     border: "2px solid",
@@ -181,14 +181,26 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
                     mb: 1,
                   }}
                   secondaryAction={
-                    annotatedTrace.note ? (
+                    annotatedRootSpan.note ? (
                       <CheckCircleIcon />
                     ) : (
                       <CheckCircleOutlineIcon />
                     )
                   }
                 >
-                  Trace: {annotatedTrace.traceId}
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                  >
+                    <Typography variant="body1">
+                      Span: {annotatedRootSpan.id}
+                    </Typography>
+                    <Typography variant="body2">
+                      Project: {annotatedRootSpan.projectName}
+                    </Typography>
+                    <Typography variant="body2">
+                      Name: {annotatedRootSpan.spanName}
+                    </Typography>
+                  </Box>
                 </ListItem>
                 <IconButton>
                   <DeleteIcon />
@@ -297,4 +309,4 @@ const Traces = ({ annotatedTraces, onCategorize }: TracesProps) => {
   );
 };
 
-export default Traces;
+export default RootSpans;

@@ -1,36 +1,43 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Traces from "./components/Traces";
+import RootSpans from "./components/RootSpans";
 import Annotation from "./components/Annotation";
-import TraceDetails from "./components/TraceDetails";
-import type { AnnotatedTrace, Rating } from "./types/types";
+import RootSpanDetails from "./components/RootSpanDetails";
+import type { AnnotatedRootSpan, Rating } from "./types/types";
 import {
-  fetchTraces,
+  fetchRootSpans,
   fetchAnnotations,
   categorizeAnnotations,
 } from "./services/services";
 import { createAnnotation, updateAnnotation } from "./services/services";
 
 const App = () => {
-  const [annotatedTraces, setAnnotatedTraces] = useState<AnnotatedTrace[]>([]);
+  const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [traces, annotations] = await Promise.all([
-          fetchTraces(),
+        setIsLoading(true)
+        const [rootSpans, annotations] = await Promise.all([
+          fetchRootSpans(),
           fetchAnnotations(),
         ]);
 
-        const combined: AnnotatedTrace[] = traces.map((trace) => {
+        const combined: AnnotatedRootSpan[] = rootSpans.map((rootSpan) => {
           const match = annotations.find(
-            (annotation) => annotation.traceId === trace.id
+            (annotation) => annotation.rootSpanId === rootSpan.id
           );
 
           return {
-            traceId: trace.id,
-            input: trace.input,
-            output: trace.output,
+            id: rootSpan.id,
+            input: rootSpan.input,
+            output: rootSpan.output,
+            traceId: rootSpan.traceId,
+            startTime: rootSpan.startTime,
+            endTime: rootSpan.endTime,
+            projectName: rootSpan.projectName,
+            spanName: rootSpan.spanName,
             annotationId: match?.id ?? "",
             note: match?.note ?? "",
             rating: match?.rating ?? "none",
@@ -38,9 +45,11 @@ const App = () => {
           };
         });
 
-        setAnnotatedTraces(combined);
+        setAnnotatedRootSpans(combined);
       } catch (error) {
-        console.error("Failed to fetch traces or annotations", error);
+        console.error("Failed to fetch root spans or annotations", error);
+      } finally {
+        setIsLoading(false)
       }
     };
 
@@ -49,19 +58,19 @@ const App = () => {
 
   const handleCategorize = async () => {
     try {
-      const traceCategories = await categorizeAnnotations();
+      const rootSpanCategories = await categorizeAnnotations();
 
-      const updatedAnnotatedTraces = annotatedTraces.map((annotatedTrace) => {
-        const match = traceCategories.find(
-          ({ traceId }) => traceId === annotatedTrace.traceId
+      const updatedAnnotatedRootSpans = annotatedRootSpans.map((annotatedRootSpan) => {
+        const match = rootSpanCategories.find(
+          ({ rootSpanId }) => rootSpanId === annotatedRootSpan.id
         );
-        const categories = match ? match.categories : annotatedTrace.categories;
+        const categories = match ? match.categories : annotatedRootSpan.categories;
         return {
-          ...annotatedTrace,
+          ...annotatedRootSpan,
           categories,
         };
       });
-      setAnnotatedTraces(updatedAnnotatedTraces);
+      setAnnotatedRootSpans(updatedAnnotatedRootSpans);
     } catch (error) {
       console.log("Error categorizing annotations", error);
     }
@@ -69,14 +78,14 @@ const App = () => {
 
   const handleSaveAnnotation = async (
     annotationId: string,
-    traceId: string,
+    rootSpanId: string,
     note: string,
     rating: Rating
   ): Promise<void> => {
     try {
       let res;
       if (annotationId === "") {
-        res = await createAnnotation(traceId, note || "", rating || "none");
+        res = await createAnnotation(rootSpanId, note || "", rating || "none");
       } else {
         res = await updateAnnotation(
           annotationId,
@@ -85,20 +94,16 @@ const App = () => {
         );
       }
 
-      setAnnotatedTraces((prev) => {
-        return prev.map((trace) => {
-          if (trace.traceId === traceId) {
+      setAnnotatedRootSpans((prev) => {
+        return prev.map((rootSpan) => {
+          if (rootSpan.id === rootSpanId) {
             return {
-              annotationId: res.id,
-              traceId: res.traceId,
-              input: trace.input,
-              output: trace.output,
-              note: res.note,
-              rating: res.rating,
-              categories: res.categories,
+              ...rootSpan,
+              note,
+              rating,
             };
           } else {
-            return trace;
+            return rootSpan;
           }
         });
       });
@@ -112,24 +117,28 @@ const App = () => {
     }
   };
 
+  if (isLoading) {
+    return <>Loading...</>
+  }
+
   return (
     <BrowserRouter>
       <Routes>
         <Route
           path="/"
           element={
-            <Traces
-              annotatedTraces={annotatedTraces}
+            <RootSpans
+              annotatedRootSpans={annotatedRootSpans}
               onCategorize={handleCategorize}
             />
           }
         />
-        <Route path="/traces/:id" element={<TraceDetails />} />
+        <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
         <Route
           path="/annotation"
           element={
             <Annotation
-              annotatedTraces={annotatedTraces}
+              annotatedRootSpans={annotatedRootSpans}
               onSave={handleSaveAnnotation}
             />
           }

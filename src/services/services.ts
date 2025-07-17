@@ -1,14 +1,14 @@
 import axios from 'axios';
-import type { Trace, Annotation } from '../types/types';
+import type { RootSpan, Annotation } from '../types/types';
 
-export const fetchTraces = async (): Promise<Trace[]> => {
-  const response = await axios.get<Trace[]>('/api/traces');
+export const fetchRootSpans = async (): Promise<RootSpan[]> => {
+  const response = await axios.get<RootSpan[]>('/api/rootSpans');
   return response.data;
-};
+}
 
-export const fetchTrace = async (id: string): Promise<Trace> => {
-  const response = await axios.get<Trace>(`/api/traces/${id}`)
-  return response.data
+export const fetchRootSpan = async (id: string): Promise<RootSpan> => {
+  const response = await axios.get<RootSpan>(`/api/rootSpan/${id}`);
+  return response.data;
 }
 
 export const fetchAnnotations = async (): Promise<Annotation[]> => {
@@ -21,8 +21,8 @@ export const fetchAnnotation = async (id: string): Promise<Annotation> => {
   return response.data
 }
 
-export const createAnnotation = async (traceId: string, note: string, rating: string) => {
-  const response = await axios.post(`/api/annotations`, {traceId, note, rating})
+export const createAnnotation = async (rootSpanId: string, note: string, rating: string) => {
+  const response = await axios.post(`/api/annotations`, {rootSpanId, note, rating})
   return response.data
 }
 
@@ -32,7 +32,7 @@ export const updateAnnotation = async (annotationId: string, note: string, ratin
 }
 
 export const categorizeAnnotations = async (): Promise<
-  { traceId: string; categories: string[] }[]
+  { rootSpanId: string; categories: string[] }[]
 > => {
   const response = await axios.post("/api/categorize");
   return response.data;
