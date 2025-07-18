@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RootSpans from "./components/RootSpans";
 import Annotation from "./components/Annotation";
+import Home from "./components/Home";
+import NavBar from "./components/NavBar";
+import CreateQueue from "./components/CreateQueue";
 import RootSpanDetails from "./components/RootSpanDetails";
 import type { AnnotatedRootSpan, Rating } from "./types/types";
 import {
@@ -123,9 +126,12 @@ const App = () => {
 
   return (
     <BrowserRouter>
+      <NavBar />
       <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/create-queue" element={<CreateQueue />} />
         <Route
-          path="/"
+          path="/queues/:id"
           element={
             <RootSpans
               annotatedRootSpans={annotatedRootSpans}

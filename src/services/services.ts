@@ -37,3 +37,21 @@ export const categorizeAnnotations = async (): Promise<
   const response = await axios.post("/api/categorize");
   return response.data;
 };
+
+export const fetchAnnotationQueues = async (): Promise<{ id: string; name: string; count: number }[]> => {
+  // const response = await axios.get('/api/annotationQueues');
+  // return response.data;
+
+  return [
+    { id: '1', name: 'Queue 1', count: 5 },
+    { id: '2', name: 'Queue 2', count: 3 },
+    { id: '3', name: 'Queue 3', count: 8 },
+    { id: '4', name: 'Queue 4', count: 2 },
+    { id: '5', name: 'Queue 5', count: 10 },
+  ];
+}
+
+export const createAnnotationQueue = async (data: { name: string; rootSpanIds: string[] }) => {
+  const response = await axios.post('/api/annotationQueues', data);
+  return response.data;
+}
