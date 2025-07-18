@@ -10,6 +10,7 @@ const NavBar = () => {
           LLMonade 🍋
         </Typography>
         <Button color="inherit" onClick={() => navigate("/")}>Home</Button>
+        <Button color="inherit" onClick={() => navigate("/queues")}>Queues</Button>
         <Button color="inherit" onClick={() => navigate("/")}>Datasets</Button>
         <Button color="inherit" onClick={() => navigate("/")}>How To</Button>
       </Toolbar>

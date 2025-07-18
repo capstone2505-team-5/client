@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RootSpans from "./components/RootSpans";
 import Annotation from "./components/Annotation";
 import Home from "./components/Home";
+import Queues from "./components/Queues";
 import NavBar from "./components/NavBar";
 import CreateQueue from "./components/CreateQueue";
 import RootSpanDetails from "./components/RootSpanDetails";
@@ -129,6 +130,7 @@ const App = () => {
       <NavBar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/queues" element={<Queues />} />
         <Route path="/create-queue" element={<CreateQueue />} />
         <Route
           path="/queues/:id"

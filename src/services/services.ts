@@ -43,11 +43,11 @@ export const fetchAnnotationQueues = async (): Promise<{ id: string; name: strin
   // return response.data;
 
   return [
-    { id: '1', name: 'Queue 1', count: 5 },
-    { id: '2', name: 'Queue 2', count: 3 },
-    { id: '3', name: 'Queue 3', count: 8 },
-    { id: '4', name: 'Queue 4', count: 2 },
-    { id: '5', name: 'Queue 5', count: 10 },
+    { id: '1', name: 'Recipe App', count: 5 },
+    { id: '2', name: 'Categorizer', count: 3 },
+    { id: '3', name: 'Sbotify', count: 8 },
+    { id: '4', name: 'Wine RAG', count: 2 },
+    { id: '5', name: 'Journal entries', count: 10 },
   ];
 }
 

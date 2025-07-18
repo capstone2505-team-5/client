@@ -1,56 +1,37 @@
-import { useState, useEffect } from "react";
+import { Container, Typography, Box, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import {
-  Container,
-  Typography,
-  Box,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-} from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import { fetchAnnotationQueues } from "../services/services";
-
-interface AnnotationQueue {
-  id: string;
-  name: string;
-  count: number;
-}
 
 const Home = () => {
   const navigate = useNavigate();
-  const [queues, setQueues] = useState<AnnotationQueue[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      const data = await fetchAnnotationQueues();
-      setQueues(data);
-    };
-    
-    load();
-  }, []);
-
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h3">Annotation Queues</Typography>
+    <Container
+      maxWidth="md"
+      sx={{
+        mt: 8,
+        py: 6,
+        backgroundColor: '#FFFDE7',
+        borderRadius: 2,
+        boxShadow: 3,
+      }}
+    >
+      <Box textAlign="center">
+        <Typography variant="h2" gutterBottom sx={{ color: 'primary.main' }}>
+          🍋 Welcome to LLMonade! 🍋
+        </Typography>
+        
+        <Typography variant="h5" gutterBottom sx={{ mb: 4, color: 'text.secondary' }}>
+          Sweeten up your LLM app.
+        </Typography>
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate("/create-queue")}
+          color="success"
+          size="large"
+          onClick={() => navigate('/queues')}
+          sx={{ fontWeight: 'bold' }}
         >
-          Create New Queue
+          View Queues
         </Button>
       </Box>
-
-      <List>
-        {queues.map((q) => (
-          <ListItem key={q.id} button>
-            <ListItemText primary={q.name} secondary={`${q.count} spans`} />
-          </ListItem>
-        ))}
-      </List>
     </Container>
   );
 };
