@@ -42,16 +42,20 @@ export const categorizeAnnotations = async (): Promise<
 // I need to make these real API calls
 // For now, just a mock functions to simulate
 
-export const fetchAnnotationQueues = async (): Promise<{ id: string; name: string; count: number }[]> => {
+export const fetchAnnotationQueues = async (): Promise<{ 
+  id: string;
+  name: string;
+  totalSpans: number;
+  annotatedCount: number;
+  goodCount: number; }[]> => {
   // const response = await axios.get('/api/annotationQueues');
   // return response.data;
 
   return [
-    { id: '1', name: 'Recipe App', count: 5 },
-    { id: '2', name: 'Categorizer', count: 3 },
-    { id: '3', name: 'Sbotify', count: 8 },
-    { id: '4', name: 'Wine RAG', count: 2 },
-    { id: '5', name: 'Journal entries', count: 10 },
+    { id: '1', name: 'Categorizer', totalSpans: 100, annotatedCount: 30, goodCount: 30 },
+    { id: '2', name: 'Recipe App', totalSpans: 200, annotatedCount: 150, goodCount: 120 },
+    { id: '3', name: 'Sbotify', totalSpans: 300, annotatedCount: 250, goodCount: 200 },
+    { id: '4', name: 'Wine RAG', totalSpans: 400, annotatedCount: 350, goodCount: 300 },
   ];
 }
 
