@@ -14,6 +14,7 @@ import {
   categorizeAnnotations,
 } from "./services/services";
 import { createAnnotation, updateAnnotation } from "./services/services";
+import EditQueue from "./components/EditQueue";
 
 const App = () => {
   const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
@@ -132,6 +133,7 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/queues" element={<Queues />} />
         <Route path="/create-queue" element={<CreateQueue />} />
+        <Route path="/edit-queue/:id" element={<EditQueue />} />
         <Route
           path="/queues/:id"
           element={

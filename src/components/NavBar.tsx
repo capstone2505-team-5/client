@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 
 const NavBar = () => {
   const navigate = useNavigate();
+
   return (
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          LLMonade 🍋
+          🍋 LLMonade
         </Typography>
         <Button color="inherit" onClick={() => navigate("/")}>Home</Button>
         <Button color="inherit" onClick={() => navigate("/queues")}>Queues</Button>

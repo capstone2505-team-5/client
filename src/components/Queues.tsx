@@ -8,8 +8,10 @@ import {
   List,
   ListItem,
   ListItemText,
+  IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from '@mui/icons-material/Edit';
 import { fetchAnnotationQueues } from "../services/services";
 
 interface AnnotationQueue {
@@ -23,18 +25,18 @@ const Queues = () => {
   const [queues, setQueues] = useState<AnnotationQueue[]>([]);
 
   useEffect(() => {
-    const load = async () => {
+    const fetchQueues = async () => {
       const data = await fetchAnnotationQueues();
       setQueues(data);
     };
     
-    load();
+    fetchQueues();
   }, []);
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h3">Annotation Queues</Typography>
+        <Typography variant="h3">Queues</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -45,9 +47,9 @@ const Queues = () => {
       </Box>
 
       <List sx={{ padding: 0 }}>
-        {queues.map((q) => (
+        {queues.map((queue) => (
           <Box
-            key={q.id}
+            key={queue.id}
             sx={{
               borderRadius: 2,
               border: "2px solid",
@@ -57,13 +59,23 @@ const Queues = () => {
             }}
           >
             <ListItem
-              onClick={() => navigate(`/queues/${q.id}`)}
+              onClick={() => navigate(`/queues/${queue.id}`)}
               sx={{ py: 1.5, px: 2 }}
             >
               <ListItemText
-                primary={q.name}
-                secondary={`${q.count} spans`}
+                primary={queue.name}
+                secondary={`${queue.count} spans`}
               />
+              <IconButton
+                edge="end"
+                aria-label="edit"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/edit-queue/${queue.id}`);
+                }}
+              >
+                <EditIcon />
+              </IconButton>
             </ListItem>
           </Box>
         ))}
