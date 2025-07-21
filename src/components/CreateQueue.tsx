@@ -79,7 +79,12 @@ const CreateQueue = () => {
   };
 
   const handleSubmit = async () => {
-    await createQueue({ name, rootSpanIds: selectedRootSpanIds });
+    try {
+      await createQueue({ name, rootSpanIds: selectedRootSpanIds });
+    } catch (error) {
+      console.error("Failed to create queue", error);
+    }
+    
     navigate("/queues");
   };
 
