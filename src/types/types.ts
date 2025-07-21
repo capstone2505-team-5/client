@@ -11,6 +11,7 @@ export interface Annotation {
 export interface RootSpan {
   id: string;
   traceId: string;
+  queueId: string | null;
   startTime: string; // or Date
   endTime: string; // or Date
   input: string;

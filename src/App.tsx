@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
 import RootSpans from "./components/RootSpans";
 import Annotation from "./components/Annotation";
 import Home from "./components/Home";
@@ -8,6 +8,7 @@ import NavBar from "./components/NavBar";
 import CreateQueue from "./components/CreateQueue";
 import RootSpanDetails from "./components/RootSpanDetails";
 import type { AnnotatedRootSpan, Rating } from "./types/types";
+import FilteredRootSpans from "./components/FilteredRootSpans";
 import {
   fetchRootSpans,
   fetchAnnotations,
@@ -39,6 +40,7 @@ const App = () => {
             input: rootSpan.input,
             output: rootSpan.output,
             traceId: rootSpan.traceId,
+            queueId: rootSpan.queueId,
             startTime: rootSpan.startTime,
             endTime: rootSpan.endTime,
             projectName: rootSpan.projectName,
@@ -126,6 +128,7 @@ const App = () => {
     return <>Loading...</>
   }
 
+
   return (
     <BrowserRouter>
       <NavBar />
@@ -137,15 +140,16 @@ const App = () => {
         <Route
           path="/queues/:id"
           element={
-            <RootSpans
-              annotatedRootSpans={annotatedRootSpans}
+            <FilteredRootSpans
+              allSpans={annotatedRootSpans}
               onCategorize={handleCategorize}
             />
           }
         />
         <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
         <Route
-          path="/annotation"
+          // path="/annotation"
+          path="/queues/:id/annotation"
           element={
             <Annotation
               annotatedRootSpans={annotatedRootSpans}
