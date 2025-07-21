@@ -14,27 +14,20 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from '@mui/icons-material/Edit';
-import { fetchAnnotationQueues } from "../services/services";
-
-interface AnnotationQueue {
-  id: string;
-  name: string;
-  totalSpans: number;
-  annotatedCount: number;
-  goodCount: number;
-}
+import { fetchQueues } from "../services/services";
+import type { Queue } from "../types/types";
 
 const Queues = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [queues, setQueues] = useState<AnnotationQueue[]>([]);
+  const [queues, setQueues] = useState<Queue[]>([]);
 
   useEffect(() => {
-    const fetchQueues = async () => {
-      const data = await fetchAnnotationQueues();
+    const fetchData = async () => {
+      const data = await fetchQueues();
       setQueues(data);
     };
-    fetchQueues();
+    fetchData();
   }, []);
 
   const getProgressColor = (percent: number) => {

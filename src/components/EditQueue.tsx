@@ -17,7 +17,7 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import { fetchRootSpans, fetchAnnotationQueue, updateAnnotationQueue } from "../services/services";
+import { fetchRootSpans, fetchQueue, updateQueue } from "../services/services";
 import type { RootSpan } from "../types/types";
 
 const EditQueue = () => {
@@ -34,7 +34,7 @@ const EditQueue = () => {
   useEffect(() => {
     (async () => {
       if (!id) return;
-      const queue = await fetchAnnotationQueue(id);
+      const queue = await fetchQueue(id);
       setName(queue.name);
       setSelectedRootSpanIds(queue.rootSpanIds);
       const spans = await fetchRootSpans();
@@ -84,7 +84,7 @@ const EditQueue = () => {
   // save
   const handleSubmit = async () => {
     if (!id) return;
-    await updateAnnotationQueue(id, { name, rootSpanIds: selectedRootSpanIds });
+    await updateQueue(id, { name, rootSpanIds: selectedRootSpanIds });
     navigate("/queues");
   };
 

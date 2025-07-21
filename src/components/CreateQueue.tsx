@@ -17,7 +17,7 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import { fetchRootSpans, createAnnotationQueue } from "../services/services";
+import { fetchRootSpans, createQueue } from "../services/services";
 import type { RootSpan } from "../types/types";
 
 const CreateQueue = () => {
@@ -79,7 +79,7 @@ const CreateQueue = () => {
   };
 
   const handleSubmit = async () => {
-    await createAnnotationQueue({ name, rootSpanIds: selectedRootSpanIds });
+    await createQueue({ name, rootSpanIds: selectedRootSpanIds });
     navigate("/queues");
   };
 

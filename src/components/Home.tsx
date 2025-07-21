@@ -1,7 +1,7 @@
 // src/components/Home.tsx
 import { Container, Typography, Box, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import logo from "../../public/logo.png";
+import logo from "/logo.png";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ const Home = () => {
           }}
         />
         <Typography variant="h5" gutterBottom sx={{ mb: 4, color: "text.secondary" }}>
-          Sweeten up your LLM app.
+          An evaluation tool for refreshing your LLM app.
         </Typography>
         <Button
           variant="contained"

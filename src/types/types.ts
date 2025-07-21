@@ -22,3 +22,11 @@ export interface RootSpan {
 export type AnnotatedRootSpan = RootSpan & {
   annotationId: string;
 } & Pick<Annotation, "note" | "rating" | "categories">;
+
+export interface Queue {
+  id: string;
+  name: string;
+  totalSpans: number;
+  annotatedCount: number;
+  goodCount: number;
+}

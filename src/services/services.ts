@@ -42,7 +42,7 @@ export const categorizeAnnotations = async (): Promise<
 // I need to make these real API calls
 // For now, just a mock functions to simulate
 
-export const fetchAnnotationQueues = async (): Promise<{ 
+export const fetchQueues = async (): Promise<{ 
   id: string;
   name: string;
   totalSpans: number;
@@ -59,7 +59,7 @@ export const fetchAnnotationQueues = async (): Promise<{
   ];
 }
 
-export const createAnnotationQueue = async (data: { name: string; rootSpanIds: string[] }) => {
+export const createQueue = async (data: { name: string; rootSpanIds: string[] }) => {
   // const response = await axios.post('/api/annotationQueues', data);
   // return response.data;
 
@@ -68,14 +68,14 @@ export const createAnnotationQueue = async (data: { name: string; rootSpanIds: s
   ]
 }
 
-export const fetchAnnotationQueue = async (id: string): Promise<{ id: string; name: string; rootSpanIds: string[] }> => {
+export const fetchQueue = async (id: string): Promise<{ id: string; name: string; rootSpanIds: string[] }> => {
   // const response = await axios.get(`/api/annotationQueues/${id}`);
   // return response.data;
 
   return { id, name: 'Categorizer - Example for now', rootSpanIds: ['7a96ff0c2b27d316', '5126fd534f21e310', 'e17e73a03d076e6f'] };
 }
 
-export const updateAnnotationQueue = async (id: string, data: { name: string; rootSpanIds: string[] }) => {
+export const updateQueue = async (id: string, data: { name: string; rootSpanIds: string[] }) => {
   // const response = await axios.patch(`/api/annotationQueues/${id}`, data);
   // return response.data;
 
