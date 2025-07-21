@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
-import RootSpans from "./components/RootSpans";
-import Annotation from "./components/Annotation";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import FilteredAnnotation from "./components/FilteredAnnotation";
 import Home from "./components/Home";
 import Queues from "./components/Queues";
 import NavBar from "./components/NavBar";
@@ -148,11 +147,10 @@ const App = () => {
         />
         <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
         <Route
-          // path="/annotation"
           path="/queues/:id/annotation"
           element={
-            <Annotation
-              annotatedRootSpans={annotatedRootSpans}
+            <FilteredAnnotation
+              allSpans={annotatedRootSpans}
               onSave={handleSaveAnnotation}
             />
           }
