@@ -14,7 +14,8 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from '@mui/icons-material/Edit';
-import { fetchQueues } from "../services/services";
+import DeleteIcon from "@mui/icons-material/Delete";   // ← NEW
+import { fetchQueues, deleteQueue } from "../services/services";
 import type { Queue } from "../types/types";
 
 const Queues = () => {
@@ -86,6 +87,28 @@ const Queues = () => {
                   }}
                 >
                   <EditIcon />
+                </IconButton>
+                <IconButton
+                  edge="end"
+                  aria-label="delete"
+                  sx={{ color: theme.palette.error.main, ml: 1 }}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const ok = window.confirm(
+                      `Delete queue “${queue.name}”?  This cannot be undone.`
+                    );
+                    if (!ok) return;
+                    try {
+                      await deleteQueue(queue.id);
+                      setQueues((prev) =>
+                        prev.filter((q) => q.id !== queue.id)
+                      );
+                    } catch (err) {
+                      console.error("Failed to delete queue", err);
+                    }
+                  }}
+                >
+                  <DeleteIcon />
                 </IconButton>
               </ListItem>
 

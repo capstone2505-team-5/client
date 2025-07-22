@@ -17,7 +17,7 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import { fetchRootSpans, fetchQueue, updateQueue } from "../services/services";
+import { fetchRootSpans, fetchQueue, updateQueue, deleteQueue } from "../services/services";
 import type { RootSpan } from "../types/types";
 
 const EditQueue = () => {
@@ -90,9 +90,25 @@ const EditQueue = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h4" mb={2}>
-        Edit Queue
-      </Typography>
+    
+      <Box mb={2} display="flex" alignItems="center" justifyContent="space-between">
+        <Typography variant="h4">
+          Edit Queue
+        </Typography>
+        <Button
+          color="error"
+          variant="contained"
+          onClick={async () => {
+            if (!id) return;
+            const confirm = window.confirm('Delete this queue?  This cannot be undone.');
+            if (!confirm) return;
+            await deleteQueue(id);          // ← you’ll need to export this in services
+            navigate('/queues');
+          }}
+        >
+          Delete Queue
+        </Button>
+      </Box>
 
       <Box mb={3}>
         <TextField

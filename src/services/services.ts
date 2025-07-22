@@ -62,3 +62,12 @@ export const updateQueue = async (id: string, data: { name: string; rootSpanIds:
   const response = await axios.post(`/api/queues/${id}`, data);
   return response.data;
 } 
+
+export const deleteQueue = async (id: string) => {
+  // const response = await axios.delete(`/api/queues/${id}`);
+  // return response.data;
+
+  console.log(`Queue with id ${id} deleted`);
+  // Simulating deletion for now
+  return { success: true };
+}
