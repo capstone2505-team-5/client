@@ -134,8 +134,8 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/queues" element={<Queues />} />
-        <Route path="/create-queue" element={<CreateQueue />} />
-        <Route path="/edit-queue/:id" element={<EditQueue />} />
+        <Route path="/create-queue" element={<CreateQueue annotatedRootSpans={annotatedRootSpans}/>} />
+        <Route path="/edit-queue/:id" element={<EditQueue annotatedRootSpans={annotatedRootSpans}/>} />
         <Route
           path="/queues/:id"
           element={

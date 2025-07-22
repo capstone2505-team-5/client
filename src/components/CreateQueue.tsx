@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Container,
@@ -17,25 +17,19 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import { fetchRootSpans, createQueue } from "../services/services";
-import type { RootSpan } from "../types/types";
+import { createQueue } from "../services/services";
+import type { AnnotatedRootSpan } from "../types/types";
 
-const CreateQueue = () => {
+interface CreateQueueProps {
+  annotatedRootSpans: AnnotatedRootSpan[];
+}
+
+const CreateQueue = ({ annotatedRootSpans: rootSpans }: CreateQueueProps) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [rootSpans, setRootSpans] = useState<RootSpan[]>([]);
   const [selectedRootSpanIds, setSelectedRootSpanIds] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
-
-  useEffect(() => {
-    const fetchSpans = async () => {
-      const data = await fetchRootSpans();
-      setRootSpans(data);
-    };
-    
-    fetchSpans();
-  }, []);
 
   const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
@@ -84,7 +78,7 @@ const CreateQueue = () => {
     } catch (error) {
       console.error("Failed to create queue", error);
     }
-    
+
     navigate("/queues");
   };
 

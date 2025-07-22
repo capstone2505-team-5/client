@@ -17,30 +17,29 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import { fetchRootSpans, fetchQueue, updateQueue, deleteQueue } from "../services/services";
-import type { RootSpan } from "../types/types";
+import { fetchQueue, updateQueue, deleteQueue } from "../services/services";
+import type { AnnotatedRootSpan } from "../types/types";
 
-const EditQueue = () => {
+interface EditQueueProps {
+  annotatedRootSpans: AnnotatedRootSpan[];
+}
+
+const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
   const [name, setName] = useState("");
-  const [rootSpans, setRootSpans] = useState<RootSpan[]>([]);
   const [selectedRootSpanIds, setSelectedRootSpanIds] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
 
-  // fetch queue details + spans on mount
   useEffect(() => {
-    (async () => {
+    const fetchData = async () => {
       if (!id) return;
       const queue = await fetchQueue(id);
       setName(queue.name);
       setSelectedRootSpanIds(queue.rootSpanIds);
-      
-      const spans = await fetchRootSpans();
-      setRootSpans(spans);
-    })();
+    };
+    fetchData();
   }, [id]);
 
   // filtered + sorted spans
