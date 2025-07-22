@@ -37,15 +37,14 @@ const EditQueue = () => {
       const queue = await fetchQueue(id);
       setName(queue.name);
       setSelectedRootSpanIds(queue.rootSpanIds);
+      
       const spans = await fetchRootSpans();
       setRootSpans(spans);
     })();
   }, [id]);
 
-  // memoized current time
-  const now = useMemo(() => new Date(), []);
-
   // filtered + sorted spans
+  const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
     return rootSpans
       .filter(s => projectFilter === "all" || s.projectName === projectFilter)
