@@ -14,6 +14,8 @@ export interface RootSpan {
   queueId: string | null;
   startTime: string; // or Date
   endTime: string; // or Date
+  tsStart: number; // timestamp in milliseconds
+  tsEnd: number; // timestamp in milliseconds
   input: string;
   output: string;
   projectName: string;

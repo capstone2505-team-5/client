@@ -27,26 +27,27 @@ interface CreateQueueProps {
 const CreateQueue = ({ annotatedRootSpans: rootSpans }: CreateQueueProps) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [selectedRootSpanIds, setSelectedRootSpanIds] = useState<string[]>([]);
+  const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
+  const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
 
   const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
-    let list = rootSpans
-      .filter((rootSpan) => projectFilter === "all" || rootSpan.projectName === projectFilter)
-      .filter((rootSpan) => {
-        if (timeInterval === 'all') return true;
-        const threshold = new Date(now);
-        if (timeInterval === '1h') threshold.setHours(now.getHours() - 1);
-        if (timeInterval === '24h') threshold.setDate(now.getDate() - 1);
-        if (timeInterval === '7d') threshold.setDate(now.getDate() - 7);
-        return new Date(rootSpan.startTime) >= threshold;
-      });
+    const threshold = (() => {
+      if (timeInterval === 'all') return 0;
+      const t = now.getTime();
+      if (timeInterval === '1h')  return t - 3600_000;
+      if (timeInterval === '24h') return t - 86_400_000;
+      return t - 604_800_000; // 7d
+    })();
 
-    return list.sort(
-      (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-    );
+    return rootSpans
+      .filter(span =>
+        (projectFilter === 'all' || span.projectName === projectFilter) &&
+        (threshold === 0 || span.tsStart >= threshold)
+      )
+      .sort((a, b) => b.tsStart - a.tsStart);
   }, [rootSpans, projectFilter, timeInterval, now]);
 
   // unique projects
@@ -55,22 +56,28 @@ const CreateQueue = ({ annotatedRootSpans: rootSpans }: CreateQueueProps) => {
     [rootSpans]
   );
 
-  const allSelected = displayedSpans.length > 0 &&
-    displayedSpans.every((rootSpan) => selectedRootSpanIds.includes(rootSpan.id));
+  const allSelected =
+    displayedSpans.length > 0 &&
+    displayedSpans.every(s => selectedSet.has(s.id));
 
-  const handleSelectAll = () => {
-    if (allSelected) {
-      setSelectedRootSpanIds([]);
-    } else {
-      setSelectedRootSpanIds(displayedSpans.map((rootSpan) => rootSpan.id));
-    }
-  };
+  const handleSelectAll = () =>
+    setSelectedSet(prev => {
+      const next = new Set(prev);
 
-  const toggle = (selectedId: string) => {
-    setSelectedRootSpanIds((prev) =>
-      prev.includes(selectedId) ? prev.filter((prevId) => prevId !== selectedId) : [...prev, selectedId]
-    );
-  };
+      if (allSelected) {
+        displayedSpans.forEach(s => next.delete(s.id));
+      } else {
+        displayedSpans.forEach(s => next.add(s.id));
+      }
+      return next;
+  });
+
+  const toggle = (id: string) =>
+    setSelectedSet(prev => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+  });
 
   const handleSubmit = async () => {
     try {
@@ -146,7 +153,7 @@ const CreateQueue = ({ annotatedRootSpans: rootSpans }: CreateQueueProps) => {
         {displayedSpans.map((rootSpan) => (
           <ListItem key={rootSpan.id} disablePadding>
             <ListItemButton onClick={() => toggle(rootSpan.id)} sx={{ py: 1, px: 2 }}>
-              <Checkbox checked={selectedRootSpanIds.includes(rootSpan.id)} />
+              <Checkbox checked={selectedSet.has(rootSpan.id)} />
               <ListItemText primary={`${rootSpan.id} — ${rootSpan.spanName}`} />
             </ListItemButton>
           </ListItem>

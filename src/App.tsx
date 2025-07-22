@@ -42,6 +42,8 @@ const App = () => {
             queueId: rootSpan.queueId,
             startTime: rootSpan.startTime,
             endTime: rootSpan.endTime,
+            tsStart: Date.parse(rootSpan.startTime),
+            tsEnd: Date.parse(rootSpan.endTime),
             projectName: rootSpan.projectName,
             spanName: rootSpan.spanName,
             annotationId: match?.id ?? "",

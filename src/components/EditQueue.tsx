@@ -28,16 +28,17 @@ const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [selectedRootSpanIds, setSelectedRootSpanIds] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
+  const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
+  const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
       const queue = await fetchQueue(id);
       setName(queue.name);
-      setSelectedRootSpanIds(queue.rootSpanIds);
+      setSelectedSet(new Set(queue.rootSpanIds));
     };
     fetchData();
   }, [id]);
@@ -65,19 +66,28 @@ const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
   );
 
   // select all logic
-  const allSelected = displayedSpans.length > 0 &&
-    displayedSpans.every(s => selectedRootSpanIds.includes(s.id));
-  const handleSelectAll = () => {
-    if (allSelected) setSelectedRootSpanIds([]);
-    else setSelectedRootSpanIds(displayedSpans.map(s => s.id));
-  };
+  const allSelected =
+    displayedSpans.length > 0 &&
+    displayedSpans.every(s => selectedSet.has(s.id));
+  const handleSelectAll = () =>
+    setSelectedSet(prev => {
+      const next = new Set(prev);
+
+      if (allSelected) {
+        displayedSpans.forEach(s => next.delete(s.id));
+      } else {
+        displayedSpans.forEach(s => next.add(s.id));
+      }
+      return next;
+  });
 
   // toggle individual
-  const toggle = (id: string) => {
-    setSelectedRootSpanIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
+  const toggle = (id: string) =>
+    setSelectedSet(prev => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+  });
 
   // save
   const handleSubmit = async () => {
@@ -165,7 +175,7 @@ const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
         {displayedSpans.map(span => (
           <ListItem key={span.id} disablePadding>
             <ListItemButton onClick={() => toggle(span.id)} sx={{ py: 1, px: 2 }}>
-              <Checkbox checked={selectedRootSpanIds.includes(span.id)} />
+              <Checkbox checked={selectedSet.has(span.id)} />
               <ListItemText primary={`${span.id} — ${span.spanName}`} />
             </ListItemButton>
           </ListItem>
