@@ -25,8 +25,12 @@ const Queues = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await fetchQueues();
-      setQueues(data);
+      try {
+        const data = await fetchQueues();
+        setQueues(data);
+      } catch (error) {
+        console.error("Failed to fetch queues", error);
+      }
     };
     fetchData();
   }, []);

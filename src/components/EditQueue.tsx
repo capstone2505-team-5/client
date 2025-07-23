@@ -35,10 +35,15 @@ const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!id) return;
-      const queue = await fetchQueue(id);
-      setName(queue.name);
-      setSelectedSet(new Set(queue.rootSpanIds));
+      try {
+        if (!id) return;
+        const queue = await fetchQueue(id);
+        setName(queue.name);
+        setSelectedSet(new Set(queue.rootSpanIds));
+      } catch (error) { 
+        console.error("Failed to fetch queue", error);
+        navigate(`/queues`);
+      }
     };
     fetchData();
   }, [id]);
@@ -69,6 +74,7 @@ const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
   const allSelected =
     displayedSpans.length > 0 &&
     displayedSpans.every(s => selectedSet.has(s.id));
+
   const handleSelectAll = () =>
     setSelectedSet(prev => {
       const next = new Set(prev);

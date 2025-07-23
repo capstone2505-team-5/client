@@ -59,7 +59,7 @@ export const createQueue = async (data: { name: string; rootSpanIds: string[] })
 }
 
 export const updateQueue = async (id: string, data: { name: string; rootSpanIds: string[] }) => {
-  const response = await axios.post(`/api/queues/${id}`, data);
+  const response = await axios.put(`/api/queues/${id}`, data);
   return response.data;
 } 
 
