@@ -37,3 +37,33 @@ export const categorizeAnnotations = async (): Promise<
   const response = await axios.post("/api/categorize");
   return response.data;
 };
+
+export const fetchQueues = async (): Promise<{ 
+  id: string;
+  name: string;
+  totalSpans: number;
+  annotatedCount: number;
+  goodCount: number; }[]> => {
+  const response = await axios.get('/api/queues');
+  return response.data;
+}
+
+export const fetchQueue = async (id: string): Promise<{ id: string; name: string; rootSpanIds: string[] }> => {
+  const response = await axios.get(`/api/queues/${id}`);
+  return response.data;
+}
+
+export const createQueue = async (data: { name: string; rootSpanIds: string[] }) => {
+  const response = await axios.post('/api/queues', data);
+  return response.data;
+}
+
+export const updateQueue = async (id: string, data: { name: string; rootSpanIds: string[] }) => {
+  const response = await axios.put(`/api/queues/${id}`, data);
+  return response.data;
+} 
+
+export const deleteQueue = async (id: string) => {
+  const response = await axios.delete(`/api/queues/${id}`);
+  return response.data;
+}

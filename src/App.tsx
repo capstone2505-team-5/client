@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import RootSpans from "./components/RootSpans";
-import Annotation from "./components/Annotation";
+import FilteredAnnotation from "./components/FilteredAnnotation";
+import Home from "./components/Home";
+import Queues from "./components/Queues";
+import NavBar from "./components/NavBar";
+import CreateQueue from "./components/CreateQueue";
 import RootSpanDetails from "./components/RootSpanDetails";
 import type { AnnotatedRootSpan, Rating } from "./types/types";
+import FilteredRootSpans from "./components/FilteredRootSpans";
 import {
   fetchRootSpans,
   fetchAnnotations,
   categorizeAnnotations,
 } from "./services/services";
-import { createAnnotation, updateAnnotation } from "./services/services";
+import { createAnnotation, updateAnnotation, createQueue, updateQueue } from "./services/services";
+import EditQueue from "./components/EditQueue";
 
 const App = () => {
   const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
@@ -34,8 +39,11 @@ const App = () => {
             input: rootSpan.input,
             output: rootSpan.output,
             traceId: rootSpan.traceId,
+            queueId: rootSpan.queueId,
             startTime: rootSpan.startTime,
             endTime: rootSpan.endTime,
+            tsStart: Date.parse(rootSpan.startTime),
+            tsEnd: Date.parse(rootSpan.endTime),
             projectName: rootSpan.projectName,
             spanName: rootSpan.spanName,
             annotationId: match?.id ?? "",
@@ -117,28 +125,106 @@ const App = () => {
     }
   };
 
+  const handleCreateQueue = async (name: string, rootSpanIds: string[]) => {
+    try {
+      const { id: queueId } = await createQueue({ name, rootSpanIds });
+
+      const idSet = new Set(rootSpanIds);
+      setAnnotatedRootSpans(prev =>
+        prev.map(span =>
+          idSet.has(span.id) ? { ...span, queueId } : span
+        )
+      );
+    } catch (error) {
+      console.error("Failed to create queue", error);
+    }
+  };
+
+  const handleUpdateQueue = async (
+    queueId: string,
+    name: string,
+    rootSpanIds: string[]
+  ) => {
+    try {
+      await updateQueue(queueId, { name, rootSpanIds });
+
+      const keepSet = new Set(rootSpanIds);
+
+      setAnnotatedRootSpans(prev =>
+        prev.map(span => {
+          const inQueueNow   = span.queueId === queueId;
+          const shouldBeIn   = keepSet.has(span.id);
+
+          if (!inQueueNow && shouldBeIn) {
+            return { ...span, queueId };
+          }
+
+          if (inQueueNow && !shouldBeIn) {
+            return { ...span, queueId: null };
+          }
+
+          return span;
+        })
+      );
+    } catch (error) {
+      console.error('Failed to update queue', error);
+    }
+  };
+
+  const handleSpansOnDeleteQueue = async (queueId: string) => {
+    try {
+      setAnnotatedRootSpans(prev =>
+        prev.map(span => (span.queueId === queueId ? { ...span, queueId: null } : span))
+      );
+    } catch (error) {
+      console.error("Failed to delete queue", error);
+    }
+  };
+
   if (isLoading) {
     return <>Loading...</>
   }
 
+
   return (
     <BrowserRouter>
+      <NavBar />
       <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue}/>}/>
         <Route
-          path="/"
+          path="/create-queue"
           element={
-            <RootSpans
+            <CreateQueue
               annotatedRootSpans={annotatedRootSpans}
+              onCreateQueue={handleCreateQueue}
+            />
+          }
+        />
+        <Route
+          path="/edit-queue/:id"
+          element={
+            <EditQueue
+              annotatedRootSpans={annotatedRootSpans}
+              onUpdateQueue={handleUpdateQueue}
+            />
+          }
+        />
+        <Route
+          path="/queues/:id"
+          element={
+            <FilteredRootSpans
+              allSpans={annotatedRootSpans}
               onCategorize={handleCategorize}
             />
           }
         />
         <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
         <Route
-          path="/annotation"
+          path="/queues/:id/annotation"
           element={
-            <Annotation
-              annotatedRootSpans={annotatedRootSpans}
+            <FilteredAnnotation
+              allSpans={annotatedRootSpans}
               onSave={handleSaveAnnotation}
             />
           }
