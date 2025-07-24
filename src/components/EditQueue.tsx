@@ -17,14 +17,15 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import { fetchQueue, updateQueue, deleteQueue } from "../services/services";
+import { fetchQueue, deleteQueue } from "../services/services";
 import type { AnnotatedRootSpan } from "../types/types";
 
 interface EditQueueProps {
   annotatedRootSpans: AnnotatedRootSpan[];
+  onUpdateQueue: (id: string, name: string, rootSpanIds: string[]) => void;
 }
 
-const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
+const EditQueue = ({ annotatedRootSpans: rootSpans, onUpdateQueue }: EditQueueProps) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -98,7 +99,7 @@ const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
   // save
   const handleSubmit = async () => {
     if (!id) return;
-    await updateQueue(id, { name, rootSpanIds: selectedRootSpanIds });
+    onUpdateQueue(id, name, selectedRootSpanIds);
     navigate("/queues");
   };
 
@@ -116,7 +117,7 @@ const EditQueue = ({ annotatedRootSpans: rootSpans }: EditQueueProps) => {
             if (!id) return;
             const confirm = window.confirm('Delete this queue?  This cannot be undone.');
             if (!confirm) return;
-            await deleteQueue(id);          // ← you’ll need to export this in services
+            await deleteQueue(id);
             navigate('/queues');
           }}
         >

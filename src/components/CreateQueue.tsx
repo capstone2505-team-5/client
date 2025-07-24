@@ -17,14 +17,14 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import { createQueue } from "../services/services";
 import type { AnnotatedRootSpan } from "../types/types";
 
 interface CreateQueueProps {
   annotatedRootSpans: AnnotatedRootSpan[];
+  onCreateQueue: (name: string, rootSpanIds: string[]) => void;
 }
 
-const CreateQueue = ({ annotatedRootSpans: rootSpans }: CreateQueueProps) => {
+const CreateQueue = ({ annotatedRootSpans: rootSpans, onCreateQueue }: CreateQueueProps) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
@@ -80,12 +80,8 @@ const CreateQueue = ({ annotatedRootSpans: rootSpans }: CreateQueueProps) => {
   });
 
   const handleSubmit = async () => {
-    try {
-      await createQueue({ name, rootSpanIds: selectedRootSpanIds });
-    } catch (error) {
-      console.error("Failed to create queue", error);
-    }
-
+    if (!name || selectedRootSpanIds.length === 0) return;
+    onCreateQueue(name, selectedRootSpanIds);
     navigate("/queues");
   };
 

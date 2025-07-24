@@ -18,7 +18,11 @@ import DeleteIcon from "@mui/icons-material/Delete";   // ← NEW
 import { fetchQueues, deleteQueue } from "../services/services";
 import type { Queue } from "../types/types";
 
-const Queues = () => {
+interface QueueProps {
+  onDeleteQueue: (queueId: string) => void;
+}
+
+const Queues = ({ onDeleteQueue }: QueueProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [queues, setQueues] = useState<Queue[]>([]);
@@ -40,6 +44,18 @@ const Queues = () => {
     if (percent < 80) return theme.palette.warning.main;
     return theme.palette.success.main;
   };
+
+  const handleDelete = async (queueId: string) => {
+    if (window.confirm("Are you sure you want to delete this queue?")) {
+      try {
+        await deleteQueue(queueId);
+        setQueues((prev) => prev.filter((q) => q.id !== queueId));
+        onDeleteQueue(queueId);
+      } catch (error) {
+        console.error("Failed to delete queue", error);
+      }
+    }
+  }
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -98,18 +114,7 @@ const Queues = () => {
                   sx={{ color: theme.palette.error.main, ml: 1 }}
                   onClick={async (e) => {
                     e.stopPropagation();
-                    const ok = window.confirm(
-                      `Delete queue “${queue.name}”?  This cannot be undone.`
-                    );
-                    if (!ok) return;
-                    try {
-                      await deleteQueue(queue.id);
-                      setQueues((prev) =>
-                        prev.filter((q) => q.id !== queue.id)
-                      );
-                    } catch (err) {
-                      console.error("Failed to delete queue", err);
-                    }
+                    handleDelete(queue.id);
                   }}
                 >
                   <DeleteIcon />

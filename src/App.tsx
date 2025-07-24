@@ -13,7 +13,7 @@ import {
   fetchAnnotations,
   categorizeAnnotations,
 } from "./services/services";
-import { createAnnotation, updateAnnotation } from "./services/services";
+import { createAnnotation, updateAnnotation, createQueue, updateQueue } from "./services/services";
 import EditQueue from "./components/EditQueue";
 
 const App = () => {
@@ -125,6 +125,62 @@ const App = () => {
     }
   };
 
+  const handleCreateQueue = async (name: string, rootSpanIds: string[]) => {
+    try {
+      const { id: queueId } = await createQueue({ name, rootSpanIds });
+
+      const idSet = new Set(rootSpanIds);
+      setAnnotatedRootSpans(prev =>
+        prev.map(span =>
+          idSet.has(span.id) ? { ...span, queueId } : span
+        )
+      );
+    } catch (error) {
+      console.error("Failed to create queue", error);
+    }
+  };
+
+  const handleUpdateQueue = async (
+    queueId: string,
+    name: string,
+    rootSpanIds: string[]
+  ) => {
+    try {
+      await updateQueue(queueId, { name, rootSpanIds });
+
+      const keepSet = new Set(rootSpanIds);
+
+      setAnnotatedRootSpans(prev =>
+        prev.map(span => {
+          const inQueueNow   = span.queueId === queueId;
+          const shouldBeIn   = keepSet.has(span.id);
+
+          if (!inQueueNow && shouldBeIn) {
+            return { ...span, queueId };
+          }
+
+          if (inQueueNow && !shouldBeIn) {
+            return { ...span, queueId: null };
+          }
+
+          return span;
+        })
+      );
+    } catch (error) {
+      console.error('Failed to update queue', error);
+    }
+  };
+
+  const handleSpansOnDeleteQueue = async (queueId: string) => {
+    try {
+      setAnnotatedRootSpans(prev =>
+        prev.map(span => (span.queueId === queueId ? { ...span, queueId: null } : span))
+      );
+    } catch (error) {
+      console.error("Failed to delete queue", error);
+    }
+  };
+
   if (isLoading) {
     return <>Loading...</>
   }
@@ -135,9 +191,25 @@ const App = () => {
       <NavBar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/queues" element={<Queues />} />
-        <Route path="/create-queue" element={<CreateQueue annotatedRootSpans={annotatedRootSpans}/>} />
-        <Route path="/edit-queue/:id" element={<EditQueue annotatedRootSpans={annotatedRootSpans}/>} />
+        <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue}/>}/>
+        <Route
+          path="/create-queue"
+          element={
+            <CreateQueue
+              annotatedRootSpans={annotatedRootSpans}
+              onCreateQueue={handleCreateQueue}
+            />
+          }
+        />
+        <Route
+          path="/edit-queue/:id"
+          element={
+            <EditQueue
+              annotatedRootSpans={annotatedRootSpans}
+              onUpdateQueue={handleUpdateQueue}
+            />
+          }
+        />
         <Route
           path="/queues/:id"
           element={
