@@ -219,7 +219,7 @@ const App = () => {
 
   const AppContent = () => {
     const location = useLocation();
-    const showNavBar = location.pathname !== "/";
+    const showNavBar = true; // Always show NavBar now
 
     return (
       <>

@@ -2,6 +2,7 @@
 import { Container, Typography, Box, Paper } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
+import { useNavigate } from "react-router-dom";
 
 export interface Project {
   id: string;
@@ -17,6 +18,12 @@ interface HomeProps {
 }
 
 const Home = ({ projects = [] }: HomeProps) => {
+  const navigate = useNavigate();
+
+  const handleProjectClick = (projectName: string) => {
+    navigate('/queues');
+  };
+
   const columns: GridColDef[] = [
     {
       field: 'name',
@@ -137,6 +144,7 @@ const Home = ({ projects = [] }: HomeProps) => {
           },
           '& .MuiDataGrid-row': {
             minHeight: '80px !important',
+            cursor: 'pointer',
             '&:hover': {
               backgroundColor: '#f8f9fa',
             },
@@ -173,6 +181,7 @@ const Home = ({ projects = [] }: HomeProps) => {
           pageSizeOptions={[5, 10, 25]}
           disableRowSelectionOnClick
           getRowHeight={() => 80}
+          onRowClick={(params) => handleProjectClick(params.row.name)}
           sx={{
             '& .MuiDataGrid-virtualScroller': {
               minHeight: '300px',
