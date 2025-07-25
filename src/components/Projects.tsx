@@ -1,4 +1,5 @@
 // src/components/Home.tsx
+import { useState } from "react";
 import { Container, Typography, Box, Paper } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
@@ -18,9 +19,26 @@ interface HomeProps {
 
 const Projects = ({ projects = [] }: HomeProps) => {
   const navigate = useNavigate();
+  const [pageSize, setPageSize] = useState(10);
 
   const handleProjectClick = (projectName: string) => {
     navigate('/queues');
+  };
+
+  // Calculate dynamic height based on page size
+  const getDataGridHeight = () => {
+    const headerHeight = 56;
+    const footerHeight = 56;
+    const rowHeight = 56;
+    const padding = 20;
+    
+    if (pageSize <= 5) {
+      return headerHeight + (5 * rowHeight) + footerHeight + padding; // ~412px
+    } else if (pageSize <= 10) {
+      return headerHeight + (10 * rowHeight) + footerHeight + padding; // ~692px
+    } else {
+      return 650; // Fixed height for larger page sizes with scrollbar
+    }
   };
 
   const columns: GridColDef[] = [
@@ -105,46 +123,58 @@ const Projects = ({ projects = [] }: HomeProps) => {
             mb: 2
           }}
         >
-          Projects
+          Your Phoenix Projects
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-          Monitor and analyze your LLM application projects
+        <Typography variant="h6" color="text.secondary" sx={{ mt: -1 }}>
+          Select a project to begin creating batches and annotations
         </Typography>
       </Box>
 
       <Paper 
-        elevation={3}
+        elevation={0}
         sx={{ 
-          height: 650, 
+          height: getDataGridHeight(), 
           width: '100%',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 3,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
           '& .MuiDataGrid-root': {
             border: 'none',
           },
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#f5f5f5',
-            fontSize: '1.1rem',
-            fontWeight: 'bold',
+            background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
+            fontSize: '1rem',
+            fontWeight: '600',
             color: 'primary.main',
-            borderBottom: '2px solid #e0e0e0',
+            borderBottom: '2px solid',
+            borderBottomColor: 'primary.light',
+            borderRadius: '12px 12px 0 0',
           },
           '& .MuiDataGrid-row': {
-            minHeight: '80px !important',
+            minHeight: '56px !important',
             cursor: 'pointer',
             '&:hover': {
               backgroundColor: '#f8f9fa',
+              transform: 'scale(1.001)',
+              transition: 'all 0.2s ease-in-out',
             },
           },
           '& .MuiDataGrid-cell': {
             display: 'flex',
             alignItems: 'center',
-            fontSize: '1rem',
-            borderBottom: '1px solid #e0e0e0',
+            fontSize: '0.95rem',
+            borderBottom: '1px solid',
+            borderBottomColor: 'divider',
+            py: 1,
           },
           '& .MuiDataGrid-footerContainer': {
-            backgroundColor: '#f5f5f5',
-            borderTop: '2px solid #e0e0e0',
+            background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
+            borderTop: '1px solid',
+            borderTopColor: 'divider',
             minHeight: '56px',
             height: '56px',
+            borderRadius: '0 0 12px 12px',
           },
           '& .MuiTablePagination-root': {
             overflow: 'visible',
@@ -165,8 +195,11 @@ const Projects = ({ projects = [] }: HomeProps) => {
           }}
           pageSizeOptions={[5, 10, 25]}
           disableRowSelectionOnClick
-          getRowHeight={() => 80}
+          getRowHeight={() => 56}
           onRowClick={(params) => handleProjectClick(params.row.name)}
+          onPaginationModelChange={(model) => {
+            setPageSize(model.pageSize);
+          }}
           sx={{
             '& .MuiDataGrid-virtualScroller': {
               minHeight: '300px',

@@ -16,12 +16,12 @@ const Home = () => {
       description: "A Batch is simply a group of root spans you've collected from Phoenix that you wish to manually code.\n\n Create a new batch and filter for spans that are problematic or get a random selection of recent spans to get started."
     },
     {
-      title: 'Manually Code Batch',
+      title: 'Manually Grade Batch',
       description: "Manually reviewing the inputs and outputs of your LLM application is the best way to understand any issues with LLM outputs your users are experiencing.\n\n We've made this process as frictionless as possible so you can easily perform manual coding. Simple up/down grading and freeform notes for each span lets you focus on issues that matter."
     },
     {
-      title: 'Categorize the batch',
-      description: 'We take your freeform notes and automatically organize them into meaningful categories using LLMs that apply to your specific application.\n\n These categories are directly applied to your root spans so you can easily see which spans are problematic and which are not.'
+      title: 'Categorize Batch',
+      description: 'We take your freeform notes and automatically organize them into meaningful categories that apply to your specific application.\n\n These categories are directly applied to your root spans so you can easily see which spans are problematic and and why.'
     },
     {
       title: 'Inspect results',
@@ -73,7 +73,7 @@ const Home = () => {
               color: 'primary.main'
             }}
           >
-            Get Started with LLMonade
+            Getting Started with LLMonade
           </Typography>
           <Typography 
             variant="body1" 

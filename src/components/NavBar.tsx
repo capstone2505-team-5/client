@@ -26,12 +26,12 @@ const NavBar = () => {
         </Typography>
         {showLimitedNav ? (
           <>
-            <Button color="inherit" onClick={() => navigate("/")}>How To</Button>
+            <Button color="inherit" onClick={() => navigate("/")}>Getting Started</Button>
             <Button color="inherit" onClick={() => navigate("/projects")}>Projects</Button>
           </>
         ) : (
           <>
-            <Button color="inherit" onClick={() => navigate("/")}>How To</Button>
+            <Button color="inherit" onClick={() => navigate("/")}>Getting Started</Button>
             <Button color="inherit" onClick={() => navigate("/projects")}>Projects</Button>
             <Button color="inherit" onClick={() => navigate("/queues")}>Queues</Button>
           </>
