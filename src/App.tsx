@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import FilteredAnnotation from "./components/FilteredAnnotation";
 import Home from "./components/Home";
 import Queues from "./components/Queues";
@@ -18,7 +18,7 @@ import EditQueue from "./components/EditQueue";
 
 const App = () => {
   const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -181,55 +181,65 @@ const App = () => {
     }
   };
 
+  const AppContent = () => {
+    const location = useLocation();
+    const showNavBar = location.pathname !== "/";
+
+    return (
+      <>
+        {showNavBar && <NavBar />}
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue}/>}/>
+          <Route
+            path="/create-queue"
+            element={
+              <CreateQueue
+                annotatedRootSpans={annotatedRootSpans}
+                onCreateQueue={handleCreateQueue}
+              />
+            }
+          />
+          <Route
+            path="/edit-queue/:id"
+            element={
+              <EditQueue
+                annotatedRootSpans={annotatedRootSpans}
+                onUpdateQueue={handleUpdateQueue}
+              />
+            }
+          />
+          <Route
+            path="/queues/:id"
+            element={
+              <FilteredRootSpans
+                allSpans={annotatedRootSpans}
+                onCategorize={handleCategorize}
+              />
+            }
+          />
+          <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
+          <Route
+            path="/queues/:id/annotation"
+            element={
+              <FilteredAnnotation
+                allSpans={annotatedRootSpans}
+                onSave={handleSaveAnnotation}
+              />
+            }
+          />
+        </Routes>
+      </>
+    );
+  };
+
   if (isLoading) {
     return <>Loading...</>
   }
 
-
   return (
     <BrowserRouter>
-      <NavBar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue}/>}/>
-        <Route
-          path="/create-queue"
-          element={
-            <CreateQueue
-              annotatedRootSpans={annotatedRootSpans}
-              onCreateQueue={handleCreateQueue}
-            />
-          }
-        />
-        <Route
-          path="/edit-queue/:id"
-          element={
-            <EditQueue
-              annotatedRootSpans={annotatedRootSpans}
-              onUpdateQueue={handleUpdateQueue}
-            />
-          }
-        />
-        <Route
-          path="/queues/:id"
-          element={
-            <FilteredRootSpans
-              allSpans={annotatedRootSpans}
-              onCategorize={handleCategorize}
-            />
-          }
-        />
-        <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
-        <Route
-          path="/queues/:id/annotation"
-          element={
-            <FilteredAnnotation
-              allSpans={annotatedRootSpans}
-              onSave={handleSaveAnnotation}
-            />
-          }
-        />
-      </Routes>
+      <AppContent />
     </BrowserRouter>
   );
 };
