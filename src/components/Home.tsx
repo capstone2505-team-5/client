@@ -1,5 +1,5 @@
 // src/components/Home.tsx
-import { Container, Typography, Box, Card, CardContent, Stepper, Step, StepLabel, Button } from "@mui/material";
+import { Container, Typography, Box, Card, CardContent, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
@@ -7,17 +7,32 @@ const Home = () => {
   const navigate = useNavigate();
 
   const steps = [
-    'Select a project',
-    'Create root span batch', 
-    'Annotate root span batch',
-    'Categorize the batch',
-    'Inspect results'
+    {
+      title: 'Select a project',
+      description: 'Choose from your available projects traced in Phoenix to begin the evaluation process.\n\n If you don\'t have any projects traced, you can trace a new project by clicking the "Trace" button in the top right corner of the Phoenix UI to get started.'
+    },
+    {
+      title: 'Create a Batch', 
+      description: "A Batch is simply a group of root spans you've collected from Phoenix that you wish to manually code.\n\n Create a new batch and filter for spans that are problematic or get a random selection of recent spans to get started."
+    },
+    {
+      title: 'Manually Code Batch',
+      description: "Manually reviewing the inputs and outputs of your LLM application is the best way to understand any issues with LLM outputs your users are experiencing.\n\n We've made this process as frictionless as possible so you can easily perform manual coding. Simple up/down grading and freeform notes for each span lets you focus on issues that matter."
+    },
+    {
+      title: 'Categorize the batch',
+      description: 'We take your freeform notes and automatically organize them into meaningful categories using LLMs that apply to your specific application.\n\n These categories are directly applied to your root spans so you can easily see which spans are problematic and which are not.'
+    },
+    {
+      title: 'Inspect results',
+      description: 'Inspect the results of categorization to see the most common issues with your LLM application and prioritize your next steps.'
+    }
   ];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 6, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: 3, mb: 2 }}>
       {/* Welcome Section */}
-      <Box sx={{ textAlign: 'center', mb: 6 }}>
+      <Box sx={{ textAlign: 'center', mb: 3 }}>
         <Typography 
           variant="h2" 
           component="h1" 
@@ -28,7 +43,7 @@ const Home = () => {
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            mb: 3
+            mb: 2
           }}
         >
           Welcome to LLMonade
@@ -37,59 +52,108 @@ const Home = () => {
         <Typography 
           variant="h5" 
           color="text.secondary" 
-          sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
+          sx={{ mb: 2, maxWidth: '600px', mx: 'auto' }}
         >
-          Refreshingly simple LLM evaluations to get you started.
+          Refreshingly simple evals to get you started improving your LLM powered applications.
         </Typography>
       </Box>
-      <Typography 
+      
+      {/* How to Use Section */}
+                                                       <Card elevation={3} sx={{ mt: 3 }}>
+        <CardContent sx={{ p: 4 }}>
+          
+        <Typography 
             variant="h4" 
             component="h2" 
             gutterBottom 
             sx={{ 
               textAlign: 'center', 
-              mb: 2, 
+              mb: 1, 
               fontWeight: 'bold',
               color: 'primary.main'
             }}
           >
-            How to Use LLMonade
+            Get Started with LLMonade
           </Typography>
           <Typography 
             variant="body1" 
             color="text.secondary" 
-            sx={{ textAlign: 'center', mb: 4 }}
+            sx={{ textAlign: 'center', mb: 2 }}
           >
-            Follow these simple steps to analyze your LLM application:
+            Follow these simple steps to start evaluating your LLM application:
           </Typography>
-      {/* How to Use Section */}
-      <Card elevation={3} sx={{ mt: 6 }}>
-        <CardContent sx={{ p: 4 }}>
-          
-          
 
 
-          <Stepper 
-            activeStep={-1} 
-            orientation="vertical" 
+          <Box 
             sx={{ 
-              '& .MuiStepLabel-root': {
-                pb: 2
-              }
+              display: 'grid',
+              gridTemplateColumns: 'repeat(5, 1fr)',
+              gap: 2,
+              pb: 2,
+              width: '100%'
             }}
           >
-            {steps.map((label, index) => (
-              <Step key={label}>
-                <StepLabel>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
-                    {label}
+            {steps.map((step, index) => (
+              <Box
+                key={step.title}
+                sx={{
+                  p: 2.5,
+                  border: '2px solid',
+                  borderColor: 'primary.light',
+                  borderRadius: 2,
+                  backgroundColor: 'background.paper',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    boxShadow: '0 4px 16px rgba(33, 150, 243, 0.15)',
+                    borderColor: 'primary.main',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                {/* Step Title with Number Badge */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box
+                    sx={{
+                      backgroundColor: 'primary.main',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: 28,
+                      height: 28,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 'bold',
+                      mr: 1.5
+                    }}
+                  >
+                    {index + 1}
+                  </Box>
+                                      <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        fontWeight: 'bold',
+                        color: 'primary.main',
+                        fontSize: '1.1rem'
+                      }}
+                    >
+                    {step.title}
                   </Typography>
-                </StepLabel>
-              </Step>
-            ))}
-          </Stepper>
+                </Box>
 
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
+                {/* Step Description */}
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ lineHeight: 1.6, whiteSpace: 'pre-line' }}
+                >
+                  {step.description}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Button
               variant="outlined"
               size="large"
@@ -101,7 +165,7 @@ const Home = () => {
                 borderRadius: 2
               }}
             >
-              Projects
+              Go To Projects
             </Button>
           </Box>
         </CardContent>
