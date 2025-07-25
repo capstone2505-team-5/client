@@ -35,9 +35,9 @@ const Projects = ({ projects = [] }: HomeProps) => {
     if (pageSize <= 5) {
       return headerHeight + (5 * rowHeight) + footerHeight + padding; // ~412px
     } else if (pageSize <= 10) {
-      return headerHeight + (10 * rowHeight) + footerHeight + padding; // ~692px
+      return headerHeight + (8 * rowHeight) + footerHeight + padding; // ~580px (reduced from 10 rows)
     } else {
-      return 650; // Fixed height for larger page sizes with scrollbar
+      return 480; // Reduced fixed height for larger page sizes with scrollbar
     }
   };
 
@@ -108,8 +108,8 @@ const Projects = ({ projects = [] }: HomeProps) => {
   ];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
+    <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
+      <Box sx={{ mb: 2, textAlign: 'center' }}>
         <Typography 
           variant="h3" 
           component="h1" 

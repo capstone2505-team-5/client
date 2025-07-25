@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Box } from "@mui/material";
 import FilteredAnnotation from "./components/FilteredAnnotation";
 import Home from "./components/Home";
 import Projects, { type Project } from "./components/Projects";
@@ -7,6 +8,7 @@ import Queues from "./components/Queues";
 import NavBar from "./components/NavBar";
 import CreateQueue from "./components/CreateQueue";
 import RootSpanDetails from "./components/RootSpanDetails";
+import Footer from "./components/Footer";
 import type { AnnotatedRootSpan, Rating } from "./types/types";
 import FilteredRootSpans from "./components/FilteredRootSpans";
 import {
@@ -222,9 +224,10 @@ const App = () => {
     const showNavBar = true; // Always show NavBar now
 
     return (
-      <>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {showNavBar && <NavBar />}
-        <Routes>
+        <Box component="main" sx={{ flex: 1 }}>
+          <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects projects={projects} />} />
           <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue} />} />
@@ -265,8 +268,10 @@ const App = () => {
               />
             }
           />
-        </Routes>
-      </>
+          </Routes>
+        </Box>
+        <Footer />
+      </Box>
     );
   };
 

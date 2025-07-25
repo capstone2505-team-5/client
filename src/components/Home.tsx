@@ -30,7 +30,7 @@ const Home = () => {
   ];
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 3, mb: 2 }}>
+    <Container maxWidth="xl" sx={{ mt: 2, mb: 1 }}>
       {/* Welcome Section */}
       <Box sx={{ textAlign: 'center', mb: 3 }}>
         <Typography 
@@ -59,8 +59,8 @@ const Home = () => {
       </Box>
       
       {/* How to Use Section */}
-                                                       <Card elevation={3} sx={{ mt: 3 }}>
-        <CardContent sx={{ p: 4 }}>
+                                                       <Card elevation={3} sx={{ mt: 2 }}>
+        <CardContent sx={{ p: 3 }}>
           
         <Typography 
             variant="h4" 
