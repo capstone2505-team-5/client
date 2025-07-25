@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import FilteredAnnotation from "./components/FilteredAnnotation";
-import Home, { type Project } from "./components/Home";
+import Home from "./components/Home";
+import Projects, { type Project } from "./components/Projects";
 import Queues from "./components/Queues";
 import NavBar from "./components/NavBar";
 import CreateQueue from "./components/CreateQueue";
@@ -49,8 +50,7 @@ const App = () => {
       id: projectName, // Using project name as ID for now
       name: projectName,
       rootSpans: count,
-      groups: 0, // Placeholder as requested
-      datasets: 0, // Placeholder as requested
+      batches: 0, // Placeholder as requested
       dateModified: latestDate,
     }));
   }, [annotatedRootSpans]);
@@ -225,8 +225,9 @@ const App = () => {
       <>
         {showNavBar && <NavBar />}
         <Routes>
-          <Route path="/" element={<Home projects={projects} />} />
-          <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue}/>}/>
+          <Route path="/" element={<Home />} />
+          <Route path="/projects" element={<Projects projects={projects} />} />
+          <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue} />} />
           <Route
             path="/create-queue"
             element={

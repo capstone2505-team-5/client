@@ -5,6 +5,8 @@ const NavBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+  const isProjectsPage = location.pathname === "/projects";
+  const showLimitedNav = isHomePage || isProjectsPage;
 
   return (
     <AppBar position="static">
@@ -22,11 +24,16 @@ const NavBar = () => {
         >
           🍋 LLMonade
         </Typography>
-        {!isHomePage && (
+        {showLimitedNav ? (
           <>
-            <Button color="inherit" onClick={() => navigate("/queues")}>Queues</Button>
-            <Button color="inherit" onClick={() => navigate("/")}>Datasets</Button>
             <Button color="inherit" onClick={() => navigate("/")}>How To</Button>
+            <Button color="inherit" onClick={() => navigate("/projects")}>Projects</Button>
+          </>
+        ) : (
+          <>
+            <Button color="inherit" onClick={() => navigate("/")}>How To</Button>
+            <Button color="inherit" onClick={() => navigate("/projects")}>Projects</Button>
+            <Button color="inherit" onClick={() => navigate("/queues")}>Queues</Button>
           </>
         )}
       </Toolbar>

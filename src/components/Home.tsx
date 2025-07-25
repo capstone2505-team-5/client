@@ -1,114 +1,25 @@
 // src/components/Home.tsx
-import { Container, Typography, Box, Paper } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
-import type { GridColDef } from "@mui/x-data-grid";
+import { Container, Typography, Box, Card, CardContent, Stepper, Step, StepLabel, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
-export interface Project {
-  id: string;
-  name: string;
-  rootSpans: number;
-  groups: number;
-  datasets: number;
-  dateModified: string;
-}
-
-interface HomeProps {
-  projects?: Project[];
-}
-
-const Home = ({ projects = [] }: HomeProps) => {
+const Home = () => {
   const navigate = useNavigate();
 
-  const handleProjectClick = (projectName: string) => {
-    navigate('/queues');
-  };
-
-  const columns: GridColDef[] = [
-    {
-      field: 'name',
-      headerName: 'Project Name',
-      flex: 2,
-      minWidth: 200,
-      headerAlign: 'center',
-      align: 'left',
-      renderCell: (params) => (
-        <Typography variant="h6" sx={{ fontWeight: 'medium', color: 'primary.main' }}>
-          {params.value}
-        </Typography>
-      ),
-    },
-    {
-      field: 'dateModified',
-      headerName: 'Date Modified',
-      flex: 1.5,
-      minWidth: 150,
-      headerAlign: 'center',
-      align: 'center',
-      type: 'date',
-      valueGetter: (value) => new Date(value),
-      renderCell: (params) => (
-        <Typography variant="body1" sx={{ color: 'text.primary' }}>
-          {params.value.toLocaleString('en-US', {
-            month: 'numeric',
-            day: 'numeric', 
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-          })}
-        </Typography>
-      ),
-    },
-    {
-      field: 'rootSpans',
-      headerName: 'Root Spans',
-      flex: 1,
-      minWidth: 120,
-      headerAlign: 'center',
-      align: 'center',
-      type: 'number',
-      renderCell: (params) => (
-        <Typography variant="body1" sx={{ color: 'text.primary' }}>
-          {params.value.toLocaleString()}
-        </Typography>
-      ),
-    },
-    {
-      field: 'groups',
-      headerName: 'Groups',
-      flex: 1,
-      minWidth: 120,
-      headerAlign: 'center',
-      align: 'center',
-      type: 'number',
-      renderCell: (params) => (
-        <Typography variant="body1" sx={{ color: 'text.primary' }}>
-          {params.value.toLocaleString()}
-        </Typography>
-      ),
-    },
-    {
-      field: 'datasets',
-      headerName: 'Datasets',
-      flex: 1,
-      minWidth: 120,
-      headerAlign: 'center',
-      align: 'center',
-      type: 'number',
-      renderCell: (params) => (
-        <Typography variant="body1" sx={{ color: 'text.primary' }}>
-          {params.value.toLocaleString()}
-        </Typography>
-      ),
-    },
+  const steps = [
+    'Select a project',
+    'Create root span batch', 
+    'Annotate root span batch',
+    'Categorize the batch',
+    'Inspect results'
   ];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
+    <Container maxWidth="lg" sx={{ mt: 6, mb: 4 }}>
+      {/* Welcome Section */}
+      <Box sx={{ textAlign: 'center', mb: 6 }}>
         <Typography 
-          variant="h3" 
+          variant="h2" 
           component="h1" 
           gutterBottom 
           sx={{ 
@@ -117,91 +28,86 @@ const Home = ({ projects = [] }: HomeProps) => {
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            mb: 2
+            mb: 3
           }}
         >
-          Projects
+          Welcome to LLMonade
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-          Monitor and analyze your LLM application projects
+        
+        <Typography 
+          variant="h5" 
+          color="text.secondary" 
+          sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
+        >
+          Refreshingly simple LLM evaluations to get you started.
         </Typography>
       </Box>
-
-      <Paper 
-        elevation={3}
-        sx={{ 
-          height: 650, 
-          width: '100%',
-          '& .MuiDataGrid-root': {
-            border: 'none',
-          },
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#f5f5f5',
-            fontSize: '1.1rem',
-            fontWeight: 'bold',
-            color: 'primary.main',
-            borderBottom: '2px solid #e0e0e0',
-          },
-          '& .MuiDataGrid-row': {
-            minHeight: '80px !important',
-            cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: '#f8f9fa',
-            },
-          },
-          '& .MuiDataGrid-cell': {
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '1rem',
-            borderBottom: '1px solid #e0e0e0',
-          },
-          '& .MuiDataGrid-footerContainer': {
-            backgroundColor: '#f5f5f5',
-            borderTop: '2px solid #e0e0e0',
-            minHeight: '56px',
-            height: '56px',
-          },
-          '& .MuiTablePagination-root': {
-            overflow: 'visible',
-          },
-          '& .MuiTablePagination-toolbar': {
-            minHeight: '56px',
-            height: '56px',
-          },
-        }}
-      >
-        <DataGrid
-          rows={projects}
-          columns={columns}
-          initialState={{
-            pagination: {
-              paginationModel: { page: 0, pageSize: 10 },
-            },
-          }}
-          pageSizeOptions={[5, 10, 25]}
-          disableRowSelectionOnClick
-          getRowHeight={() => 80}
-          onRowClick={(params) => handleProjectClick(params.row.name)}
-          sx={{
-            '& .MuiDataGrid-virtualScroller': {
-              minHeight: '300px',
-            },
-          }}
-        />
-      </Paper>
-
-      {projects.length === 0 && (
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            No projects available
+      <Typography 
+            variant="h4" 
+            component="h2" 
+            gutterBottom 
+            sx={{ 
+              textAlign: 'center', 
+              mb: 2, 
+              fontWeight: 'bold',
+              color: 'primary.main'
+            }}
+          >
+            How to Use LLMonade
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Projects will appear here once data is loaded
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            sx={{ textAlign: 'center', mb: 4 }}
+          >
+            Follow these simple steps to analyze your LLM application:
           </Typography>
-        </Box>
-      )}
+      {/* How to Use Section */}
+      <Card elevation={3} sx={{ mt: 6 }}>
+        <CardContent sx={{ p: 4 }}>
+          
+          
+
+
+          <Stepper 
+            activeStep={-1} 
+            orientation="vertical" 
+            sx={{ 
+              '& .MuiStepLabel-root': {
+                pb: 2
+              }
+            }}
+          >
+            {steps.map((label, index) => (
+              <Step key={label}>
+                <StepLabel>
+                  <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                    {label}
+                  </Typography>
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+
+          <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate("/projects")}
+              sx={{ 
+                px: 3,
+                py: 1,
+                fontSize: '1rem',
+                borderRadius: 2
+              }}
+            >
+              Projects
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
     </Container>
   );
 };
 
-export default Home;
+export default Home; 
