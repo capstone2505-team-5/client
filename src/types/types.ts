@@ -20,6 +20,7 @@ export interface RootSpan {
   output: string;
   projectName: string;
   spanName: string;
+  created_at: string; // or Date - matches server response
 }
 
 export type AnnotatedRootSpan = RootSpan & {

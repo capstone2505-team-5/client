@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import FilteredAnnotation from "./components/FilteredAnnotation";
-import Home from "./components/Home";
+import Home, { type Project } from "./components/Home";
 import Queues from "./components/Queues";
 import NavBar from "./components/NavBar";
 import CreateQueue from "./components/CreateQueue";
@@ -19,6 +19,41 @@ import EditQueue from "./components/EditQueue";
 const App = () => {
   const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Derive projects from annotatedRootSpans
+  const projects = useMemo<Project[]>(() => {
+    const projectMap = new Map<string, { count: number; latestDate: string }>();
+    
+    // Group spans by project and track count and latest date
+    annotatedRootSpans.forEach(span => {
+      const projectName = span.projectName;
+      const existing = projectMap.get(projectName);
+      
+      if (!existing) {
+        projectMap.set(projectName, { 
+          count: 1, 
+          latestDate: span.startTime 
+        });
+      } else {
+        projectMap.set(projectName, {
+          count: existing.count + 1,
+          latestDate: new Date(span.startTime) > new Date(existing.latestDate) 
+            ? span.startTime 
+            : existing.latestDate
+        });
+      }
+    });
+
+    // Convert to Project array
+    return Array.from(projectMap.entries()).map(([projectName, { count, latestDate }]) => ({
+      id: projectName, // Using project name as ID for now
+      name: projectName,
+      rootSpans: count,
+      groups: 0, // Placeholder as requested
+      datasets: 0, // Placeholder as requested
+      dateModified: latestDate,
+    }));
+  }, [annotatedRootSpans]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +81,7 @@ const App = () => {
             tsEnd: Date.parse(rootSpan.endTime),
             projectName: rootSpan.projectName,
             spanName: rootSpan.spanName,
+            created_at: rootSpan.created_at,
             annotationId: match?.id ?? "",
             note: match?.note ?? "",
             rating: match?.rating ?? "none",
@@ -189,7 +225,7 @@ const App = () => {
       <>
         {showNavBar && <NavBar />}
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home projects={projects} />} />
           <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue}/>}/>
           <Route
             path="/create-queue"
