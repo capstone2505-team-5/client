@@ -1,8 +1,9 @@
 // src/components/Home.tsx
 import { useState, useMemo } from "react";
-import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButton } from "@mui/material";
+import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButton, Button } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import AddIcon from '@mui/icons-material/Add';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
@@ -200,7 +201,15 @@ const Projects = ({ projects = [] }: HomeProps) => {
         }}
       >
         {/* Search Bar */}
-        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderBottomColor: 'divider' }}>
+        <Box sx={{ 
+          px: 2, 
+          py: 1.5, 
+          borderBottom: '1px solid', 
+          borderBottomColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
           <TextField
             size="small"
             placeholder="Search projects..."
@@ -232,6 +241,21 @@ const Projects = ({ projects = [] }: HomeProps) => {
               }
             }}
           />
+          
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            size="small"
+            href="https://arize.com/docs/phoenix/integrations"
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{
+              whiteSpace: 'nowrap',
+              ml: 2
+            }}
+          >
+            Create New Project
+          </Button>
         </Box>
 
         <Box sx={{ height: getDataGridHeight() }}>
