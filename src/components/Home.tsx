@@ -44,7 +44,7 @@ const Home = () => {
     {
       title: 'Select a project',
       description: 'Choose from your available projects traced in Phoenix to begin the evaluation process.',
-      videoPath: '../public/CreateBatchMVP.mp4',
+      videoPath: '/CreateBatchMVP.mp4',
       additionalContent: (
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mt: 1 }}>
           Don't have any project traced? Access your{' '}
@@ -53,6 +53,7 @@ const Home = () => {
               href={phoenixDashboardUrl} 
               target="_blank" 
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               sx={{ color: 'primary.main', textDecoration: 'underline' }}
             >
               Phoenix Dashboard
@@ -67,22 +68,22 @@ const Home = () => {
     {
       title: 'Create a Batch', 
       description: "A Batch is simply a group of root spans you've collected from Phoenix that you wish to manually grade.\n\n Create a new batch and filter for spans that are problematic or get a random selection of recent spans to get started.",
-      videoPath: '../public/CreateBatchMVP.mp4'
+      videoPath: '/CreateBatchMVP.mp4'
     },
     {
       title: 'Manually Grade Batch',
       description: "Manually reviewing the inputs and outputs of your LLM application is the best way to understand any issues with LLM outputs your users are experiencing.\n\n We've made this process as frictionless as possible so you can easily perform manual coding. Simple up/down grading and freeform notes for each span lets you focus on issues that matter.",
-      videoPath: '../public/CreateBatchMVP.mp4'
+      videoPath: '/CreateBatchMVP.mp4'
     },
     {
       title: 'Categorize Batch',
       description: 'We take your freeform notes and automatically organize them into meaningful categories that apply to your specific application.\n\n These categories are directly applied to your root spans so you can easily see which spans are problematic and and why.',
-      videoPath: '../public/CreateBatchMVP.mp4'
+      videoPath: '/CreateBatchMVP.mp4'
     },
     {
       title: 'Inspect Results',
       description: 'Inspect the results of categorization to see the most common issues with your LLM application and prioritize your next steps.',
-      videoPath: '../public/CreateBatchMVP.mp4'
+      videoPath: '/CreateBatchMVP.mp4'
     }
   ];
 
