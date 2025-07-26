@@ -13,7 +13,7 @@ const Home = () => {
     },
     {
       title: 'Create a Batch', 
-      description: "A Batch is simply a group of root spans you've collected from Phoenix that you wish to manually code.\n\n Create a new batch and filter for spans that are problematic or get a random selection of recent spans to get started."
+      description: "A Batch is simply a group of root spans you've collected from Phoenix that you wish to manually grade.\n\n Create a new batch and filter for spans that are problematic or get a random selection of recent spans to get started."
     },
     {
       title: 'Manually Grade Batch',
@@ -24,7 +24,7 @@ const Home = () => {
       description: 'We take your freeform notes and automatically organize them into meaningful categories that apply to your specific application.\n\n These categories are directly applied to your root spans so you can easily see which spans are problematic and and why.'
     },
     {
-      title: 'Inspect results',
+      title: 'Inspect Results',
       description: 'Inspect the results of categorization to see the most common issues with your LLM application and prioritize your next steps.'
     }
   ];

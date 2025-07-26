@@ -7,9 +7,9 @@ const Footer = () => {
   const steps = [
     { title: 'Select a project', routes: ['/projects'] },
     { title: 'Create a Batch', routes: ['/create-queue'] },
-    { title: 'Manually Code Batch', routes: ['/queues/:id/annotation'] },
-    { title: 'Categorize the batch', routes: ['/queues/:id'] },
-    { title: 'Inspect results', routes: ['/queues/:id'] }
+    { title: 'Manually Grade Batch', routes: ['/queues/:id/annotation'] },
+    { title: 'Categorize Batch', routes: ['/queues/:id'] },
+    { title: 'Inspect Results', routes: ['/queues/:id'] }
   ];
 
   // Determine current step based on route
@@ -17,10 +17,10 @@ const Footer = () => {
     const path = location.pathname;
     
     if (path === '/projects') return 0;
-    if (path === '/create-queue' || path.startsWith('/edit-queue')) return 1;
+    if (path === '/create-queue' || path.startsWith('/edit-queue') || path === '/queues') return 1;
     if (path.includes('/annotation')) return 2;
-    if (path.startsWith('/queues/') && !path.includes('/annotation')) return 3;
-    if (path.startsWith('/queues/') && path.includes('results')) return 4;
+    if (path.startsWith('/queues/') && !path.includes('/annotation')) return 3; // need to add logic if annotation is done for the batch
+    if (path.startsWith('/queues/') && path.includes('results')) return 4; // need to add logic if categorization is done for the batch
     
     return -1; // No active step (home page, etc.)
   };
@@ -37,7 +37,7 @@ const Footer = () => {
       component="footer"
       sx={{
         mt: 'auto',
-        py: 3,
+        py: 2,
         backgroundColor: 'background.paper',
         borderTop: '1px solid',
         borderTopColor: 'divider',

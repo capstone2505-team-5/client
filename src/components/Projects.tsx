@@ -1,7 +1,9 @@
 // src/components/Home.tsx
-import { useState } from "react";
-import { Container, Typography, Box, Paper } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { useState, useMemo } from "react";
+import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButton } from "@mui/material";
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
 
@@ -20,10 +22,20 @@ interface HomeProps {
 const Projects = ({ projects = [] }: HomeProps) => {
   const navigate = useNavigate();
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleProjectClick = (projectName: string) => {
     navigate('/queues');
   };
+
+  // Filter projects based on search term
+  const filteredProjects = useMemo(() => {
+    if (!searchTerm.trim()) return projects;
+    
+    return projects.filter(project =>
+      project.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [projects, searchTerm]);
 
   // Calculate dynamic height based on page size
   const getDataGridHeight = () => {
@@ -33,11 +45,10 @@ const Projects = ({ projects = [] }: HomeProps) => {
     const padding = 20;
     
     if (pageSize <= 5) {
-      return headerHeight + (5 * rowHeight) + footerHeight + padding; // ~412px
-    } else if (pageSize <= 10) {
-      return headerHeight + (8 * rowHeight) + footerHeight + padding; // ~580px (reduced from 10 rows)
+      return headerHeight + (5 * rowHeight) + footerHeight + padding; // ~412px (compact)
     } else {
-      return 480; // Reduced fixed height for larger page sizes with scrollbar
+      // Same medium size for 10 and 25 rows
+      return headerHeight + (8 * rowHeight) + footerHeight + padding; // ~524px (slightly reduced from 8 to 7)
     }
   };
 
@@ -64,6 +75,9 @@ const Projects = ({ projects = [] }: HomeProps) => {
       align: 'center',
       type: 'date',
       valueGetter: (value) => new Date(value),
+      filterOperators: getGridDateOperators().filter((operator) =>
+        ['is', 'after', 'onOrAfter', 'before', 'onOrBefore'].includes(operator.value)
+      ),
       renderCell: (params) => (
         <Typography variant="body1" sx={{ color: 'text.primary' }}>
           {params.value.toLocaleString('en-US', {
@@ -108,8 +122,8 @@ const Projects = ({ projects = [] }: HomeProps) => {
   ];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
-      <Box sx={{ mb: 2, textAlign: 'center' }}>
+    <Container maxWidth="lg" sx={{ mt: 1.5, mb: 1.5 }}>
+      <Box sx={{ mb: 1.5, textAlign: 'center' }}>
         <Typography 
           variant="h3" 
           component="h1" 
@@ -126,19 +140,19 @@ const Projects = ({ projects = [] }: HomeProps) => {
           Your Phoenix Projects
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ mt: -1 }}>
-          Select a project to begin creating batches and annotations
+          Select a project to begin evaluating your LLM application
         </Typography>
       </Box>
 
       <Paper 
         elevation={0}
         sx={{ 
-          height: getDataGridHeight(), 
           width: '100%',
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: 3,
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          overflow: 'hidden',
           '& .MuiDataGrid-root': {
             border: 'none',
           },
@@ -185,39 +199,92 @@ const Projects = ({ projects = [] }: HomeProps) => {
           },
         }}
       >
-        <DataGrid
-          rows={projects}
-          columns={columns}
-          initialState={{
-            pagination: {
-              paginationModel: { page: 0, pageSize: 10 },
-            },
-          }}
-          pageSizeOptions={[5, 10, 25]}
-          disableRowSelectionOnClick
-          getRowHeight={() => 56}
-          onRowClick={(params) => handleProjectClick(params.row.name)}
-          onPaginationModelChange={(model) => {
-            setPageSize(model.pageSize);
-          }}
-          sx={{
-            '& .MuiDataGrid-virtualScroller': {
-              minHeight: '300px',
-            },
-          }}
-        />
+        {/* Search Bar */}
+        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderBottomColor: 'divider' }}>
+          <TextField
+            size="small"
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setSearchTerm('')}
+                    edge="end"
+                    sx={{ mr: -0.5 }}
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              minWidth: 300,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: 'background.default',
+              }
+            }}
+          />
+        </Box>
+
+        <Box sx={{ height: getDataGridHeight() }}>
+                    <DataGrid
+            rows={filteredProjects}
+            columns={columns}
+            initialState={{
+              pagination: {
+                paginationModel: { page: 0, pageSize: 10 },
+              },
+            }}
+            pageSizeOptions={[5, 10, 25]}
+            disableRowSelectionOnClick
+            getRowHeight={() => 56}
+            onRowClick={(params) => handleProjectClick(params.row.name)}
+            onPaginationModelChange={(model) => {
+              setPageSize(model.pageSize);
+            }}
+            slots={{
+              noRowsOverlay: () => (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  height: '100%',
+                  py: 4
+                }}>
+                  <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                    {projects.length === 0 
+                      ? 'No projects available' 
+                      : 'No projects found'
+                    }
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {projects.length === 0 
+                      ? 'Projects will appear here once data is loaded'
+                      : `No projects match your search "${searchTerm}"`
+                    }
+                  </Typography>
+                </Box>
+              )
+            }}
+            sx={{
+              '& .MuiDataGrid-virtualScroller': {
+                minHeight: '300px',
+              },
+            }}
+          />
+        </Box>
       </Paper>
 
-      {projects.length === 0 && (
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            No projects available
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Projects will appear here once data is loaded
-          </Typography>
-        </Box>
-      )}
+
     </Container>
   );
 };
