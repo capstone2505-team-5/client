@@ -1,15 +1,53 @@
 // src/components/Home.tsx
-import { Container, Typography, Box, Card, CardContent, Button } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Container, Typography, Box, Card, CardContent, Button, Link } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { getPhoenixDashboardUrl } from "../services/services";
 
 const Home = () => {
   const navigate = useNavigate();
+  const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
 
-  const steps = [
+  useEffect(() => {
+    const fetchPhoenixUrl = async () => {
+      try {
+        const url = await getPhoenixDashboardUrl();
+        setPhoenixDashboardUrl(url);
+      } catch (error) {
+        console.error('Failed to fetch Phoenix dashboard URL:', error);
+      }
+    };
+    
+    fetchPhoenixUrl();
+  }, []);
+
+  const steps: Array<{
+    title: string;
+    description: string;
+    additionalContent?: React.ReactNode;
+  }> = [
     {
       title: 'Select a project',
-      description: 'Choose from your available projects traced in Phoenix to begin the evaluation process.\n\n If you don\'t have any projects traced, you can trace a new project by clicking the "Trace" button in the top right corner of the Phoenix UI to get started.'
+      description: 'Choose from your available projects traced in Phoenix to begin the evaluation process.',
+      additionalContent: (
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mt: 1 }}>
+          Don't have any project traced? Access your{' '}
+          {phoenixDashboardUrl ? (
+            <Link 
+              href={phoenixDashboardUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              sx={{ color: 'primary.main', textDecoration: 'underline' }}
+            >
+              Phoenix Dashboard
+            </Link>
+          ) : (
+            'Phoenix Dashboard'
+          )}
+          {' '}and follow instructions from the "Trace" button in the top right corner of the Phoenix UI to get started.
+        </Typography>
+      )
     },
     {
       title: 'Create a Batch', 
@@ -149,6 +187,9 @@ const Home = () => {
                 >
                   {step.description}
                 </Typography>
+                
+                {/* Additional Content (for Phoenix Dashboard link) */}
+                {step.additionalContent && step.additionalContent}
               </Box>
             ))}
           </Box>

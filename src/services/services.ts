@@ -67,3 +67,8 @@ export const deleteQueue = async (id: string) => {
   const response = await axios.delete(`/api/queues/${id}`);
   return response.data;
 }
+
+export const getPhoenixDashboardUrl = async (): Promise<string> => {
+  const response = await axios.get('/api/phoenix/dashboard-url');
+  return response.data;
+};
