@@ -1,13 +1,26 @@
 // src/components/Home.tsx
 import { useState, useEffect } from "react";
-import { Container, Typography, Box, Card, CardContent, Button, Link } from "@mui/material";
+import { Container, Typography, Box, Card, CardContent, Button, Link, Modal, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CloseIcon from '@mui/icons-material/Close';
 import { getPhoenixDashboardUrl } from "../services/services";
 
 const Home = () => {
   const navigate = useNavigate();
   const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedStep, setSelectedStep] = useState<number | null>(null);
+
+  const handleStepClick = (stepIndex: number) => {
+    setSelectedStep(stepIndex);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedStep(null);
+  };
 
   useEffect(() => {
     const fetchPhoenixUrl = async () => {
@@ -25,11 +38,13 @@ const Home = () => {
   const steps: Array<{
     title: string;
     description: string;
+    videoPath: string;
     additionalContent?: React.ReactNode;
   }> = [
     {
       title: 'Select a project',
       description: 'Choose from your available projects traced in Phoenix to begin the evaluation process.',
+      videoPath: '../public/CreateBatchMVP.mp4',
       additionalContent: (
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mt: 1 }}>
           Don't have any project traced? Access your{' '}
@@ -51,19 +66,23 @@ const Home = () => {
     },
     {
       title: 'Create a Batch', 
-      description: "A Batch is simply a group of root spans you've collected from Phoenix that you wish to manually grade.\n\n Create a new batch and filter for spans that are problematic or get a random selection of recent spans to get started."
+      description: "A Batch is simply a group of root spans you've collected from Phoenix that you wish to manually grade.\n\n Create a new batch and filter for spans that are problematic or get a random selection of recent spans to get started.",
+      videoPath: '../public/CreateBatchMVP.mp4'
     },
     {
       title: 'Manually Grade Batch',
-      description: "Manually reviewing the inputs and outputs of your LLM application is the best way to understand any issues with LLM outputs your users are experiencing.\n\n We've made this process as frictionless as possible so you can easily perform manual coding. Simple up/down grading and freeform notes for each span lets you focus on issues that matter."
+      description: "Manually reviewing the inputs and outputs of your LLM application is the best way to understand any issues with LLM outputs your users are experiencing.\n\n We've made this process as frictionless as possible so you can easily perform manual coding. Simple up/down grading and freeform notes for each span lets you focus on issues that matter.",
+      videoPath: '../public/CreateBatchMVP.mp4'
     },
     {
       title: 'Categorize Batch',
-      description: 'We take your freeform notes and automatically organize them into meaningful categories that apply to your specific application.\n\n These categories are directly applied to your root spans so you can easily see which spans are problematic and and why.'
+      description: 'We take your freeform notes and automatically organize them into meaningful categories that apply to your specific application.\n\n These categories are directly applied to your root spans so you can easily see which spans are problematic and and why.',
+      videoPath: '../public/CreateBatchMVP.mp4'
     },
     {
       title: 'Inspect Results',
-      description: 'Inspect the results of categorization to see the most common issues with your LLM application and prioritize your next steps.'
+      description: 'Inspect the results of categorization to see the most common issues with your LLM application and prioritize your next steps.',
+      videoPath: '../public/CreateBatchMVP.mp4'
     }
   ];
 
@@ -134,6 +153,7 @@ const Home = () => {
             {steps.map((step, index) => (
               <Box
                 key={step.title}
+                onClick={() => handleStepClick(index)}
                 sx={{
                   p: 2.5,
                   border: '2px solid',
@@ -141,6 +161,7 @@ const Home = () => {
                   borderRadius: 2,
                   backgroundColor: 'background.paper',
                   transition: 'all 0.2s ease-in-out',
+                  cursor: 'pointer',
                   '&:hover': {
                     boxShadow: '0 4px 16px rgba(33, 150, 243, 0.15)',
                     borderColor: 'primary.main',
@@ -211,6 +232,66 @@ const Home = () => {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Video Modal */}
+      <Modal
+        open={modalOpen}
+        onClose={handleCloseModal}
+        aria-labelledby="step-video-modal"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 0,
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            outline: 'none',
+          }}
+        >
+          {/* Close Button */}
+          <IconButton
+            onClick={handleCloseModal}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              bgcolor: 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              zIndex: 1,
+              '&:hover': {
+                bgcolor: 'rgba(0, 0, 0, 0.9)',
+              },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          {/* Video Player */}
+          {selectedStep !== null && (
+            <video
+              src={steps[selectedStep].videoPath}
+              autoPlay
+              loop
+              muted
+              controls
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxHeight: '80vh',
+                borderRadius: '8px',
+              }}
+            />
+          )}
+        </Box>
+      </Modal>
     </Container>
   );
 };
