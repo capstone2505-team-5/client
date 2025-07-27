@@ -60,7 +60,7 @@ const Projects = () => {
   };
 
   const handleProjectClick = (projectName: string) => {
-    navigate('/queues');
+    navigate('/batches');
   };
 
   // Filter projects based on search term

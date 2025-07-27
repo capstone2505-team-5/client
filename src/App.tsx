@@ -7,9 +7,9 @@ import { darkTheme, lightTheme } from "./theme/theme";
 import FilteredAnnotation from "./components/FilteredAnnotation";
 import Home from "./components/Home";
 import Projects from "./components/Projects";
-import Queues from "./components/Queues";
+import Batches from "./components/Batches";
 import NavBar from "./components/NavBar";
-import CreateQueue from "./components/CreateQueue";
+import CreateBatch from "./components/CreateBatch";
 import RootSpanDetails from "./components/RootSpanDetails";
 import Footer from "./components/Footer";
 import type { AnnotatedRootSpan, Rating } from "./types/types";
@@ -19,8 +19,8 @@ import {
   fetchAnnotations,
   categorizeAnnotations,
 } from "./services/services";
-import { createAnnotation, updateAnnotation, createQueue, updateQueue } from "./services/services";
-import EditQueue from "./components/EditQueue";
+import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
+import EditBatch from "./components/EditBatch";
 
 const App = () => {
   const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
@@ -132,41 +132,41 @@ const App = () => {
     }
   };
 
-  const handleCreateQueue = async (name: string, rootSpanIds: string[]) => {
+  const handleCreateBatch = async (name: string, rootSpanIds: string[]) => {
     try {
-      const { id: queueId } = await createQueue({ name, rootSpanIds });
+      const { id: batchId } = await createBatch({ name, rootSpanIds });
 
       const idSet = new Set(rootSpanIds);
       setAnnotatedRootSpans(prev =>
         prev.map(span =>
-          idSet.has(span.id) ? { ...span, queueId } : span
+          idSet.has(span.id) ? { ...span, queueId: batchId } : span
         )
       );
     } catch (error) {
-      console.error("Failed to create queue", error);
+      console.error("Failed to create batch", error);
     }
   };
 
-  const handleUpdateQueue = async (
-    queueId: string,
+  const handleUpdateBatch = async (
+    batchId: string,
     name: string,
     rootSpanIds: string[]
   ) => {
     try {
-      await updateQueue(queueId, { name, rootSpanIds });
+      await updateBatch(batchId, { name, rootSpanIds });
 
       const keepSet = new Set(rootSpanIds);
 
       setAnnotatedRootSpans(prev =>
         prev.map(span => {
-          const inQueueNow   = span.queueId === queueId;
+          const inBatchNow   = span.queueId === batchId;
           const shouldBeIn   = keepSet.has(span.id);
 
-          if (!inQueueNow && shouldBeIn) {
-            return { ...span, queueId };
+          if (!inBatchNow && shouldBeIn) {
+            return { ...span, queueId: batchId };
           }
 
-          if (inQueueNow && !shouldBeIn) {
+          if (inBatchNow && !shouldBeIn) {
             return { ...span, queueId: null };
           }
 
@@ -174,17 +174,17 @@ const App = () => {
         })
       );
     } catch (error) {
-      console.error('Failed to update queue', error);
+      console.error('Failed to update batch', error);
     }
   };
 
-  const handleSpansOnDeleteQueue = async (queueId: string) => {
+  const handleSpansOnDeleteBatch = async (batchId: string) => {
     try {
       setAnnotatedRootSpans(prev =>
-        prev.map(span => (span.queueId === queueId ? { ...span, queueId: null } : span))
+        prev.map(span => (span.queueId === batchId ? { ...span, queueId: null } : span))
       );
     } catch (error) {
-      console.error("Failed to delete queue", error);
+      console.error("Failed to delete batch", error);
     }
   };
 
@@ -201,27 +201,27 @@ const App = () => {
             <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
-          <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue} />} />
+          <Route path="/batches" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
           <Route
-            path="/create-queue"
+            path="/create-batch"
             element={
-              <CreateQueue
+              <CreateBatch
                 annotatedRootSpans={annotatedRootSpans}
-                onCreateQueue={handleCreateQueue}
+                onCreateBatch={handleCreateBatch}
               />
             }
           />
           <Route
-            path="/edit-queue/:id"
+            path="/edit-batch/:id"
             element={
-              <EditQueue
+              <EditBatch
                 annotatedRootSpans={annotatedRootSpans}
-                onUpdateQueue={handleUpdateQueue}
+                onUpdateBatch={handleUpdateBatch}
               />
             }
           />
           <Route
-            path="/queues/:id"
+            path="/batches/:id"
             element={
               <FilteredRootSpans
                 allSpans={annotatedRootSpans}
@@ -231,7 +231,7 @@ const App = () => {
           />
           <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
           <Route
-            path="/queues/:id/annotation"
+            path="/batches/:id/annotation"
             element={
               <FilteredAnnotation
                 allSpans={annotatedRootSpans}

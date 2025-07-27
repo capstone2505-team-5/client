@@ -14,26 +14,26 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from "@mui/icons-material/Delete";   // ← NEW
-import { fetchQueues, deleteQueue } from "../services/services";
-import type { Queue } from "../types/types";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { fetchBatches, deleteBatch } from "../services/services";
+import type { Batch } from "../types/types";
 
-interface QueueProps {
-  onDeleteQueue: (queueId: string) => void;
+interface BatchProps {
+  onDeleteBatch: (batchId: string) => void;
 }
 
-const Queues = ({ onDeleteQueue }: QueueProps) => {
+const Batches = ({ onDeleteBatch }: BatchProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [queues, setQueues] = useState<Queue[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await fetchQueues();
-        setQueues(data);
+        const data = await fetchBatches();
+        setBatches(data);
       } catch (error) {
-        console.error("Failed to fetch queues", error);
+        console.error("Failed to fetch batches", error);
       }
     };
     fetchData();
@@ -45,14 +45,14 @@ const Queues = ({ onDeleteQueue }: QueueProps) => {
     return theme.palette.success.main;
   };
 
-  const handleDelete = async (queueId: string) => {
-    if (window.confirm("Are you sure you want to delete this queue?")) {
+  const handleDelete = async (batchId: string) => {
+    if (window.confirm("Are you sure you want to delete this batch?")) {
       try {
-        await deleteQueue(queueId);
-        setQueues((prev) => prev.filter((q) => q.id !== queueId));
-        onDeleteQueue(queueId);
+        await deleteBatch(batchId);
+        setBatches((prev) => prev.filter((b) => b.id !== batchId));
+        onDeleteBatch(batchId);
       } catch (error) {
-        console.error("Failed to delete queue", error);
+        console.error("Failed to delete batch", error);
       }
     }
   }
@@ -60,28 +60,28 @@ const Queues = ({ onDeleteQueue }: QueueProps) => {
   return (
     <Container maxWidth="md" sx={{ py: 2 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h3">Queues</Typography>
+        <Typography variant="h3">Batches</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => navigate("/create-queue")}
+          onClick={() => navigate("/create-batch")}
         >
-          Create New Queue
+          Create New Batch
         </Button>
       </Box>
 
       <List sx={{ padding: 0 }}>
-        {queues.map((queue) => {
-          const annotatedPercent = queue.totalSpans
-            ? Math.round((queue.annotatedCount / queue.totalSpans) * 100)
+        {batches.map((batch) => {
+          const annotatedPercent = batch.totalSpans
+            ? Math.round((batch.annotatedCount / batch.totalSpans) * 100)
             : 0;
-          const goodPercent = queue.annotatedCount
-            ? Math.round((queue.goodCount / queue.annotatedCount) * 100)
+          const goodPercent = batch.annotatedCount
+            ? Math.round((batch.goodCount / batch.annotatedCount) * 100)
             : 0;
 
           return (
             <Box
-              key={queue.id}
+              key={batch.id}
               sx={{
                 borderRadius: 2,
                 border: "2px solid",
@@ -91,19 +91,19 @@ const Queues = ({ onDeleteQueue }: QueueProps) => {
               }}
             >
               <ListItem
-                onClick={() => navigate(`/queues/${queue.id}`)}
+                onClick={() => navigate(`/batches/${batch.id}`)}
                 sx={{ py: 1.5, px: 2, cursor: 'pointer' }}
               >
                 <ListItemText
-                  primary={queue.name}
-                  secondary={`${queue.totalSpans} spans`}
+                  primary={batch.name}
+                  secondary={`${batch.totalSpans} spans`}
                 />
                 <IconButton
                   edge="end"
                   aria-label="edit"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/edit-queue/${queue.id}`);
+                    navigate(`/edit-batch/${batch.id}`);
                   }}
                 >
                   <EditIcon />
@@ -114,7 +114,7 @@ const Queues = ({ onDeleteQueue }: QueueProps) => {
                   sx={{ color: theme.palette.error.main, ml: 1 }}
                   onClick={async (e) => {
                     e.stopPropagation();
-                    handleDelete(queue.id);
+                    handleDelete(batch.id);
                   }}
                 >
                   <DeleteIcon />
@@ -161,4 +161,4 @@ const Queues = ({ onDeleteQueue }: QueueProps) => {
   );
 };
 
-export default Queues;
+export default Batches; 

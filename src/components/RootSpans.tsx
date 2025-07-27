@@ -143,7 +143,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           <Box>
             <Button
               variant="contained"
-              onClick={() => navigate(`/queues/${id}/annotation`)}
+              onClick={() => navigate(`/batches/${id}/annotation`)}
               sx={{ width: "280px", mr: 2 }}
             >
               Start Annotating!

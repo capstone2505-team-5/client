@@ -26,10 +26,10 @@ const Footer = () => {
     const path = location.pathname;
     
     if (path === '/projects') return 0;
-    if (path === '/create-queue' || path.startsWith('/edit-queue') || path === '/queues') return 1;
+    if (path === '/create-batch' || path.startsWith('/edit-batch') || path === '/batches') return 1;
     if (path.includes('/annotation')) return 2;
-    if (path.startsWith('/queues/') && !path.includes('/annotation')) return 3; // need to add logic if annotation is done for the batch
-    if (path.startsWith('/queues/') && path.includes('results')) return 4; // need to add logic if categorization is done for the batch
+    if (path.startsWith('/batches/') && !path.includes('/annotation')) return 3; // need to add logic if annotation is done for the batch
+    if (path.startsWith('/batches/') && path.includes('results')) return 4; // need to add logic if categorization is done for the batch
     
     return -1; // No active step (home page, etc.)
   };

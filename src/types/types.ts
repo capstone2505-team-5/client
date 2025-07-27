@@ -27,7 +27,7 @@ export type AnnotatedRootSpan = RootSpan & {
   annotationId: string;
 } & Pick<Annotation, "note" | "rating" | "categories">;
 
-export interface Queue {
+export interface Batch {
   id: string;
   name: string;
   totalSpans: number;
