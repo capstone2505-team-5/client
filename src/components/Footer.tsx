@@ -11,7 +11,7 @@ const Footer = () => {
   const steps = [
     { title: 'Select a project', routes: ['/projects'] },
     { title: 'Create a Batch', routes: ['/create-queue'] },
-    { title: 'Manually Grade Batch', routes: ['/queues/:id/annotation'] },
+    { title: 'Grade Batch', routes: ['/queues/:id/annotation'] },
     { title: 'Categorize Batch', routes: ['/queues/:id'] },
     { title: 'Inspect Results', routes: ['/queues/:id'] }
   ];
@@ -77,15 +77,16 @@ const Footer = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 2,
-            maxWidth: '1200px',
-            mx: 'auto'
+            maxWidth: '1400px',
+            mx: 'auto',
+            px: 3
           }}
         >
           <Box 
             sx={{ 
               display: 'grid',
               gridTemplateColumns: 'repeat(5, 1fr)',
-              gap: 2,
+              gap: 1.5,
               flex: 1
             }}
           >
@@ -97,7 +98,8 @@ const Footer = () => {
               <Box
                 key={step.title}
                 sx={{
-                  p: 1.5,
+                  py: 1.25,
+                  px: 1.5,
                   border: '2px solid',
                   borderColor: isCompleted ? 'primary.main' : 'divider',
                   borderRadius: 2,
@@ -106,7 +108,8 @@ const Footer = () => {
                   transition: 'all 0.2s ease-in-out',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1.5,
+                  justifyContent: 'center',
+                  gap: 1.25,
                   opacity: isCurrent ? 1 : (isCompleted ? 0.85 : 0.6),
                   transform: isCurrent ? 'scale(1.02)' : 'scale(1)'
                 }}
@@ -135,8 +138,9 @@ const Footer = () => {
                   sx={{ 
                     fontWeight: isCompleted ? 'bold' : 'medium',
                     color: isCompleted ? 'primary.dark' : 'text.primary',
-                    fontSize: '0.95rem',
-                    textAlign: 'left'
+                    fontSize: '0.875rem',
+                    textAlign: 'left',
+                    lineHeight: 1.2
                   }}
                 >
                   {step.title}

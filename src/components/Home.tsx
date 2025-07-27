@@ -66,12 +66,12 @@ const Home = () => {
       )
     },
     {
-      title: 'Create a Batch', 
+      title: 'Create Batch', 
       description: "A Batch is simply a group of root spans you've collected from Phoenix that you wish to manually grade.\n\n Create a new batch and filter for spans that are problematic or get a random selection of recent spans to get started.",
       videoPath: '/CreateBatchMVP.mp4'
     },
     {
-      title: 'Manually Grade Batch',
+      title: 'Grade Batch',
       description: "Manually reviewing the inputs and outputs of your LLM application is the best way to understand any issues with LLM outputs your users are experiencing.\n\n We've made this process as frictionless as possible so you can easily perform manual coding. Simple up/down grading and freeform notes for each span lets you focus on issues that matter.",
       videoPath: '/CreateBatchMVP.mp4'
     },
