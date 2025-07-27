@@ -33,6 +33,7 @@ export interface Batch {
   totalSpans: number;
   annotatedCount: number;
   goodCount: number;
+  categories: string[];
 }
 
 export interface Project {
