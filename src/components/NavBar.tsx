@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { useTheme } from "../contexts/ThemeContext";
 import llmonadeIcon from "../assets/icons/Updated_OG_Symbol.svg";
-import llmonadeText from "../assets/icons/Updated_OG_Tag_White.svg";
+import llmonadeWhiteText from "../assets/icons/Updated_OG_Tag_White.svg";
+import llmonadeDarkText from "../assets/icons/Updated_OG_Tag_Dark.svg";
 
 const NavBar = () => {
   const navigate = useNavigate();
@@ -12,7 +13,6 @@ const NavBar = () => {
   const isHomePage = location.pathname === "/";
   const isProjectsPage = location.pathname === "/projects";
   const showLimitedNav = isHomePage || isProjectsPage;
-
   return (
     <AppBar position="static">
       <Toolbar>
@@ -21,7 +21,10 @@ const NavBar = () => {
           onClick={() => navigate("/")}
         >
           <img src={llmonadeIcon} alt="LLMonade Icon" style={{ width: "50px", height: "50px" }} />
-          <img src={llmonadeText} alt="LLMonade Text" style={{ width: "100px", height: "50px" }} />
+          {isDarkMode ? 
+          <img src={llmonadeWhiteText} alt="LLMonade White Text" style={{ width: "100px", height: "50px" }} /> : 
+          <img src={llmonadeDarkText} alt="LLMonade Dark Text" style={{ width: "100px", height: "50px" }} />}
+          
         </Box>
         
         <Box sx={{ flexGrow: 1 }} />
