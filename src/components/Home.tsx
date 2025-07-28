@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { Container, Typography, Box, Card, CardContent, Button, Link, Modal, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CloseIcon from '@mui/icons-material/Close';
 import { getPhoenixDashboardUrl } from "../services/services";
 

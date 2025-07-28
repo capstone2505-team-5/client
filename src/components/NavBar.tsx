@@ -1,5 +1,7 @@
-import { AppBar, Toolbar, Typography, Button } from "@mui/material";
+import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
+import llmonadeIcon from "../assets/icons/Updated_OG_Symbol.svg";
+import llmonadeText from "../assets/icons/Updated_OG_Tag_White.svg";
 
 const NavBar = () => {
   const navigate = useNavigate();
@@ -11,19 +13,15 @@ const NavBar = () => {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            flexGrow: 1, 
-            cursor: 'pointer',
-            '&:hover': {
-              opacity: 0.8
-            }
-          }}
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}
           onClick={() => navigate("/")}
         >
-          🍋 LLMonade
-        </Typography>
+          <img src={llmonadeIcon} alt="LLMonade Icon" style={{ width: "50px", height: "50px" }} />
+          <img src={llmonadeText} alt="LLMonade Text" style={{ width: "100px", height: "50px" }} />
+        </Box>
+        
+        <Box sx={{ flexGrow: 1 }} />
         {showLimitedNav ? (
           <>
             <Button color="inherit" onClick={() => navigate("/")}>Getting Started</Button>
