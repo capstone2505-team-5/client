@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Container,
@@ -13,6 +13,11 @@ import {
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -27,9 +32,27 @@ interface BatchProps {
 const Batches = ({ onDeleteBatch }: BatchProps) => {
   const navigate = useNavigate();
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [open, setOpen] = useState(false);
+  const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const location = useLocation();
   const { projectName } = location.state || {};
   const theme = useTheme();
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setBatchToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (batchToDelete) {
+      await handleDelete(batchToDelete);
+      handleClose();
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,7 +72,6 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   }, []);
 
   const handleDelete = async (batchId: string) => {
-    if (window.confirm("Are you sure you want to delete this batch?")) {
       try {
         await deleteBatch(batchId);
         setBatches((prev) => prev.filter((b) => b.id !== batchId));
@@ -57,7 +79,6 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       } catch (error) {
         console.error("Failed to delete batch", error);
       }
-    }
   };
 
     const handleAnnotate = (batchId: string) => {
@@ -218,7 +239,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
               color="error"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete(params.row.id);
+                setBatchToDelete(params.row.id);
+                setOpen(true);
               }}
               sx={{ 
                 border: '1px solid',
@@ -443,6 +465,59 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
           />
         </Box>
       </Paper>
+      <Fragment>
+        <Dialog
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedtext="alert-dialog-description"
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle 
+            id="alert-dialog-title"
+            sx={{ 
+              color: 'error.main',
+              fontWeight: 'bold',
+              pb: 1
+            }}
+          >
+            Delete Batch
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText 
+              id="alert-dialog-description"
+              sx={{ fontSize: '1rem', color: 'text.primary' }}
+            >
+              Are you sure you want to delete this batch? This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+            <Button 
+              onClick={handleClose} 
+              variant="outlined"
+              sx={{ 
+                minWidth: '100px',
+                borderColor: 'grey.400',
+                color: 'text.secondary'
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmDelete}
+              variant="contained"
+              color="error"
+              sx={{ 
+                minWidth: '100px',
+                fontWeight: 'bold'
+              }}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Fragment>
     </Container>
   );
 };

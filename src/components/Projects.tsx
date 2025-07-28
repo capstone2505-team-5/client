@@ -331,31 +331,30 @@ const Projects = () => {
           </Button>
         </Box>
 
-        <Fragment>
-
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          {"Add Tracing to a New Application to Create a New Project"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Access your Phoenix Dashboard and follow instructions from the "Trace" button in the top right corner of the Phoenix UI to get started. Or consult the phoenix documentation for more information.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button href={phoenixDashboardUrl} target="_blank" rel="noopener noreferrer" onClick={handleClose}>Dashboard</Button>
-          <Button href="https://arize.com/docs/phoenix/integrations" target="_blank" rel="noopener noreferrer" onClick={handleClose}>Documentation</Button>
-          <Button onClick={handleClose} autoFocus>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Fragment>
+      <Fragment>
+        <Dialog
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {"Add Tracing to a New Application to Create a New Project"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Access your Phoenix Dashboard and follow instructions from the "Trace" button in the top right corner of the Phoenix UI to get started. Or consult the phoenix documentation for more information.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button href={phoenixDashboardUrl} target="_blank" rel="noopener noreferrer" onClick={handleClose}>Dashboard</Button>
+            <Button href="https://arize.com/docs/phoenix/integrations" target="_blank" rel="noopener noreferrer" onClick={handleClose}>Documentation</Button>
+            <Button onClick={handleClose} autoFocus>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Fragment>
 
         <Box sx={{ height: getDataGridHeight() }}>
                     <DataGrid
