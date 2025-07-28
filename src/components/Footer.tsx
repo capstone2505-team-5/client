@@ -1,4 +1,4 @@
-import { Box, Container, Typography, IconButton, Tooltip } from "@mui/material";
+import { Box, Container, Typography, IconButton, Tooltip, useTheme } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -8,6 +8,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 const Footer = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [maxStepReached, setMaxStepReached] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -105,11 +106,11 @@ const Footer = () => {
           <IconButton
             onClick={toggleFooterVisibility}
             sx={{
-              backgroundColor: 'primary.main',
-              color: 'white',
+              backgroundColor: 'secondary.main',
+              color: 'black',
               boxShadow: 2,
               '&:hover': {
-                backgroundColor: 'primary.dark',
+                backgroundColor: 'secondary.dark',
                 boxShadow: 4
               }
             }}
@@ -149,8 +150,8 @@ const Footer = () => {
             borderColor: 'divider',
             '&:hover': {
               backgroundColor: 'action.hover',
-              borderColor: 'primary.main',
-              color: 'primary.main'
+              borderColor: 'secondary.main',
+              color: 'secondary.main'
             },
             zIndex: 1
           }}
@@ -188,25 +189,37 @@ const Footer = () => {
                 sx={{
                   py: 1.25,
                   px: 1.5,
-                  border: '2px solid',
-                  borderColor: isCompleted ? 'primary.main' : 'divider',
+                  border: '1px solid',
+                  borderColor: isCurrent 
+                    ? 'secondary.main' 
+                    : isCompleted 
+                      ? theme.palette.mode === 'dark' ? 'rgba(254, 207, 44, 0.3)' : 'rgba(254, 207, 44, 0.4)'
+                      : 'divider',
                   borderRadius: 2,
-                  backgroundColor: isCompleted ? 'primary.light' : 'background.default',
+                  backgroundColor: isCurrent
+                    ? theme.palette.mode === 'dark' ? 'rgba(254, 207, 44, 0.15)' : 'rgba(254, 207, 44, 0.1)'
+                    : isCompleted 
+                      ? theme.palette.mode === 'dark' ? 'rgba(254, 207, 44, 0.08)' : 'rgba(254, 207, 44, 0.04)'
+                      : 'background.default',
                   textAlign: 'center',
                   transition: 'all 0.2s ease-in-out',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 1.25,
-                  opacity: isCurrent ? 1 : (isCompleted ? 0.85 : 0.6),
+                  opacity: isCurrent ? 1 : (isCompleted ? 0.9 : 0.5),
                   transform: isCurrent ? 'scale(1.02)' : 'scale(1)'
                 }}
               >
                 {/* Step Number */}
                 <Box
                   sx={{
-                    backgroundColor: isCompleted ? 'primary.main' : 'text.secondary',
-                    color: 'white',
+                    backgroundColor: isCurrent 
+                      ? 'secondary.main' 
+                      : isCompleted 
+                        ? 'secondary.dark'
+                        : theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.3)',
+                    color: isCurrent || isCompleted ? 'black' : theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                     borderRadius: '50%',
                     width: 24,
                     height: 24,
@@ -224,8 +237,12 @@ const Footer = () => {
                 <Typography 
                   variant="body1" 
                   sx={{ 
-                    fontWeight: isCompleted ? 'bold' : 'medium',
-                    color: isCompleted ? 'primary.dark' : 'text.primary',
+                    fontWeight: isCurrent ? 'bold' : isCompleted ? 'medium' : 'normal',
+                    color: isCurrent 
+                      ? theme.palette.text.primary
+                      : isCompleted 
+                        ? theme.palette.text.primary
+                        : theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)',
                     fontSize: '0.875rem',
                     textAlign: 'left',
                     lineHeight: 1.2
@@ -251,8 +268,8 @@ const Footer = () => {
                   borderColor: 'divider',
                   '&:hover': {
                     backgroundColor: 'action.hover',
-                    borderColor: 'primary.main',
-                    color: 'primary.main'
+                    borderColor: 'secondary.main',
+                    color: 'secondary.main'
                   },
                   ml: 1
                 }}

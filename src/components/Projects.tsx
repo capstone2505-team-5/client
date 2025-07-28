@@ -1,6 +1,6 @@
-// src/components/Home.tsx
+// src/components/Projects.tsx
 import { useState, useMemo } from "react";
-import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButton, Button } from "@mui/material";
+import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButton, Button, useTheme } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,6 +22,7 @@ interface HomeProps {
 
 const Projects = ({ projects = [] }: HomeProps) => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -62,7 +63,13 @@ const Projects = ({ projects = [] }: HomeProps) => {
       headerAlign: 'center',
       align: 'left',
       renderCell: (params) => (
-        <Typography variant="h6" sx={{ fontWeight: 'medium', color: 'primary.main' }}>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            fontWeight: 'medium', 
+            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121'
+          }}
+        >
           {params.value}
         </Typography>
       ),
@@ -131,16 +138,19 @@ const Projects = ({ projects = [] }: HomeProps) => {
           gutterBottom 
           sx={{ 
             fontWeight: 'bold',
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
             mb: 2
           }}
         >
           Your Phoenix Projects
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mt: -1 }}>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            mt: -1,
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)'
+          }}
+        >
           Select a project to begin evaluating your LLM application
         </Typography>
       </Box>
@@ -158,19 +168,25 @@ const Projects = ({ projects = [] }: HomeProps) => {
             border: 'none',
           },
           '& .MuiDataGrid-columnHeaders': {
-            background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.05)'
+              : 'rgba(0, 0, 0, 0.04)',
             fontSize: '1rem',
             fontWeight: '600',
-            color: 'primary.main',
+            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
             borderBottom: '2px solid',
-            borderBottomColor: 'primary.light',
+            borderBottomColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.12)'
+              : 'rgba(0, 0, 0, 0.12)',
             borderRadius: '12px 12px 0 0',
           },
           '& .MuiDataGrid-row': {
             minHeight: '56px !important',
             cursor: 'pointer',
             '&:hover': {
-              backgroundColor: '#f8f9fa',
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.08)'
+                : '#f8f9fa',
               transform: 'scale(1.001)',
               transition: 'all 0.2s ease-in-out',
             },
@@ -180,23 +196,43 @@ const Projects = ({ projects = [] }: HomeProps) => {
             alignItems: 'center',
             fontSize: '0.95rem',
             borderBottom: '1px solid',
-            borderBottomColor: 'divider',
+            borderBottomColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.12)'
+              : 'rgba(0, 0, 0, 0.12)',
             py: 1,
+            color: theme.palette.text.primary,
           },
           '& .MuiDataGrid-footerContainer': {
-            background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
+            backgroundColor: theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF',
             borderTop: '1px solid',
-            borderTopColor: 'divider',
+            borderTopColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.12)'
+              : 'rgba(0, 0, 0, 0.12)',
             minHeight: '56px',
             height: '56px',
             borderRadius: '0 0 12px 12px',
+            color: theme.palette.text.primary,
           },
           '& .MuiTablePagination-root': {
             overflow: 'visible',
+            color: theme.palette.text.primary,
           },
           '& .MuiTablePagination-toolbar': {
             minHeight: '56px',
             height: '56px',
+            color: theme.palette.text.primary,
+          },
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            color: theme.palette.text.primary,
+          },
+          '& .MuiTablePagination-select': {
+            color: theme.palette.text.primary,
+          },
+          '& .MuiIconButton-root': {
+            color: theme.palette.text.primary,
+          },
+          '& .MuiSvgIcon-root': {
+            color: theme.palette.text.primary,
           },
         }}
       >
@@ -251,7 +287,13 @@ const Projects = ({ projects = [] }: HomeProps) => {
             rel="noopener noreferrer"
             sx={{
               whiteSpace: 'nowrap',
-              ml: 2
+              ml: 2,
+              backgroundColor: 'primary.main',
+              color: 'black',
+              fontWeight: 600,
+              '&:hover': {
+                backgroundColor: 'primary.dark',
+              },
             }}
           >
             Create New Project
@@ -284,13 +326,24 @@ const Projects = ({ projects = [] }: HomeProps) => {
                   height: '100%',
                   py: 4
                 }}>
-                  <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      mb: 1,
+                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                    }}
+                  >
                     {projects.length === 0 
                       ? 'No projects available' 
                       : 'No projects found'
                     }
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography 
+                    variant="body2" 
+                    sx={{
+                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'
+                    }}
+                  >
                     {projects.length === 0 
                       ? 'Projects will appear here once data is loaded'
                       : `No projects match your search "${searchTerm}"`
