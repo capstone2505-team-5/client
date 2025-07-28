@@ -337,21 +337,101 @@ const Projects = () => {
           onClose={handleClose}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
+          maxWidth="sm"
+          fullWidth
         >
-          <DialogTitle id="alert-dialog-title">
-            {"Add Tracing to a New Application to Create a New Project"}
+          <DialogTitle 
+            id="alert-dialog-title"
+            sx={{ 
+              color: 'primary.main',
+              fontWeight: 'bold',
+              fontSize: '1.5rem',
+              pb: 1,
+              textAlign: 'center'
+            }}
+          >
+            Create New Project
           </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              Access your Phoenix Dashboard and follow instructions from the "Trace" button in the top right corner of the Phoenix UI to get started. Or consult the phoenix documentation for more information.
-            </DialogContentText>
+          <DialogContent sx={{ pt: 2 }}>
+                         <DialogContentText 
+               id="alert-dialog-description"
+               sx={{ 
+                 fontSize: '1rem', 
+                 color: 'text.primary',
+                 textAlign: 'center',
+                 lineHeight: 1.6,
+                 mb: 2
+               }}
+             >
+               To create a new project, you'll need to add tracing to your application.
+             </DialogContentText>
+                         <Box sx={{ 
+               backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.1)' : 'rgba(33, 150, 243, 0.05)',
+               borderRadius: 2,
+               p: 2,
+               border: '1px solid',
+               borderColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.3)' : 'rgba(33, 150, 243, 0.2)'
+             }}>
+               <Typography variant="body2" sx={{ color: 'text.primary', mb: 1, textAlign: 'center' }}>
+                 Access your Phoenix Dashboard and follow the instructions from the "Trace" button in the top right corner of the Phoenix UI to get started.
+               </Typography>
+               <Typography 
+                 variant="body2" 
+                 sx={{ 
+                   color: 'text.secondary', 
+                   textAlign: 'center', 
+                   fontStyle: 'italic',
+                   my: 1 
+                 }}
+               >
+                 — or —
+               </Typography>
+               <Typography variant="body2" sx={{ color: 'text.primary', textAlign: 'center' }}>
+                 Reference the Phoenix documentation for more information.
+               </Typography>
+             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button href={phoenixDashboardUrl} target="_blank" rel="noopener noreferrer" onClick={handleClose}>Dashboard</Button>
-            <Button href="https://arize.com/docs/phoenix/integrations" target="_blank" rel="noopener noreferrer" onClick={handleClose}>Documentation</Button>
-            <Button onClick={handleClose} autoFocus>
-              Close
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1, justifyContent: 'center' }}>
+            <Button 
+              href={phoenixDashboardUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              onClick={handleClose}
+              variant="contained"
+              color="primary"
+              sx={{ 
+                minWidth: '120px',
+                fontWeight: 'bold'
+              }}
+            >
+              Dashboard
             </Button>
+            <Button 
+              href="https://arize.com/docs/phoenix/integrations" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              onClick={handleClose}
+              variant="contained"
+              color="primary"
+              sx={{ 
+                minWidth: '120px',
+                borderColor: 'primary.main',
+                fontWeight: 'bold'
+              }}
+            >
+              Documentation
+            </Button>
+                         <Button 
+               onClick={handleClose} 
+               variant="contained"
+               color="primary"
+               sx={{ 
+                 minWidth: '100px',
+                 fontWeight: 'bold'
+               }}
+             >
+               Close
+             </Button>
           </DialogActions>
         </Dialog>
       </Fragment>
