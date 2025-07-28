@@ -2,11 +2,14 @@ import { Box, Container, Typography, IconButton, Tooltip } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const Footer = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [maxStepReached, setMaxStepReached] = useState(0);
+  const [isHidden, setIsHidden] = useState(false);
 
   const steps = [
     { title: 'Select a project', routes: ['/projects'] },
@@ -37,6 +40,12 @@ const Footer = () => {
     if (savedMaxStep) {
       setMaxStepReached(parseInt(savedMaxStep, 10));
     }
+    
+    // Load footer visibility state
+    const savedFooterState = localStorage.getItem('llmonade-footer-hidden');
+    if (savedFooterState) {
+      setIsHidden(JSON.parse(savedFooterState));
+    }
   }, []);
 
   // Update max step reached when current step changes
@@ -54,9 +63,48 @@ const Footer = () => {
     navigate('/projects');
   };
 
+  // Toggle footer visibility
+  const toggleFooterVisibility = () => {
+    const newHiddenState = !isHidden;
+    setIsHidden(newHiddenState);
+    localStorage.setItem('llmonade-footer-hidden', JSON.stringify(newHiddenState));
+  };
+
   // Don't show footer on home/getting started page
   if (location.pathname === '/') {
     return null;
+  }
+
+  // Show minimal footer when hidden
+  if (isHidden) {
+    return (
+      <Box
+        component="footer"
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          zIndex: 1000
+        }}
+      >
+        <Tooltip title="Show Footer" arrow>
+          <IconButton
+            onClick={toggleFooterVisibility}
+            sx={{
+              backgroundColor: 'primary.main',
+              color: 'white',
+              boxShadow: 2,
+              '&:hover': {
+                backgroundColor: 'primary.dark',
+                boxShadow: 4
+              }
+            }}
+          >
+            <ExpandLessIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    );
   }
 
   return (
@@ -68,9 +116,35 @@ const Footer = () => {
         backgroundColor: 'background.paper',
         borderTop: '1px solid',
         borderTopColor: 'divider',
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.05)'
+        boxShadow: '0 -2px 8px rgba(0,0,0,0.05)',
+        position: 'relative'
       }}
     >
+      {/* Hide Footer Button */}
+      <Tooltip title="Hide Footer" arrow>
+        <IconButton
+          onClick={toggleFooterVisibility}
+          size="small"
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            color: 'text.secondary',
+            backgroundColor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            '&:hover': {
+              backgroundColor: 'action.hover',
+              borderColor: 'primary.main',
+              color: 'primary.main'
+            },
+            zIndex: 1
+          }}
+        >
+          <ExpandMoreIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+
       <Container maxWidth="xl">
         <Box 
           sx={{ 
