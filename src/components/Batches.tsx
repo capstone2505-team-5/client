@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -26,6 +26,8 @@ interface BatchProps {
 const Batches = ({ onDeleteBatch }: BatchProps) => {
   const navigate = useNavigate();
   const [batches, setBatches] = useState<Batch[]>([]);
+  const location = useLocation();
+  const { projectName } = location.state || {};
 
   useEffect(() => {
     const fetchData = async () => {
@@ -228,25 +230,72 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 1.5, mb: 1.5 }}>
-      <Box sx={{ mb: 1.5, textAlign: 'center' }}>
-        <Typography 
-          variant="h3" 
-          component="h1" 
-          gutterBottom 
-          sx={{ 
-            fontWeight: 'bold',
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            mb: 2
-          }}
-        >
-          Project - Batches
-        </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mt: -1 }}>
-          Manage and track your evaluation batches
-        </Typography>
+      <Box sx={{ mb: 1.5, position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+        {/* Project Name Box - Far Left */}
+        {projectName && (
+          <Box sx={{ 
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}>
+            <Box sx={{
+              px: 2,
+              py: 0.75,
+              backgroundColor: 'primary.main',
+              borderRadius: 2,
+              boxShadow: '0 2px 8px rgba(33, 150, 243, 0.3)',
+            }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: 'white',
+                  fontWeight: 'medium',
+                  fontSize: '0.875rem',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                PROJECT
+              </Typography>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  mt: -0.5
+                }}
+              >
+                {projectName}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
+        {/* Centered Title Content */}
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography 
+            variant="h3" 
+            component="h1" 
+            gutterBottom 
+            sx={{ 
+              fontWeight: 'bold',
+              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 2
+            }}
+          >
+            Batches
+          </Typography>
+          <Typography variant="h6" color="text.secondary" sx={{ mt: -1 }}>
+            Manage and track your evaluation batches
+          </Typography>
+        </Box>
       </Box>
 
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>

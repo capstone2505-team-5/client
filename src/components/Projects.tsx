@@ -60,7 +60,7 @@ const Projects = () => {
   };
 
   const handleProjectClick = (projectName: string) => {
-    navigate('/batches');
+    navigate('/batches', { state: { projectName } });
   };
 
   // Filter projects based on search term
@@ -72,7 +72,7 @@ const Projects = () => {
     );
   }, [projects, searchTerm]);
 
-  // Calculate dynamic height based on page size
+  // Calculate dynamic height based on rows per page in data grid
   const getDataGridHeight = () => {
     const headerHeight = 56;
     const footerHeight = 56;
