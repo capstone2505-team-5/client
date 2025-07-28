@@ -316,9 +316,6 @@ const Projects = () => {
             startIcon={<AddIcon sx={{ color: 'black !important' }} />}
             size="small"
             onClick={handleClickOpen}
-            // href="https://arize.com/docs/phoenix/integrations"
-            // target="_blank"
-            // rel="noopener noreferrer"
             sx={{
               whiteSpace: 'nowrap',
               ml: 2,

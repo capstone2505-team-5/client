@@ -9,6 +9,7 @@ import {
   Paper,
   Chip,
   Stack,
+  useTheme,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
@@ -28,6 +29,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   const [batches, setBatches] = useState<Batch[]>([]);
   const location = useLocation();
   const { projectName } = location.state || {};
+  const theme = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,7 +73,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       headerAlign: 'left',
       align: 'left',
       renderCell: (params) => (
-        <Typography variant="h6" sx={{ fontWeight: 'medium', color: 'primary.main' }}>
+        <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
           {params.value}
         </Typography>
       ),
@@ -178,10 +180,16 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             }}
             sx={{ 
               minWidth: '110px', 
-              fontSize: '0.8rem', 
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
+              borderColor: 'secondary.main',
+              fontSize: '0.8rem',
               py: 0.75, 
               px: 1.5,
-              flex: 1
+              flex: 1,
+              '&:hover': {
+                borderColor: 'secondary.dark',
+                backgroundColor: 'rgba(255, 235, 59, 0.1)',
+              }
             }}
           >
             Annotate
@@ -245,14 +253,20 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             <Box sx={{
               px: 2,
               py: 0.75,
-              backgroundColor: 'primary.main',
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(0, 0, 0, 0.4)' 
+                : 'rgba(255, 255, 255, 0.9)',
               borderRadius: 2,
-              boxShadow: '0 2px 8px rgba(33, 150, 243, 0.3)',
+              border: '2px solid',
+              borderColor: 'secondary.main',
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 2px 8px rgba(255, 235, 59, 0.2)'
+                : '0 2px 8px rgba(255, 235, 59, 0.3)',
             }}>
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: 'white',
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
                   fontWeight: 'medium',
                   fontSize: '0.875rem',
                   letterSpacing: '0.5px'
@@ -263,7 +277,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
               <Typography 
                 variant="h6" 
                 sx={{ 
-                  color: 'white',
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
                   fontWeight: 'bold',
                   fontSize: '1rem',
                   mt: -0.5
@@ -283,10 +297,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             gutterBottom 
             sx={{ 
               fontWeight: 'bold',
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
               mb: 2
             }}
           >
@@ -301,8 +312,16 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={<AddIcon sx={{ color: 'black !important' }} />}
           onClick={() => navigate("/create-batch")}
+          sx={{
+            backgroundColor: 'secondary.main',
+            color: 'black',
+            fontWeight: 600,
+            '&:hover': {
+              backgroundColor: 'secondary.dark',
+            },
+          }}
         >
           Create New Batch
         </Button>
@@ -321,19 +340,25 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             border: 'none',
           },
           '& .MuiDataGrid-columnHeaders': {
-            background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.05)'
+              : 'rgba(0, 0, 0, 0.04)',
             fontSize: '1rem',
             fontWeight: '600',
-            color: 'primary.main',
+            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
             borderBottom: '2px solid',
-            borderBottomColor: 'primary.light',
+            borderBottomColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.12)'
+              : 'rgba(0, 0, 0, 0.12)',
             borderRadius: '12px 12px 0 0',
           },
           '& .MuiDataGrid-row': {
-            minHeight: '80px !important',
+            minHeight: '56px !important',
             cursor: 'pointer',
             '&:hover': {
-              backgroundColor: '#f8f9fa',
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.08)'
+                : '#f8f9fa',
               transform: 'scale(1.001)',
               transition: 'all 0.2s ease-in-out',
             },
@@ -343,16 +368,43 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             alignItems: 'center',
             fontSize: '0.95rem',
             borderBottom: '1px solid',
-            borderBottomColor: 'divider',
+            borderBottomColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.12)'
+              : 'rgba(0, 0, 0, 0.12)',
             py: 1,
+            color: theme.palette.text.primary,
           },
           '& .MuiDataGrid-footerContainer': {
-            background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
+            backgroundColor: theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF',
             borderTop: '1px solid',
-            borderTopColor: 'divider',
+            borderTopColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.12)'
+              : 'rgba(0, 0, 0, 0.12)',
             minHeight: '56px',
             height: '56px',
             borderRadius: '0 0 12px 12px',
+            color: theme.palette.text.primary,
+          },
+          '& .MuiTablePagination-root': {
+            overflow: 'visible',
+            color: theme.palette.text.primary,
+          },
+          '& .MuiTablePagination-toolbar': {
+            minHeight: '56px',
+            height: '56px',
+            color: theme.palette.text.primary,
+          },
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            color: theme.palette.text.primary,
+          },
+          '& .MuiTablePagination-select': {
+            color: theme.palette.text.primary,
+          },
+          '& .MuiIconButton-root': {
+            color: theme.palette.text.primary,
+          },
+          '& .MuiSvgIcon-root': {
+            color: theme.palette.text.primary,
           },
         }}
       >
