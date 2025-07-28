@@ -49,8 +49,8 @@ const Queues = ({ onDeleteQueue }: QueueProps) => {
     if (window.confirm("Are you sure you want to delete this queue?")) {
       try {
         await deleteQueue(queueId);
-        setQueues((prev) => prev.filter((q) => q.id !== queueId));
         onDeleteQueue(queueId);
+        setQueues((prev) => prev.filter((q) => q.id !== queueId));
       } catch (error) {
         console.error("Failed to delete queue", error);
       }
