@@ -43,7 +43,7 @@ const Home = () => {
   }> = [
     {
       title: 'Select a project',
-      description: 'Choose from your available projects traced in Phoenix to begin the evaluation process.',
+      description: 'Choose from your projects traced in Phoenix to begin the evaluation process.',
               videoPath: '/CreateBatchMVP.mp4',
       additionalContent: (
         <Typography 
@@ -54,7 +54,7 @@ const Home = () => {
             color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
           }}
         >
-          Don't have any project traced? Access your{' '}
+          Don't have any projects traced? Access your{' '}
           {phoenixDashboardUrl ? (
             <Link 
               href={phoenixDashboardUrl} 
@@ -79,7 +79,7 @@ const Home = () => {
     },
     {
       title: 'Grade Batch',
-      description: "Manually reviewing the inputs and outputs of your LLM application is the best way to understand any issues with LLM outputs your users are experiencing.\n\n We've made this process as frictionless as possible so you can easily perform manual coding. Simple up/down grading and freeform notes for each span lets you focus on issues that matter.",
+      description: "Manually reviewing the inputs and outputs of your LLM application is the best way to understand any issues with LLM outputs your users are experiencing.\n\n We've made this process as frictionless as possible so you can easily perform manual grading. Simple up/down grading and freeform notes for each span lets you focus on issues that matter.",
       videoPath: '/CreateBatchMVP.mp4'
     },
     {
