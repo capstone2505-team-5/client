@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Container,
   Typography,
@@ -7,8 +7,14 @@ import {
   Box,
   Paper,
   Chip,
+  TextField,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import type { AnnotatedRootSpan } from "../types/types";
@@ -20,6 +26,7 @@ interface RootSpansProps {
 
 const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
@@ -30,6 +37,25 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
     navigate(`/rootSpans/${annotatedRootSpan.traceId}`, { state: annotatedRootSpan });
   };
+
+  const handleDelete = async (rootSpanId: string) => {
+    if (window.confirm("Are you sure you want to delete this root span?")) {
+      // TODO: Implement delete functionality
+      console.log("Delete root span:", rootSpanId);
+    }
+  };
+
+  // Filter root spans based on search term
+  const filteredRootSpans = useMemo(() => {
+    if (!searchTerm.trim()) return annotatedRootSpans;
+    
+    return annotatedRootSpans.filter(rootSpan =>
+      rootSpan.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rootSpan.spanName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rootSpan.input && rootSpan.input.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (rootSpan.output && rootSpan.output.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [annotatedRootSpans, searchTerm]);
 
   // Truncate text for display in columns
   const truncateText = (text: string, maxLength: number = 100) => {
@@ -92,6 +118,11 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
       minWidth: 180,
       headerAlign: 'center',
       align: 'center',
+      type: 'date',
+      valueGetter: (value) => new Date(value),
+      filterOperators: getGridDateOperators().filter((operator) =>
+        ['is', 'after', 'onOrAfter', 'before', 'onOrBefore'].includes(operator.value)
+      ),
       renderCell: (params) => (
         <Typography variant="body2" sx={{ color: 'white' }}>
           {formatDateTime(params.value)}
@@ -174,6 +205,35 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
         </Box>
       ),
     },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 50,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <IconButton
+            size="small"
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(params.row.id);
+            }}
+            sx={{ 
+              border: '1px solid',
+              borderColor: 'error.main',
+              '&:hover': { backgroundColor: 'error.light' },
+              width: 32,
+              height: 32,
+            }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      ),
+    },
   ];
 
   // Calculate dynamic height based on rows per page
@@ -238,7 +298,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           )}
         </Box>
 
-        {/* Centered Title Content */}
+                {/* Centered Title Content */}
         <Box sx={{ textAlign: 'center' }}>
           <Typography 
             variant="h3" 
@@ -259,19 +319,26 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
             Review and annotate individual spans from your batch
           </Typography>
         </Box>
-      </Box>
 
-      {/* Start Annotating Button - Right Justified */}
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-        <Button
-          variant="contained"
-          startIcon={<RateReviewIcon />}
-          onClick={() => navigate(`/batches/${id}/annotation`)}
-          size="large"
-          sx={{ px: 3 }}
-        >
-          Start Annotating!
-        </Button>
+        {/* Start Annotating Button */}
+        <Box sx={{ 
+          position: 'absolute',
+          right: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+        }}>
+          <Button
+            variant="contained"
+            startIcon={<RateReviewIcon />}
+            onClick={() => navigate(`/batches/${id}/annotation`)}
+            size="large"
+            sx={{ px: 3 }}
+          >
+            Grade Batch!
+          </Button>
+        </Box>
       </Box>
 
       <Paper 
@@ -326,9 +393,52 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           },
         }}
       >
+        {/* Search Bar */}
+        <Box sx={{ 
+          px: 2, 
+          py: 1.5, 
+          borderBottom: '1px solid', 
+          borderBottomColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start'
+        }}>
+          <TextField
+            size="small"
+            placeholder="Search spans by ID, name, input, or output..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setSearchTerm('')}
+                    edge="end"
+                    sx={{ mr: -0.5 }}
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              minWidth: 400,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: 'background.default',
+              }
+            }}
+          />
+        </Box>
+
         <Box sx={{ height: getDataGridHeight() }}>
           <DataGrid
-            rows={annotatedRootSpans}
+            rows={filteredRootSpans}
             columns={columns}
             initialState={{
               pagination: {
@@ -354,10 +464,16 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
                   py: 4
                 }}>
                   <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                    No root spans available
+                    {annotatedRootSpans.length === 0 
+                      ? 'No root spans available' 
+                      : 'No spans found'
+                    }
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Root spans will appear here once data is loaded
+                    {annotatedRootSpans.length === 0 
+                      ? 'Root spans will appear here once data is loaded'
+                      : `No spans match your search "${searchTerm}"`
+                    }
                   </Typography>
                 </Box>
               )
