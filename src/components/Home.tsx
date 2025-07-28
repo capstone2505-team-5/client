@@ -119,7 +119,7 @@ const Home = () => {
       </Box>
       
       {/* How to Use Section */}
-                                                       <Card elevation={3} sx={{ mt: 2 }}>
+        <Card elevation={3} sx={{ mt: 2 }}>
         <CardContent sx={{ p: 3 }}>
           
         <Typography 
