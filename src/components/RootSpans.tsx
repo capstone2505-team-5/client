@@ -11,6 +11,11 @@ import {
   InputAdornment,
   IconButton,
   Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -19,9 +24,99 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
-import type { GridColDef } from "@mui/x-data-grid";
+import type { GridColDef, GridFilterOperator, GridFilterInputValueProps } from "@mui/x-data-grid";
 import RateReviewIcon from '@mui/icons-material/RateReview';
+import CategoryIcon from '@mui/icons-material/Category';
 import type { AnnotatedRootSpan } from "../types/types";
+
+// Custom Rating Filter Component
+const RatingFilterInputValue = (props: GridFilterInputValueProps) => {
+  const { item, applyValue } = props;
+
+  const handleFilterChange = (event: any) => {
+    applyValue({ ...item, value: event.target.value });
+  };
+
+  const getRatingIcon = (rating: string) => {
+    switch (rating) {
+      case 'good':
+        return <CheckCircleIcon sx={{ color: 'success.main', fontSize: '1.25rem' }} />;
+      case 'bad':
+        return <CancelIcon sx={{ color: 'error.main', fontSize: '1.25rem' }} />;
+      case 'none':
+        return <CheckCircleOutlineIcon sx={{ color: 'text.disabled', fontSize: '1.25rem' }} />;
+      default:
+        return null;
+    }
+  };
+
+  const getRatingLabel = (rating: string) => {
+    switch (rating) {
+      case 'good':
+        return 'Good';
+      case 'bad':
+        return 'Bad';
+      case 'none':
+        return 'Not Rated';
+      default:
+        return 'All';
+    }
+  };
+
+  return (
+    <FormControl fullWidth size="small">
+      <Select
+        value={item.value || ''}
+        onChange={handleFilterChange}
+        displayEmpty
+        sx={{ minWidth: 120 }}
+      >
+        <MenuItem value="">
+          <ListItemText primary="All" />
+        </MenuItem>
+        <MenuItem value="good">
+          <ListItemIcon sx={{ minWidth: '32px !important' }}>
+            {getRatingIcon('good')}
+          </ListItemIcon>
+          <ListItemText primary={getRatingLabel('good')} />
+        </MenuItem>
+        <MenuItem value="bad">
+          <ListItemIcon sx={{ minWidth: '32px !important' }}>
+            {getRatingIcon('bad')}
+          </ListItemIcon>
+          <ListItemText primary={getRatingLabel('bad')} />
+        </MenuItem>
+        <MenuItem value="none">
+          <ListItemIcon sx={{ minWidth: '32px !important' }}>
+            {getRatingIcon('none')}
+          </ListItemIcon>
+          <ListItemText primary={getRatingLabel('none')} />
+        </MenuItem>
+      </Select>
+    </FormControl>
+  );
+};
+
+// Custom filter operators for rating
+const ratingFilterOperators: GridFilterOperator[] = [
+  {
+    label: 'is',
+    value: 'is',
+    getApplyFilterFn: (filterItem) => {
+      if (!filterItem.value) {
+        return null;
+      }
+      return (value) => {
+        // Handle the case where unrated spans have null/undefined rating
+        if (filterItem.value === 'none') {
+          return !value || value === 'none' || value === null || value === undefined;
+        }
+        return value === filterItem.value;
+      };
+    },
+          InputComponent: RatingFilterInputValue,
+  },
+];
 
 interface RootSpansProps {
   annotatedRootSpans: AnnotatedRootSpan[];
@@ -121,7 +216,15 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
       width: 80,
       headerAlign: 'center',
       align: 'center',
-      sortable: false,
+      sortable: true,
+      filterable: true,
+      type: 'singleSelect',
+      valueOptions: [
+        { value: 'good', label: 'Good' },
+        { value: 'bad', label: 'Bad' },
+        { value: 'none', label: 'Not Rated' },
+      ],
+      valueGetter: (value) => value || 'none',
       renderCell: (params) => {
         const rating = params.value as string;
         const getStatusIcon = () => {
@@ -279,6 +382,13 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
     },
   ];
 
+  // Check if all root spans have ratings
+  const allSpansRated = useMemo(() => {
+    return annotatedRootSpans.length > 0 && annotatedRootSpans.every(span => 
+      span.rating && span.rating !== 'none'
+    );
+  }, [annotatedRootSpans]);
+
   // Calculate dynamic height based on rows per page
   const getDataGridHeight = () => {
     const headerHeight = 56;
@@ -363,23 +473,43 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           </Typography>
         </Box>
 
-        {/* Start Annotating Button */}
+        {/* Action Buttons */}
         <Box sx={{ 
           position: 'absolute',
           right: 0,
           top: '50%',
           transform: 'translateY(-50%)',
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: 1,
         }}>
           <Button
             variant="contained"
             startIcon={<RateReviewIcon />}
             onClick={() => navigate(`/batches/${id}/annotation`)}
             size="large"
-            sx={{ px: 3 }}
+            sx={{ px: 3, minWidth: 225 }}
           >
             Grade Batch!
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<CategoryIcon />}
+            onClick={onCategorize}
+            size="large"
+            disabled={!allSpansRated}
+            sx={{ 
+              px: 3,
+              minWidth: 225,
+              opacity: allSpansRated ? 1 : 0.5,
+              '&.Mui-disabled': {
+                borderColor: 'text.disabled',
+                color: 'text.disabled',
+              }
+            }}
+          >
+            Categorize ({annotatedRootSpans.filter(span => span.rating && span.rating !== 'none').length}/{annotatedRootSpans.length})
           </Button>
         </Box>
       </Box>
@@ -495,6 +625,18 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
             onRowClick={(params) => handleView(params.row)}
             onPaginationModelChange={(model) => {
               setPageSize(model.pageSize);
+            }}
+            slotProps={{
+              filterPanel: {
+                sx: {
+                  '& .MuiDataGrid-filterForm': {
+                    padding: 2,
+                  },
+                  '& .MuiFormControl-root': {
+                    margin: 1,
+                  },
+                },
+              },
             }}
             slots={{
               noRowsOverlay: () => (
