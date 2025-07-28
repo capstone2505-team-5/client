@@ -108,7 +108,7 @@ const Home = () => {
             mb: 2
           }}
         >
-          Welcome to LLMonade
+          LLMonade
         </Typography>
         
         <Typography 

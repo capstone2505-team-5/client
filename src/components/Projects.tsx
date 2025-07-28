@@ -280,7 +280,7 @@ const Projects = ({ projects = [] }: HomeProps) => {
           
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={<AddIcon sx={{ color: 'black !important' }} />}
             size="small"
             href="https://arize.com/docs/phoenix/integrations"
             target="_blank"
@@ -288,11 +288,11 @@ const Projects = ({ projects = [] }: HomeProps) => {
             sx={{
               whiteSpace: 'nowrap',
               ml: 2,
-              backgroundColor: 'primary.main',
+              backgroundColor: 'secondary.main',
               color: 'black',
               fontWeight: 600,
               '&:hover': {
-                backgroundColor: 'primary.dark',
+                backgroundColor: 'secondary.dark',
               },
             }}
           >
