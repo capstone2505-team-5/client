@@ -10,6 +10,7 @@ const Footer = () => {
   const navigate = useNavigate();
   const [maxStepReached, setMaxStepReached] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const steps = [
     { title: 'Select a project', routes: ['/projects'] },
@@ -39,6 +40,8 @@ const Footer = () => {
     const savedMaxStep = localStorage.getItem('llmonade-max-step');
     if (savedMaxStep) {
       setMaxStepReached(parseInt(savedMaxStep, 10));
+    } else {
+      setMaxStepReached(0);
     }
     
     // Load footer visibility state
@@ -50,17 +53,28 @@ const Footer = () => {
 
   // Update max step reached when current step changes
   useEffect(() => {
-    if (currentStep > maxStepReached) {
+    if (!isResetting && currentStep > maxStepReached) {
       setMaxStepReached(currentStep);
       localStorage.setItem('llmonade-max-step', currentStep.toString());
     }
-  }, [currentStep, maxStepReached]);
+  }, [currentStep, maxStepReached, isResetting]);
 
   // Reset progress function
   const resetProgress = () => {
+    // Set resetting flag to prevent useEffect interference
+    setIsResetting(true);
+    
+    // Force clear localStorage and state immediately
     localStorage.removeItem('llmonade-max-step');
     setMaxStepReached(0);
-    navigate('/projects');
+    
+    // Navigate and then clear the resetting flag
+    navigate('/projects', { replace: true });
+    
+    // Clear resetting flag after navigation
+    setTimeout(() => {
+      setIsResetting(false);
+    }, 100);
   };
 
   // Toggle footer visibility
