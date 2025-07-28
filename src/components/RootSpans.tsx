@@ -463,18 +463,31 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
 
                 {/* Centered Title Content */}
         <Box sx={{ textAlign: 'center' }}>
-          <Typography 
-            variant="h3" 
-            component="h1" 
-            gutterBottom 
-            sx={{ 
-              fontWeight: 'bold',
-              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-              mb: 2
-            }}
-          >
-            {batchName} ({annotatedRootSpans.length})
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
+            <Typography 
+              variant="h3" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 'bold',
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+              }}
+            >
+              {batchName}
+            </Typography>
+            <Chip
+              label={annotatedRootSpans.length}
+              sx={{
+                backgroundColor: 'secondary.main',
+                color: 'black',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                height: '32px',
+                '& .MuiChip-label': {
+                  px: 1.5
+                }
+              }}
+            />
+          </Box>
           <Typography variant="h6" color="text.secondary" sx={{ mt: -1 }}>
             Review and annotate individual spans from your batch
           </Typography>
