@@ -16,7 +16,7 @@ import {
   FormControl,
   ListItemIcon,
   ListItemText,
-  useTheme,
+  useTheme as muiUseTheme,
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -28,6 +28,7 @@ import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef, GridFilterOperator, GridFilterInputValueProps } from "@mui/x-data-grid";
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import CategoryIcon from '@mui/icons-material/Category';
+import { useTheme } from "../contexts/ThemeContext";
 import type { AnnotatedRootSpan } from "../types/types";
 
 // Custom Rating Filter Component
@@ -131,7 +132,8 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   const { id } = useParams();
   const location = useLocation();
   const { batchName } = location.state || {};
-  const theme = useTheme();
+  const { isDarkMode } = useTheme();
+  const theme = muiUseTheme();
 
 
 
@@ -614,6 +616,36 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           },
           '& .MuiDataGrid-footerContainer .MuiSvgIcon-root': {
             color: theme.palette.text.primary,
+          },
+          // Custom scrollbar styling
+          '& .MuiDataGrid-virtualScroller::-webkit-scrollbar': {
+            width: '12px !important',
+            height: '12px !important',
+          },
+          '& .MuiDataGrid-virtualScroller::-webkit-scrollbar-track': {
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? '#1a1a1a !important' 
+              : 'rgba(0, 0, 0, 0.05) !important',
+            borderRadius: '6px',
+          },
+          '& .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb': {
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? '#404040 !important' 
+              : 'rgba(0, 0, 0, 0.9) !important',
+            borderRadius: '6px',
+            border: theme.palette.mode === 'dark' 
+              ? '1px solid #555 !important' 
+              : 'none',
+          },
+          '& .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? '#606060 !important' 
+              : 'rgba(0, 0, 0, 0.7) !important',
+          },
+          '& .MuiDataGrid-virtualScroller::-webkit-scrollbar-corner': {
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? '#1a1a1a !important' 
+              : 'rgba(0, 0, 0, 0.05) !important',
           },
         }}
       >
