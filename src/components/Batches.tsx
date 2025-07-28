@@ -64,8 +64,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'name',
       headerName: 'Batch Name',
-      flex: 2,
-      minWidth: 200,
+      flex: 1.5,
+      minWidth: 100,
       headerAlign: 'left',
       align: 'left',
       renderCell: (params) => (
@@ -77,7 +77,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'totalSpans',
       headerName: 'Spans',
-      flex: 1,
+      flex: 0.75,
       minWidth: 100,
       headerAlign: 'center',
       align: 'center',
@@ -91,7 +91,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'annotatedPercent',
       headerName: 'Annotated',
-      flex: 1,
+      flex: 0.75,
       minWidth: 100,
       headerAlign: 'center',
       align: 'center',
@@ -110,7 +110,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'gradePercent',
       headerName: 'Grade',
-      flex: 1,
+      flex: 0.75,
       minWidth: 100,
       headerAlign: 'center',
       align: 'center',
@@ -135,7 +135,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'categories',
       headerName: 'Categories',
-      flex: 2,
+      flex: 2.5,
       minWidth: 200,
       headerAlign: 'left',
       align: 'left',
@@ -160,26 +160,32 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'actions',
       headerName: '',
-      width: 150,
+      width: 200,
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, py: 0.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1, py: 0.5 }}>
           <Button
-            size="large"
+            size="medium"
             variant="outlined"
             startIcon={<RateReviewIcon />}
             onClick={(e) => {
               e.stopPropagation();
               handleAnnotate(params.row.id);
             }}
-            sx={{ minWidth: '100px', fontSize: '0.7rem', py: 0.25 }}
+            sx={{ 
+              minWidth: '110px', 
+              fontSize: '0.8rem', 
+              py: 0.75, 
+              px: 1.5,
+              flex: 1
+            }}
           >
             Annotate
           </Button>
           
-          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             <IconButton
               size="small"
               color="primary"
@@ -191,8 +197,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
                 border: '1px solid',
                 borderColor: 'primary.main',
                 '&:hover': { backgroundColor: 'primary.light' },
-                width: 28,
-                height: 28,
+                width: 32,
+                height: 32,
               }}
             >
               <EditIcon fontSize="small" />
@@ -208,8 +214,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
                 border: '1px solid',
                 borderColor: 'error.main',
                 '&:hover': { backgroundColor: 'error.light' },
-                width: 28,
-                height: 28,
+                width: 32,
+                height: 32,
               }}
             >
               <DeleteIcon fontSize="small" />
@@ -236,7 +242,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             mb: 2
           }}
         >
-          Your Batches
+          Project - Batches
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ mt: -1 }}>
           Manage and track your evaluation batches
