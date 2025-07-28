@@ -105,6 +105,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
       minWidth: 200,
       headerAlign: 'left',
       align: 'left',
+      sortable: false,
       renderCell: (params) => (
         <Typography 
           variant="body2" 
@@ -126,6 +127,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
       minWidth: 200,
       headerAlign: 'left',
       align: 'left',
+      sortable: false,
       renderCell: (params) => (
         <Typography 
           variant="body2" 
@@ -147,6 +149,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
       minWidth: 250,
       headerAlign: 'left',
       align: 'left',
+      sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 1 }}>
           {(params.value as string[]).length > 0 ? (
