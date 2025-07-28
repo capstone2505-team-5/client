@@ -205,7 +205,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
               }}
               sx={{ 
                 border: '1px solid',
-                borderColor: 'primary.main',
+                borderColor: 'grey.500',
                 '&:hover': { backgroundColor: 'primary.light' },
                 width: 32,
                 height: 32,
@@ -222,7 +222,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
               }}
               sx={{ 
                 border: '1px solid',
-                borderColor: 'error.main',
+                borderColor: 'grey.500',
                 '&:hover': { backgroundColor: 'error.light' },
                 width: 32,
                 height: 32,
