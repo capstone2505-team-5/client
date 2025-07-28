@@ -10,10 +10,14 @@ import {
   TextField,
   InputAdornment,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
 import RateReviewIcon from '@mui/icons-material/RateReview';
@@ -110,6 +114,45 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           {params.value}
         </Typography>
       ),
+    },
+    {
+      field: 'rating',
+      headerName: 'Rating',
+      width: 80,
+      headerAlign: 'center',
+      align: 'center',
+      sortable: false,
+      renderCell: (params) => {
+        const rating = params.value as string;
+        const getStatusIcon = () => {
+          switch (rating) {
+            case 'good':
+              return (
+                <Tooltip title="Rated Good" arrow>
+                  <CheckCircleIcon sx={{ color: 'success.main', fontSize: '1.25rem' }} />
+                </Tooltip>
+              );
+            case 'bad':
+              return (
+                <Tooltip title="Rated Bad" arrow>
+                  <CancelIcon sx={{ color: 'error.main', fontSize: '1.25rem' }} />
+                </Tooltip>
+              );
+            default:
+              return (
+                <Tooltip title="Not Rated" arrow>
+                  <CheckCircleOutlineIcon sx={{ color: 'text.disabled', fontSize: '1.25rem' }} />
+                </Tooltip>
+              );
+          }
+        };
+        
+        return (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {getStatusIcon()}
+          </Box>
+        );
+      },
     },
     {
       field: 'startTime',
@@ -225,8 +268,8 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
               border: '1px solid',
               borderColor: 'error.main',
               '&:hover': { backgroundColor: 'error.light' },
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
             }}
           >
             <DeleteIcon fontSize="small" />
