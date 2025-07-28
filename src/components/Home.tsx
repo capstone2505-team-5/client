@@ -1,12 +1,13 @@
 // src/components/Home.tsx
 import { useState, useEffect } from "react";
-import { Container, Typography, Box, Card, CardContent, Button, Link, Modal, IconButton } from "@mui/material";
+import { Container, Typography, Box, Card, CardContent, Button, Link, Modal, IconButton, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import CloseIcon from '@mui/icons-material/Close';
 import { getPhoenixDashboardUrl } from "../services/services";
 
 const Home = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
@@ -43,9 +44,16 @@ const Home = () => {
     {
       title: 'Select a project',
       description: 'Choose from your available projects traced in Phoenix to begin the evaluation process.',
-      videoPath: '/CreateBatchMVP.mp4',
+              videoPath: '/CreateBatchMVP.mp4',
       additionalContent: (
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mt: 1 }}>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            lineHeight: 1.6, 
+            mt: 1,
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+          }}
+        >
           Don't have any project traced? Access your{' '}
           {phoenixDashboardUrl ? (
             <Link 
@@ -96,10 +104,7 @@ const Home = () => {
           gutterBottom 
           sx={{ 
             fontWeight: 'bold',
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
             mb: 2
           }}
         >
@@ -108,8 +113,12 @@ const Home = () => {
         
         <Typography 
           variant="h5" 
-          color="text.secondary" 
-          sx={{ mb: 2, maxWidth: '600px', mx: 'auto' }}
+          sx={{ 
+            mb: 2, 
+            maxWidth: '600px', 
+            mx: 'auto',
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)'
+          }}
         >
           Refreshingly simple evals to get you started improving your LLM powered applications.
         </Typography>
@@ -127,15 +136,18 @@ const Home = () => {
               textAlign: 'center', 
               mb: 1, 
               fontWeight: 'bold',
-              color: 'primary.main'
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121'
             }}
           >
             Getting Started with LLMonade
           </Typography>
           <Typography 
-            variant="body1" 
-            color="text.secondary" 
-            sx={{ textAlign: 'center', mb: 2 }}
+            variant="body1"
+            sx={{ 
+              textAlign: 'center', 
+              mb: 2,
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)'
+            }}
           >
             Follow these simple steps to start evaluating your LLM application:
           </Typography>
@@ -156,16 +168,23 @@ const Home = () => {
                 onClick={() => handleStepClick(index)}
                 sx={{
                   p: 2.5,
-                  border: '2px solid',
-                  borderColor: 'primary.light',
+                  border: '1px solid',
+                  borderColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.12)'
+                    : 'rgba(0, 0, 0, 0.12)',
                   borderRadius: 2,
                   backgroundColor: 'background.paper',
                   transition: 'all 0.2s ease-in-out',
                   cursor: 'pointer',
                   '&:hover': {
-                    boxShadow: '0 4px 16px rgba(33, 150, 243, 0.15)',
-                    borderColor: 'primary.main',
-                    transform: 'translateY(-2px)'
+                    boxShadow: theme.palette.mode === 'dark'
+                      ? '0 4px 16px rgba(254, 207, 44, 0.25)'
+                      : '0 4px 16px rgba(254, 207, 44, 0.2)',
+                    borderColor: 'secondary.main',
+                    transform: 'translateY(-2px)',
+                    backgroundColor: theme.palette.mode === 'dark'
+                      ? 'rgba(254, 207, 44, 0.08)'
+                      : 'rgba(254, 207, 44, 0.05)'
                   }
                 }}
               >
@@ -173,8 +192,8 @@ const Home = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <Box
                     sx={{
-                      backgroundColor: 'primary.main',
-                      color: 'white',
+                      backgroundColor: 'secondary.main',
+                      color: 'black',
                       borderRadius: '50%',
                       width: 28,
                       height: 28,
@@ -188,23 +207,26 @@ const Home = () => {
                   >
                     {index + 1}
                   </Box>
-                                      <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        fontWeight: 'bold',
-                        color: 'primary.main',
-                        fontSize: '1.1rem'
-                      }}
-                    >
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 'bold',
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                      fontSize: '1.1rem'
+                    }}
+                  >
                     {step.title}
                   </Typography>
                 </Box>
 
                 {/* Step Description */}
                 <Typography 
-                  variant="body2" 
-                  color="text.secondary"
-                  sx={{ lineHeight: 1.6, whiteSpace: 'pre-line' }}
+                  variant="body2"
+                  sx={{ 
+                    lineHeight: 1.6, 
+                    whiteSpace: 'pre-line',
+                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                  }}
                 >
                   {step.description}
                 </Typography>
@@ -217,14 +239,23 @@ const Home = () => {
 
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Button
-              variant="outlined"
+              variant="contained"
               size="large"
               onClick={() => navigate("/projects")}
               sx={{ 
-                px: 3,
-                py: 1,
+                px: 4,
+                py: 1.5,
                 fontSize: '1rem',
-                borderRadius: 2
+                borderRadius: 2,
+                backgroundColor: 'secondary.main',
+                color: 'black',
+                fontWeight: 600,
+                boxShadow: '0 2px 8px rgba(254, 207, 44, 0.4)',
+                '&:hover': {
+                  backgroundColor: 'secondary.dark',
+                  boxShadow: '0 4px 12px rgba(254, 207, 44, 0.5)',
+                  transform: 'translateY(-1px)'
+                }
               }}
             >
               Go To Projects

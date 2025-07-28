@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { Box } from "@mui/material";
+import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { useTheme } from "./contexts/ThemeContext";
+import { darkTheme, lightTheme } from "./theme/theme";
 import FilteredAnnotation from "./components/FilteredAnnotation";
 import Home from "./components/Home";
 import Projects, { type Project } from "./components/Projects";
@@ -221,13 +224,16 @@ const App = () => {
 
   const AppContent = () => {
     const location = useLocation();
+    const { isDarkMode } = useTheme();
     const showNavBar = true; // Always show NavBar now
 
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        {showNavBar && <NavBar />}
-        <Box component="main" sx={{ flex: 1 }}>
-          <Routes>
+      <MuiThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+        <CssBaseline />
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          {showNavBar && <NavBar />}
+          <Box component="main" sx={{ flex: 1 }}>
+            <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects projects={projects} />} />
           <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue} />} />
@@ -268,10 +274,11 @@ const App = () => {
               />
             }
           />
-          </Routes>
+            </Routes>
+          </Box>
+          <Footer />
         </Box>
-        <Footer />
-      </Box>
+      </MuiThemeProvider>
     );
   };
 
@@ -280,9 +287,11 @@ const App = () => {
   }
 
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 };
 
