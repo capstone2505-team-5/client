@@ -1,12 +1,18 @@
 // src/components/Projects.tsx
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButton, Button, useTheme } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import AddIcon from '@mui/icons-material/Add';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 import type { GridColDef } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
+import { getPhoenixDashboardUrl } from "../services/services";
 
 export interface Project {
   id: string;
@@ -25,6 +31,29 @@ const Projects = ({ projects = [] }: HomeProps) => {
   const theme = useTheme();
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [open, setOpen] = useState(false);
+  const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
+
+  useEffect(() => {
+    const fetchPhoenixUrl = async () => {
+      try {
+        const url = await getPhoenixDashboardUrl();
+        setPhoenixDashboardUrl(url);
+      } catch (error) {
+        console.error('Failed to fetch Phoenix dashboard URL:', error);
+      }
+    };
+    
+    fetchPhoenixUrl();
+  }, []);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   const handleProjectClick = (projectName: string) => {
     navigate('/queues');
@@ -282,9 +311,10 @@ const Projects = ({ projects = [] }: HomeProps) => {
             variant="contained"
             startIcon={<AddIcon sx={{ color: 'black !important' }} />}
             size="small"
-            href="https://arize.com/docs/phoenix/integrations"
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={handleClickOpen}
+            // href="https://arize.com/docs/phoenix/integrations"
+            // target="_blank"
+            // rel="noopener noreferrer"
             sx={{
               whiteSpace: 'nowrap',
               ml: 2,
@@ -299,6 +329,32 @@ const Projects = ({ projects = [] }: HomeProps) => {
             Create New Project
           </Button>
         </Box>
+
+        <Fragment>
+
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Add Tracing to a New Application to Create a New Project"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Access your Phoenix Dashboard and follow instructions from the "Trace" button in the top right corner of the Phoenix UI to get started. Or consult the phoenix documentation for more information.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button href={phoenixDashboardUrl} target="_blank" rel="noopener noreferrer" onClick={handleClose}>Dashboard</Button>
+          <Button href="https://arize.com/docs/phoenix/integrations" target="_blank" rel="noopener noreferrer" onClick={handleClose}>Documentation</Button>
+          <Button onClick={handleClose} autoFocus>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Fragment>
 
         <Box sx={{ height: getDataGridHeight() }}>
                     <DataGrid
