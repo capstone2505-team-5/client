@@ -4,6 +4,8 @@ import { Container, Typography, Box, Card, CardContent, Button, Link, Modal, Ico
 import { useNavigate } from "react-router-dom";
 import CloseIcon from '@mui/icons-material/Close';
 import { getPhoenixDashboardUrl } from "../services/services";
+import llmonadeWhiteText from "../assets/icons/Updated_OG_Tag_White.svg";
+import llmonadeDarkText from "../assets/icons/Updated_OG_Tag_Dark.svg";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -11,6 +13,7 @@ const Home = () => {
   const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
+
 
   const handleStepClick = (stepIndex: number) => {
     setSelectedStep(stepIndex);
@@ -98,18 +101,9 @@ const Home = () => {
     <Container maxWidth="xl" sx={{ mt: 2, mb: 1 }}>
       {/* Welcome Section */}
       <Box sx={{ textAlign: 'center', mb: 3 }}>
-        <Typography 
-          variant="h2" 
-          component="h1" 
-          gutterBottom 
-          sx={{ 
-            fontWeight: 'bold',
-            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-            mb: 2
-          }}
-        >
-          LLMonade
-        </Typography>
+        {theme.palette.mode === 'dark' ? 
+        <img src={llmonadeWhiteText} alt="LLMonade White Text" style={{ width: "800px", height: "100px" }} /> : 
+        <img src={llmonadeDarkText} alt="LLMonade Dark Text" style={{ width: "800px", height: "100px" }} />}
         
         <Typography 
           variant="h5" 
@@ -120,7 +114,7 @@ const Home = () => {
             color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)'
           }}
         >
-          Refreshingly simple evals to get you started improving your LLM powered applications.
+          A refreshingly simple process to get your LLM evals started and improve your LLM powered applications.
         </Typography>
       </Box>
       
