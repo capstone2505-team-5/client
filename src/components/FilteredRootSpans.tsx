@@ -9,7 +9,7 @@ interface Props {
 
 const FilteredRootSpans = ({ allSpans, onCategorize }: Props) => {
   const { id } = useParams();
-  const spans = allSpans.filter(span => span.queueId === id);
+  const spans = allSpans.filter(span => span.batchId === id);
   return <RootSpans annotatedRootSpans={spans} onCategorize={onCategorize} />;
 };
 

@@ -38,10 +38,6 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   const {  projectId, projectName } = location.state || {};
   const theme = useTheme();
 
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
   const handleClose = () => {
     setOpen(false);
     setBatchToDelete(null);

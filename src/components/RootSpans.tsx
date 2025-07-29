@@ -37,7 +37,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
     const categoryCountMap = new Map<string, number>();
 
     annotatedRootSpans.forEach((rootSpan) => {
-      rootSpan.categories.forEach((category) => {
+      rootSpan.annotation?.categories.forEach((category) => {
         const currentCount = categoryCountMap.get(category) || 0;
         categoryCountMap.set(category, currentCount + 1);
       });
