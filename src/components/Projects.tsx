@@ -133,7 +133,7 @@ const Projects = () => {
       ),
     },
     {
-      field: 'traceCount',
+      field: 'rootSpanCount',
       headerName: 'Root Spans',
       flex: 1,
       minWidth: 120,
@@ -142,21 +142,21 @@ const Projects = () => {
       type: 'number',
       renderCell: (params) => (
         <Typography variant="body1" sx={{ color: 'text.primary' }}>
-          {params.value.toLocaleString()}
+          {params.value}
         </Typography>
       ),
     },
     {
-      field: 'batches',
+      field: 'numBatches',
       headerName: 'Batches',
       flex: 1,
       minWidth: 120,
       headerAlign: 'center',
       align: 'center',
       type: 'number',
-      renderCell: () => (
+      renderCell: (params) => (
         <Typography variant="body1" sx={{ color: 'text.primary' }}>
-          0 {/* hard coded for now */}
+          {params.value}
         </Typography>
       ),
     },

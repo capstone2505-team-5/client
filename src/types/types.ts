@@ -38,6 +38,8 @@ export interface Queue {
 export interface Project {
   id: string;
   name: string;
-  traceCount: number;
-  dateModified: string;
+  createdAt: string;
+  updatedAt: string;
+  rootSpanCount: number;
+  numBatches: number;
 }
