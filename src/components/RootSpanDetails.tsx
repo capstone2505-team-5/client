@@ -1,15 +1,50 @@
+import React from "react";
 import { useLocation } from "react-router-dom";
+import { Container, Typography, Box, Paper, Chip, Button, useTheme as muiUseTheme } from "@mui/material";
+import { useTheme } from "../contexts/ThemeContext";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { AnnotatedRootSpan } from "../types/types";
-import { Container, Typography, Box } from "@mui/material";
 
 const RootSpanDetail = () => {
   const location = useLocation();
   const annotatedRootSpan = location.state as AnnotatedRootSpan;
-
+  const { isDarkMode } = useTheme();
+  const theme = muiUseTheme();
 
   if (!annotatedRootSpan) {
-    return <Box>Loading...</Box>;
+    return (
+      <Container maxWidth="xl">
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+          <Typography variant="h5" color="text.secondary">Loading...</Typography>
+        </Box>
+      </Container>
+    );
   }
+
+  const getRatingIcon = (rating: string) => {
+    switch (rating) {
+      case 'good':
+        return <CheckCircleIcon sx={{ color: 'success.main', fontSize: '1.5rem' }} />;
+      case 'bad':
+        return <CancelIcon sx={{ color: 'error.main', fontSize: '1.5rem' }} />;
+      default:
+        return <CheckCircleOutlineIcon sx={{ color: 'text.disabled', fontSize: '1.5rem' }} />;
+    }
+  };
+
+  const getRatingLabel = (rating: string) => {
+    switch (rating) {
+      case 'good':
+        return 'Good';
+      case 'bad':
+        return 'Bad';
+      default:
+        return 'Not Rated';
+    }
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
