@@ -34,7 +34,7 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
   const [projects, setProjects] = useState<Project[]>([]);
-  console.log(projects)
+
   const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
     const threshold = (() => {
@@ -54,7 +54,7 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
       .sort((a, b) => new Date(b.startTime!).getTime() - new Date(a.startTime!).getTime());
   }, [rootSpans, projectFilter, timeInterval, now]);
 
-  // unique projects
+  // get projects - will remove later since we don't need to filter by project here
   useEffect(() => {
     const loadProjects = async () => {
       try {
