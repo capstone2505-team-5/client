@@ -1,13 +1,13 @@
 import axios from 'axios';
-import type { RootSpan, Annotation, Project } from '../types/types';
+import type { AnnotatedRootSpan, Annotation, Project } from '../types/types';
 
-export const fetchRootSpans = async (): Promise<RootSpan[]> => {
-  const response = await axios.get<RootSpan[]>('/api/rootSpans');
+export const fetchRootSpans = async (): Promise<AnnotatedRootSpan[]> => {
+  const response = await axios.get<AnnotatedRootSpan[]>('/api/rootSpans');
   return response.data;
 }
 
-export const fetchRootSpan = async (id: string): Promise<RootSpan> => {
-  const response = await axios.get<RootSpan>(`/api/rootSpan/${id}`);
+export const fetchRootSpan = async (id: string): Promise<AnnotatedRootSpan> => {
+  const response = await axios.get<AnnotatedRootSpan>(`/api/rootSpan/${id}`);
   return response.data;
 }
 
@@ -44,27 +44,27 @@ export const fetchBatches = async (): Promise<{
   totalSpans: number;
   annotatedCount: number;
   goodCount: number; }[]> => {
-  const response = await axios.get('/api/queues');
+  const response = await axios.get('/api/batches');
   return response.data;
 }
 
 export const fetchBatch = async (id: string): Promise<{ id: string; name: string; rootSpanIds: string[] }> => {
-  const response = await axios.get(`/api/queues/${id}`);
+  const response = await axios.get(`/api/batches/${id}`);
   return response.data;
 }
 
 export const createBatch = async (data: { name: string; rootSpanIds: string[] }) => {
-  const response = await axios.post('/api/queues', data);
+  const response = await axios.post('/api/batches', data);
   return response.data;
 }
 
 export const updateBatch = async (id: string, data: { name: string; rootSpanIds: string[] }) => {
-  const response = await axios.put(`/api/queues/${id}`, data);
+  const response = await axios.put(`/api/batches/${id}`, data);
   return response.data;
 } 
 
 export const deleteBatch = async (id: string) => {
-  const response = await axios.delete(`/api/queues/${id}`);
+  const response = await axios.delete(`/api/batches/${id}`);
   return response.data;
 }
 

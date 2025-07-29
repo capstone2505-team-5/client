@@ -23,9 +23,19 @@ export interface RootSpan {
   created_at: string; // or Date - matches server response
 }
 
-export type AnnotatedRootSpan = RootSpan & {
-  annotationId: string;
-} & Pick<Annotation, "note" | "rating" | "categories">;
+export interface AnnotatedRootSpan {
+  id: string;
+  traceId: string;
+  batchId: string | null;  
+  startTime: string | null; 
+  endTime: string | null;        // or Date
+  input: string;
+  output: string;
+  projectId?: string;
+  projectName?: string;
+  spanName: string | null;
+  annotation: Omit<Annotation, 'rootSpanId'> | null;
+}
 
 export interface Batch {
   id: string;

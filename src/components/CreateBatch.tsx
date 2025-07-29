@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Container,
@@ -17,7 +17,9 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import type { AnnotatedRootSpan } from "../types/types";
+import type { SelectChangeEvent } from "@mui/material";
+import type { AnnotatedRootSpan, Project } from "../types/types";
+import { fetchProjects } from "../services/services";
 
 interface CreateBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
@@ -31,7 +33,8 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
-
+  const [projects, setProjects] = useState<Project[]>([]);
+  console.log(projects)
   const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
     const threshold = (() => {
@@ -43,24 +46,35 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
     })();
 
     return rootSpans
+      .filter(span => span.startTime !== null) // Filter out spans with null startTime
       .filter(span =>
-        (projectFilter === 'all' || span.projectName === projectFilter) &&
-        (threshold === 0 || span.tsStart >= threshold)
+        (projectFilter === 'all' || span.projectId === projectFilter) &&
+        (threshold === 0 || new Date(span.startTime!).getTime() >= threshold)
       )
-      .sort((a, b) => b.tsStart - a.tsStart);
+      .sort((a, b) => new Date(b.startTime!).getTime() - new Date(a.startTime!).getTime());
   }, [rootSpans, projectFilter, timeInterval, now]);
 
   // unique projects
-  const projects = useMemo(
-    () => Array.from(new Set(rootSpans.map((s) => s.projectName))),
-    [rootSpans]
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const projects = await fetchProjects();
+        setProjects(projects);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+      }
+    };
+    
+    loadProjects();
+  }, []);
+
+  const allSelected = useMemo(() =>
+    displayedSpans.length > 0 &&
+    displayedSpans.every(s => selectedSet.has(s.id)),
+    [displayedSpans, selectedSet]
   );
 
-  const allSelected =
-    displayedSpans.length > 0 &&
-    displayedSpans.every(s => selectedSet.has(s.id));
-
-  const handleSelectAll = () =>
+  const handleSelectAll = useCallback(() =>
     setSelectedSet(prev => {
       const next = new Set(prev);
 
@@ -70,20 +84,36 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
         displayedSpans.forEach(s => next.add(s.id));
       }
       return next;
-  });
+    }),
+    [allSelected, displayedSpans]
+  );
 
-  const toggle = (id: string) =>
+  const toggle = useCallback((id: string) =>
     setSelectedSet(prev => {
       const s = new Set(prev);
       s.has(id) ? s.delete(id) : s.add(id);
       return s;
-  });
+    }),
+    []
+  );
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0) return;
     onCreateBatch(name, selectedRootSpanIds);
     navigate("/batches");
-  };
+  }, [name, selectedRootSpanIds, onCreateBatch, navigate]);
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+  }, []);
+
+  const handleProjectFilterChange = useCallback((e: SelectChangeEvent) => {
+    setProjectFilter(e.target.value);
+  }, []);
+
+  const handleTimeIntervalChange = useCallback((e: SelectChangeEvent) => {
+    setTimeInterval(e.target.value as 'all' | '1h' | '24h' | '7d');
+  }, []);
 
   return (
     <Container maxWidth="md" sx={{ py: 2 }}>
@@ -91,12 +121,12 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
         Create New Batch
       </Typography>
       <Box mb={3}>
-        <TextField
-          fullWidth
-          label="Batch Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+                  <TextField
+            fullWidth
+            label="Batch Name"
+            value={name}
+            onChange={handleNameChange}
+          />
       </Box>
 
       {/* Project & Time Interval Filters */}
@@ -106,11 +136,11 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
           <Select
             value={projectFilter}
             label="Project"
-            onChange={(e) => setProjectFilter(e.target.value)}
+            onChange={handleProjectFilterChange}
           >
             <MenuItem value="all">All Projects</MenuItem>
             {projects.map((proj) => (
-              <MenuItem key={proj} value={proj}>{proj}</MenuItem>
+              <MenuItem key={proj.id} value={proj.id}>{proj.name}</MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -119,7 +149,7 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
           <Select
             value={timeInterval}
             label="Time Interval"
-            onChange={(e) => setTimeInterval(e.target.value as any)}
+            onChange={handleTimeIntervalChange}
           >
             <MenuItem value="all">All Time</MenuItem>
             <MenuItem value="1h">Last Hour</MenuItem>
@@ -150,7 +180,7 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
           <ListItem key={rootSpan.id} disablePadding>
             <ListItemButton onClick={() => toggle(rootSpan.id)} sx={{ py: 1, px: 2 }}>
               <Checkbox checked={selectedSet.has(rootSpan.id)} />
-              <ListItemText primary={`${rootSpan.id} — ${rootSpan.spanName}`} />
+              <ListItemText primary={`${rootSpan.traceId} — ${rootSpan.spanName}`} />
             </ListItemButton>
           </ListItem>
         ))}

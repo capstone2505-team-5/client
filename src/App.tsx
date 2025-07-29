@@ -30,37 +30,9 @@ const App = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true)
-        const [rootSpans, annotations] = await Promise.all([
-          fetchRootSpans(),
-          fetchAnnotations(),
-        ]);
+        const rootSpans = await fetchRootSpans();
 
-        const combined: AnnotatedRootSpan[] = rootSpans.map((rootSpan) => {
-          const match = annotations.find(
-            (annotation) => annotation.rootSpanId === rootSpan.id
-          );
-
-          return {
-            id: rootSpan.id,
-            input: rootSpan.input,
-            output: rootSpan.output,
-            traceId: rootSpan.traceId,
-            queueId: rootSpan.queueId,
-            startTime: rootSpan.startTime,
-            endTime: rootSpan.endTime,
-            tsStart: Date.parse(rootSpan.startTime),
-            tsEnd: Date.parse(rootSpan.endTime),
-            projectName: rootSpan.projectName,
-            spanName: rootSpan.spanName,
-            created_at: rootSpan.created_at,
-            annotationId: match?.id ?? "",
-            note: match?.note ?? "",
-            rating: match?.rating ?? "none",
-            categories: match?.categories ?? [],
-          };
-        });
-
-        setAnnotatedRootSpans(combined);
+        setAnnotatedRootSpans(rootSpans);
       } catch (error) {
         console.error("Failed to fetch root spans or annotations", error);
       } finally {

@@ -59,8 +59,8 @@ const Projects = () => {
     setOpen(false);
   };
 
-  const handleProjectClick = (projectName: string) => {
-    navigate('/batches', { state: { projectName } });
+  const handleProjectClick = (projectId: string, projectName: string) => {
+    navigate('/batches', { state: { projectId, projectName } });
   };
 
   // Filter projects based on search term
@@ -448,7 +448,7 @@ const Projects = () => {
             pageSizeOptions={[5, 10, 25]}
             disableRowSelectionOnClick
             getRowHeight={() => 56}
-            onRowClick={(params) => handleProjectClick(params.row.name)}
+            onRowClick={(params) => handleProjectClick(params.row.id, params.row.name)}
             onPaginationModelChange={(model) => {
               setPageSize(model.pageSize);
             }}
