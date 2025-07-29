@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Container, Typography, Button, Box, TextField, Chip } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -18,6 +18,7 @@ interface RootSpanProps {
 }
 
 const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
+  const { id: queueId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [currentRootSpanIndex, setCurrentRootSpanIndex] = useState<number>(0);
   const [note, setNote] = useState<string>('');
@@ -62,7 +63,7 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
           <Typography variant="h3" component="h1" gutterBottom>
             Annotation Queue
           </Typography>
-          <Button variant="contained" onClick={() => navigate('/')}>
+          <Button variant="contained" onClick={() => navigate(`/queues/${queueId}`)}>
             Back to Root Spans
           </Button>
         </Box>

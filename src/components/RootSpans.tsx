@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   Container,
@@ -31,6 +31,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
     AnnotatedRootSpan[]
   >([]);
   const navigate = useNavigate();
+  const { id } = useParams();
 
   useEffect(() => {
     const categoryCountMap = new Map<string, number>();
@@ -142,7 +143,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           <Box>
             <Button
               variant="contained"
-              onClick={() => navigate("/annotation")}
+              onClick={() => navigate(`/queues/${id}/annotation`)}
               sx={{ width: "280px", mr: 2 }}
             >
               Start Annotating!
