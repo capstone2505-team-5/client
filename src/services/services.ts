@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { RootSpan, Annotation } from '../types/types';
+import type { RootSpan, Annotation, Project } from '../types/types';
 
 export const fetchRootSpans = async (): Promise<RootSpan[]> => {
   const response = await axios.get<RootSpan[]>('/api/rootSpans');
