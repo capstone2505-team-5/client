@@ -8,9 +8,11 @@ import type { AnnotatedRootSpan, Rating as RatingType } from "../types/types";
 interface Props {
   annotatedRootSpans: AnnotatedRootSpan[];
   onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => void;
+  projectName?: string;
+  batchName?: string;
 }
 
-const Annotation = ({ annotatedRootSpans, onSave }: Props) => {
+const Annotation = ({ annotatedRootSpans, onSave, projectName, batchName }: Props) => {
   const { id: batchId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [note, setNote] = useState("");
@@ -59,7 +61,9 @@ const Annotation = ({ annotatedRootSpans, onSave }: Props) => {
           <Typography variant="h3" component="h1" gutterBottom>
             Annotation Queue
           </Typography>
-          <Button variant="contained" onClick={() => navigate(`/batches/${batchId}`)}>
+          <Button variant="contained" onClick={() => navigate(`/batches/${batchId}`, {
+            state: { projectName, batchName }
+          })}>
             Back to Batch
           </Button>
         </Box>

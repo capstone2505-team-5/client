@@ -131,7 +131,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
-  const { batchName } = location.state || {};
+  const { projectName, batchName } = location.state || {};
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
 
@@ -410,18 +410,17 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   return (
     <Container maxWidth={false} sx={{ mt: 1.5, mb: 1.5, px: 3 }}>
       <Box sx={{ mb: 1.5, position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
-        {/* Project and Batch Name Boxes - Far Left */}
-        <Box sx={{ 
-          position: 'absolute',
-          left: 0,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2
-        }}>
-          {/* Project Name Box */}
-          {annotatedRootSpans.length > 0 && annotatedRootSpans[0].projectName && (
+        {/* Project Name Box - Far Left */}
+        {(projectName || (annotatedRootSpans.length > 0 && annotatedRootSpans[0].projectName)) && (
+          <Box sx={{ 
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}>
             <Box sx={{
               px: 2,
               py: 0.75,
@@ -455,13 +454,13 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
                   mt: -0.5
                 }}
               >
-                {annotatedRootSpans[0].projectName}
+                {projectName || annotatedRootSpans[0]?.projectName}
               </Typography>
             </Box>
-          )}
-        </Box>
+          </Box>
+        )}
 
-                {/* Centered Title Content */}
+        {/* Centered Title Content */}
         <Box sx={{ textAlign: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
             <Typography 
@@ -507,7 +506,9 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           <Button
             variant="contained"
             startIcon={<RateReviewIcon />}
-            onClick={() => navigate(`/batches/${id}/annotation`)}
+            onClick={() => navigate(`/batches/${id}/annotation`, { 
+              state: { projectName: projectName || annotatedRootSpans[0]?.projectName, batchName } 
+            })}
             size="large"
             sx={{ 
               px: 3, 
@@ -578,12 +579,10 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           '& .MuiDataGrid-row': {
             minHeight: '56px !important',
             cursor: 'pointer',
-            backgroundColor: '#1a1a1a',
-            '&:nth-of-type(even)': {
-              backgroundColor: '#2a2a2a',
-            },
             '&:hover': {
-              backgroundColor: '#3a3a3a !important',
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.08)'
+                : '#f8f9fa',
               transform: 'scale(1.001)',
               transition: 'all 0.2s ease-in-out',
             },
@@ -705,7 +704,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
           />
         </Box>
 
-        <Box sx={{ height: getDataGridHeight() }}>
+        <Box sx={{ height: 600 }}>
           <DataGrid
             rows={filteredRootSpans}
             columns={columns}

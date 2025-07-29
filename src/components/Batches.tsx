@@ -438,7 +438,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             pageSizeOptions={[5, 10, 25]}
             disableRowSelectionOnClick
             getRowHeight={() => 80}
-            onRowClick={(params) => navigate(`/batches/${params.row.id}`, { state: { batchName: params.row.name } })}
+            onRowClick={(params) => navigate(`/batches/${params.row.id}`, { state: { projectName, batchName: params.row.name } })}
             slots={{
               noRowsOverlay: () => (
                 <Box sx={{ 
