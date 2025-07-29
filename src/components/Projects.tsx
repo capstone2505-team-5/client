@@ -12,27 +12,31 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import type { GridColDef } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
-import { getPhoenixDashboardUrl } from "../services/services";
+import { getPhoenixDashboardUrl, fetchProjects } from "../services/services";
+import type { Project } from "../types/types";
 
-export interface Project {
-  id: string;
-  name: string;
-  rootSpans: number;
-  batches: number;
-  dateModified: string;
-}
-
-interface HomeProps {
-  projects?: Project[];
-}
-
-const Projects = ({ projects = [] }: HomeProps) => {
+const Projects = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
   const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
+  const [projects, setProjects] = useState<Project[]>([]);
+
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const projects = await fetchProjects();
+        setProjects(projects);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+      }
+    };
+    
+    loadProjects();
+  }, []);
 
   useEffect(() => {
     const fetchPhoenixUrl = async () => {
@@ -104,8 +108,8 @@ const Projects = ({ projects = [] }: HomeProps) => {
       ),
     },
     {
-      field: 'dateModified',
-      headerName: 'Date Modified',
+      field: 'updatedAt',
+      headerName: 'Last Updated At',
       flex: 1.5,
       minWidth: 150,
       headerAlign: 'center',
@@ -129,7 +133,7 @@ const Projects = ({ projects = [] }: HomeProps) => {
       ),
     },
     {
-      field: 'rootSpans',
+      field: 'traceCount',
       headerName: 'Root Spans',
       flex: 1,
       minWidth: 120,
@@ -150,9 +154,9 @@ const Projects = ({ projects = [] }: HomeProps) => {
       headerAlign: 'center',
       align: 'center',
       type: 'number',
-      renderCell: (params) => (
+      renderCell: () => (
         <Typography variant="body1" sx={{ color: 'text.primary' }}>
-          {params.value.toLocaleString()}
+          0 {/* hard coded for now */}
         </Typography>
       ),
     },

@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useTheme } from "./contexts/ThemeContext";
 import { darkTheme, lightTheme } from "./theme/theme";
 import FilteredAnnotation from "./components/FilteredAnnotation";
 import Home from "./components/Home";
-import Projects, { type Project } from "./components/Projects";
+import Projects from "./components/Projects";
 import Queues from "./components/Queues";
 import NavBar from "./components/NavBar";
 import CreateQueue from "./components/CreateQueue";
@@ -25,40 +25,6 @@ import EditQueue from "./components/EditQueue";
 const App = () => {
   const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Derive projects from annotatedRootSpans
-  const projects = useMemo<Project[]>(() => {
-    const projectMap = new Map<string, { count: number; latestDate: string }>();
-    
-    // Group spans by project and track count and latest date
-    annotatedRootSpans.forEach(span => {
-      const projectName = span.projectName;
-      const existing = projectMap.get(projectName);
-      
-      if (!existing) {
-        projectMap.set(projectName, { 
-          count: 1, 
-          latestDate: span.startTime 
-        });
-      } else {
-        projectMap.set(projectName, {
-          count: existing.count + 1,
-          latestDate: new Date(span.startTime) > new Date(existing.latestDate) 
-            ? span.startTime 
-            : existing.latestDate
-        });
-      }
-    });
-
-    // Convert to Project array
-    return Array.from(projectMap.entries()).map(([projectName, { count, latestDate }]) => ({
-      id: projectName, // Using project name as ID for now
-      name: projectName,
-      rootSpans: count,
-      batches: 0, // Placeholder as requested
-      dateModified: latestDate,
-    }));
-  }, [annotatedRootSpans]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -223,7 +189,6 @@ const App = () => {
   };
 
   const AppContent = () => {
-    const location = useLocation();
     const { isDarkMode } = useTheme();
     const showNavBar = true; // Always show NavBar now
 
@@ -235,7 +200,7 @@ const App = () => {
           <Box component="main" sx={{ flex: 1 }}>
             <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/projects" element={<Projects projects={projects} />} />
+          <Route path="/projects" element={<Projects />} />
           <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue} />} />
           <Route
             path="/create-queue"

@@ -34,3 +34,10 @@ export interface Queue {
   annotatedCount: number;
   goodCount: number;
 }
+
+export interface Project {
+  id: string;
+  name: string;
+  traceCount: number;
+  dateModified: string;
+}

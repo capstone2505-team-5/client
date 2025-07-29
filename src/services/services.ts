@@ -72,3 +72,8 @@ export const getPhoenixDashboardUrl = async (): Promise<string> => {
   const response = await axios.get('/api/phoenix/dashboard-url');
   return response.data;
 };
+
+export const fetchProjects = async (): Promise<Project[]> => {
+  const response = await axios.get('/api/projects');
+  return response.data;
+}
