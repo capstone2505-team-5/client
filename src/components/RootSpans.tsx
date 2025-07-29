@@ -154,7 +154,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
     
     return annotatedRootSpans.filter(rootSpan =>
       rootSpan.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rootSpan.spanName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rootSpan.spanName && rootSpan.spanName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (rootSpan.input && rootSpan.input.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (rootSpan.output && rootSpan.output.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -228,9 +228,9 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
         { value: 'bad', label: 'Bad' },
         { value: 'none', label: 'Not Rated' },
       ],
-      valueGetter: (value) => value || 'none',
-      renderCell: (params) => {
-        const rating = params.value as string;
+             valueGetter: (value, row) => row.annotation?.rating || 'none',
+       renderCell: (params) => {
+         const rating = params.value as string;
         const getStatusIcon = () => {
           switch (rating) {
             case 'good':
@@ -324,7 +324,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
       ),
     },
     {
-      field: 'categories',
+      field: 'annotation?.categories',
       headerName: 'Categories',
       flex: 2,
       minWidth: 250,
@@ -333,7 +333,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 1 }}>
-          {(params.value as string[]).length > 0 ? (
+          {(params.value as string[])?.length > 0 ? (
             (params.value as string[]).map((category, index) => (
               <Chip
                 key={index}
@@ -389,7 +389,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   // Check if all root spans have ratings
   const allSpansRated = useMemo(() => {
     return annotatedRootSpans.length > 0 && annotatedRootSpans.every(span => 
-      span.rating && span.rating !== 'none'
+      span.annotation?.rating !== undefined && span.annotation?.rating !== null
     );
   }, [annotatedRootSpans]);
 
@@ -545,7 +545,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
               }
             }}
           >
-            Categorize ({annotatedRootSpans.filter(span => span.rating && span.rating !== 'none').length}/{annotatedRootSpans.length})
+            Categorize ({annotatedRootSpans.filter(span => span.annotation?.rating !== undefined && span.annotation?.rating !== null).length}/{annotatedRootSpans.length})
           </Button>
         </Box>
       </Box>

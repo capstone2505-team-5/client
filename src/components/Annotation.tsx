@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Rating, Stack, Chip } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Chip } from "@mui/material";
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import type { AnnotatedRootSpan, Rating as RatingType } from "../types/types";
 
 interface Props {
@@ -24,6 +26,8 @@ const Annotation = ({ annotatedRootSpans, onSave }: Props) => {
     }
   }, [currentSpan]);
 
+  const isSaveDisabled = rating === 'bad' && !note.trim();
+  
   const handleSave = () => {
     if (currentSpan && rating) {
       onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
@@ -47,106 +51,139 @@ const Annotation = ({ annotatedRootSpans, onSave }: Props) => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 2 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Annotate Spans</Typography>
-        <Button variant="contained" onClick={() => navigate(`/batches/${batchId}`)}>
-          Back to Batch
-        </Button>
-      </Box>
-
-      <Box mb={2}>
-        <Typography variant="h6">
-          Span {currentIndex + 1} of {annotatedRootSpans.length}
-        </Typography>
-      </Box>
-
-      <Box mb={3} p={2} border="1px solid #ccc" borderRadius={2}>
-        <Typography variant="h6" gutterBottom>Input</Typography>
-        <Typography variant="body1" sx={{ mb: 2, backgroundColor: '#f5f5f5', p: 1, borderRadius: 1 }}>
-          {currentSpan.input}
-        </Typography>
-        
-        <Typography variant="h6" gutterBottom>Output</Typography>
-        <Typography variant="body1" sx={{ mb: 2, backgroundColor: '#f5f5f5', p: 1, borderRadius: 1 }}>
-          {currentSpan.output}
-        </Typography>
-
-        <Typography variant="h6" gutterBottom>Trace ID</Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          {currentSpan.traceId}
-        </Typography>
-
-        <Typography variant="h6" gutterBottom>Start Time</Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          {currentSpan.startTime ? new Date(currentSpan.startTime).toLocaleString() : "N/A"}
-        </Typography>
-      </Box>
-
-      <Box mb={3}>
-        <Typography variant="h6" gutterBottom>Rating</Typography>
-        <Rating
-          value={rating === 'good' ? 1 : rating === 'bad' ? 0 : null}
-          max={1}
-          onChange={(_, newValue) => {
-            setRating(newValue === 1 ? 'good' : newValue === 0 ? 'bad' : null);
-          }}
-        />
-      </Box>
-
-      <Box mb={3}>
-        <TextField
-          fullWidth
-          multiline
-          rows={4}
-          label="Note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-      </Box>
-
-      {/* Categories Display */}
-      {currentSpan.annotation?.categories && currentSpan.annotation.categories.length > 0 ? (
-        <Box mb={3}>
-          <Typography variant="h6" gutterBottom>Categories</Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            {currentSpan.annotation.categories.map(category => (
-              <Chip key={category} label={category} variant="outlined" />
-            ))}
-          </Stack>
-        </Box>
-      ) : (
-        <Box mb={3}>
-          <Typography variant="body2" color="text.secondary">
-            No categories assigned yet
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header + all three columns */}
+      <Box>
+        {/* Header - Title and back button */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h3" component="h1" gutterBottom>
+            Annotation Queue
           </Typography>
+          <Button variant="contained" onClick={() => navigate(`/batches/${batchId}`)}>
+            Back to Batch
+          </Button>
         </Box>
-      )}
 
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Button 
-            onClick={handlePrevious} 
-            disabled={currentIndex === 0}
-            sx={{ mr: 1 }}
+        {/* All three columns - Input | Output | Annotate */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* Input */}
+          <Box
+            sx={{
+              width: '30%',
+              borderRadius: 2,
+              border: '2px solid',
+              borderColor: 'primary.light',
+              height: '70vh',
+              p: 2,
+              overflow: 'auto',
+            }}
           >
-            Previous
-          </Button>
-          <Button 
-            onClick={handleNext} 
-            disabled={currentIndex === annotatedRootSpans.length - 1}
+            <Typography variant="h4" component="h2" gutterBottom>
+              Input
+            </Typography>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{currentSpan.input}</pre>
+          </Box>
+
+          {/* Output */}
+          <Box
+            sx={{
+              width: '40%',
+              borderRadius: 2,
+              border: '2px solid',
+              borderColor: 'primary.light',
+              height: '70vh',
+              p: 2,
+              overflow: 'auto',
+            }}
           >
-            Next
-          </Button>
+            <Typography variant="h4" component="h2" gutterBottom>
+              Output
+            </Typography>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{currentSpan.output}</pre>
+          </Box>
+
+          {/* Annotation + Rate Responses + Notes + Save + Navigation */}
+          <Box>
+            <Typography variant="h4" component="h2" gutterBottom>
+              Annotation
+            </Typography>
+
+            <Box sx={{ textAlign: 'left', mb: 2 }}>
+              <Typography variant="h5" component="h3" gutterBottom>Categories</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {currentSpan.annotation?.categories && currentSpan.annotation.categories.length > 0 ? (
+                  currentSpan.annotation.categories.map(category => (
+                    <Chip key={category} label={category} variant="outlined" />
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">None</Typography>
+                )}
+              </Box>
+            </Box>
+
+            {/* Rate Responses */}
+            <Box sx={{ textAlign: 'left', mb: 2 }}>
+              <Typography variant="h5" component="h3" gutterBottom>Rate Response</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
+                <Button
+                  variant={rating === 'good' ? 'contained' : 'outlined'}
+                  color="success"
+                  startIcon={<ThumbUpIcon />}
+                  onClick={() => setRating('good')}
+                >Good</Button>
+                <Button
+                  variant={rating === 'bad' ? 'contained' : 'outlined'}
+                  color="error"
+                  startIcon={<ThumbDownIcon />}
+                  onClick={() => setRating('bad')}
+                >Bad</Button>
+              </Box>
+            </Box>
+
+            {/* Notes */}
+            <Typography variant="h5" component="h3" gutterBottom>Notes</Typography>
+            <TextField
+              multiline
+              rows={12}
+              fullWidth
+              variant="outlined"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={rating === 'bad' ? 'Note required for bad rating.' : ''}
+            />
+
+            {/* Save */}
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              sx={{ mt: 2, alignSelf: 'flex-end' }}
+              disabled={isSaveDisabled || !rating}
+            >
+              Save Annotation
+            </Button>
+
+            {/* Navigation */}
+            <Box sx={{ display: 'flex', justifyContent: 'left', alignItems: 'center', gap: 2, mt: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={handlePrevious}
+                disabled={currentIndex === 0}
+              >
+                Previous
+              </Button>
+              <Typography>
+                {currentIndex + 1} of {annotatedRootSpans.length}
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={handleNext}
+                disabled={currentIndex === annotatedRootSpans.length - 1}
+              >
+                Next
+              </Button>
+            </Box>
+          </Box>
         </Box>
-        
-        <Button 
-          variant="contained" 
-          onClick={handleSave}
-          disabled={!rating}
-        >
-          Save Annotation
-        </Button>
       </Box>
     </Container>
   );
