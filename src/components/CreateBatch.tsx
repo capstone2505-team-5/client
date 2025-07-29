@@ -121,12 +121,12 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
         Create New Batch
       </Typography>
       <Box mb={3}>
-                  <TextField
-            fullWidth
-            label="Batch Name"
-            value={name}
-            onChange={handleNameChange}
-          />
+        <TextField
+          fullWidth
+          label="Batch Name"
+          value={name}
+          onChange={handleNameChange}
+        />
       </Box>
 
       {/* Project & Time Interval Filters */}

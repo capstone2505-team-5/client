@@ -14,7 +14,7 @@ interface Props {
 
 const FilteredAnnotation = ({ allSpans, onSave }: Props) => {
   const { id } = useParams();
-  const spans = allSpans.filter(span => span.queueId === id);
+  const spans = allSpans.filter(span => span.batchId === id);
   return <Annotation annotatedRootSpans={spans} onSave={onSave} />;
 };
 

@@ -1,9 +1,9 @@
 import axios from 'axios';
-import type { AnnotatedRootSpan, Annotation, Project } from '../types/types';
+import type { AnnotatedRootSpan, Annotation, Rating, Project } from '../types/types';
 
 export const fetchRootSpans = async (): Promise<AnnotatedRootSpan[]> => {
-  const response = await axios.get<AnnotatedRootSpan[]>('/api/rootSpans');
-  return response.data;
+  const response = await axios.get<AnnotatedRootSpan[]>('/api/root-spans')
+  return response.data
 }
 
 export const fetchRootSpan = async (id: string): Promise<AnnotatedRootSpan> => {
@@ -13,7 +13,7 @@ export const fetchRootSpan = async (id: string): Promise<AnnotatedRootSpan> => {
 
 export const fetchAnnotations = async (): Promise<Annotation[]> => {
   const response = await axios.get<Annotation[]>('/api/annotations')
-  return response.data;
+  return response.data
 }
 
 export const fetchAnnotation = async (id: string): Promise<Annotation> => {
@@ -21,12 +21,12 @@ export const fetchAnnotation = async (id: string): Promise<Annotation> => {
   return response.data
 }
 
-export const createAnnotation = async (rootSpanId: string, note: string, rating: string) => {
+export const createAnnotation = async (rootSpanId: string, note: string, rating: Rating) => {
   const response = await axios.post(`/api/annotations`, {rootSpanId, note, rating})
   return response.data
 }
 
-export const updateAnnotation = async (annotationId: string, note: string, rating: string) => {
+export const updateAnnotation = async (annotationId: string, note: string, rating: Rating) => {
   const response = await axios.patch(`/api/annotations/${annotationId}`, {annotationId, note, rating})
   return response.data
 }

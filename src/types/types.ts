@@ -1,4 +1,4 @@
-export type Rating = "good" | "bad" | "none";
+export type Rating = "good" | "bad";
 
 export interface Annotation {
   id: string;
@@ -11,7 +11,7 @@ export interface Annotation {
 export interface RootSpan {
   id: string;
   traceId: string;
-  queueId: string | null;
+  batchId: string | null;
   startTime: string; // or Date
   endTime: string; // or Date
   tsStart: number; // timestamp in milliseconds
@@ -28,7 +28,7 @@ export interface AnnotatedRootSpan {
   traceId: string;
   batchId: string | null;  
   startTime: string | null; 
-  endTime: string | null;        // or Date
+  endTime: string | null;
   input: string;
   output: string;
   projectId?: string;

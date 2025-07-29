@@ -35,7 +35,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   const [open, setOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const location = useLocation();
-  const {  projectId, projectName } = location.state || {};
+  const { projectId, projectName } = location.state || {};
   const theme = useTheme();
 
   const handleClose = () => {
@@ -68,16 +68,16 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   }, []);
 
   const handleDelete = async (batchId: string) => {
-      try {
-        await deleteBatch(batchId);
-        setBatches((prev) => prev.filter((b) => b.id !== batchId));
-        onDeleteBatch(batchId);
-      } catch (error) {
-        console.error("Failed to delete batch", error);
-      }
+    try {
+      await deleteBatch(batchId);
+      setBatches((prev) => prev.filter((b) => b.id !== batchId));
+      onDeleteBatch(batchId);
+    } catch (error) {
+      console.error("Failed to delete batch", error);
+    }
   };
 
-    const handleAnnotate = (batchId: string) => {
+  const handleAnnotate = (batchId: string) => {
     navigate(`/batches/${batchId}/annotation`);
   };
 

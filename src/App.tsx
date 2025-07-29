@@ -51,10 +51,13 @@ const App = () => {
         const match = rootSpanCategories.find(
           ({ rootSpanId }) => rootSpanId === annotatedRootSpan.id
         );
-        const categories = match ? match.categories : annotatedRootSpan.categories;
+        const categories = match ? match.categories : annotatedRootSpan.annotation?.categories || [];
         return {
           ...annotatedRootSpan,
-          categories,
+          annotation: annotatedRootSpan.annotation ? {
+            ...annotatedRootSpan.annotation,
+            categories
+          } : null
         };
       });
       setAnnotatedRootSpans(updatedAnnotatedRootSpans);
@@ -67,18 +70,18 @@ const App = () => {
     annotationId: string,
     rootSpanId: string,
     note: string,
-    rating: Rating
+    rating: Rating | null
   ): Promise<void> => {
     try {
-      let res;
+      let res: any = null;
       if (annotationId === "") {
-        res = await createAnnotation(rootSpanId, note || "", rating || "none");
+        if (rating) {
+          res = await createAnnotation(rootSpanId, note || "", rating);
+        }
       } else {
-        res = await updateAnnotation(
-          annotationId,
-          note || "",
-          rating || "none"
-        );
+        if (rating) {
+          res = await updateAnnotation(annotationId, note || "", rating);
+        }
       }
 
       setAnnotatedRootSpans((prev) => {
@@ -86,8 +89,12 @@ const App = () => {
           if (rootSpan.id === rootSpanId) {
             return {
               ...rootSpan,
-              note,
-              rating,
+              annotation: rating ? {
+                id: annotationId || res?.id || '',
+                note: note || '',
+                rating,
+                categories: rootSpan.annotation?.categories || []
+              } : null
             };
           } else {
             return rootSpan;
@@ -95,10 +102,12 @@ const App = () => {
         });
       });
 
-      console.log(
-        annotationId ? "Annotation updated:" : "Annotation created:",
-        res
-      );
+      if (res) {
+        console.log(
+          annotationId ? "Annotation updated:" : "Annotation created:",
+          res
+        );
+      }
     } catch (err) {
       console.error("Failed to save annotation", err);
     }
@@ -111,7 +120,7 @@ const App = () => {
       const idSet = new Set(rootSpanIds);
       setAnnotatedRootSpans(prev =>
         prev.map(span =>
-          idSet.has(span.id) ? { ...span, queueId: batchId } : span
+          idSet.has(span.id) ? { ...span, batchId: batchId } : span
         )
       );
     } catch (error) {
@@ -131,15 +140,15 @@ const App = () => {
 
       setAnnotatedRootSpans(prev =>
         prev.map(span => {
-          const inBatchNow   = span.queueId === batchId;
+          const inBatchNow   = span.batchId === batchId;
           const shouldBeIn   = keepSet.has(span.id);
 
           if (!inBatchNow && shouldBeIn) {
-            return { ...span, queueId: batchId };
+            return { ...span, batchId: batchId };
           }
 
           if (inBatchNow && !shouldBeIn) {
-            return { ...span, queueId: null };
+            return { ...span, batchId: null };
           }
 
           return span;
@@ -153,7 +162,7 @@ const App = () => {
   const handleSpansOnDeleteBatch = async (batchId: string) => {
     try {
       setAnnotatedRootSpans(prev =>
-        prev.map(span => (span.queueId === batchId ? { ...span, queueId: null } : span))
+        prev.map(span => (span.batchId === batchId ? { ...span, batchId: null } : span))
       );
     } catch (error) {
       console.error("Failed to delete batch", error);

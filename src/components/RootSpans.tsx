@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Container,
   Typography,
@@ -33,62 +33,58 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   const navigate = useNavigate();
   const { id } = useParams();
 
+  // Extract categories for the filter
   useEffect(() => {
-    const categoryCountMap = new Map<string, number>();
-
+    const allCategories = new Set<string>();
     annotatedRootSpans.forEach((rootSpan) => {
-      rootSpan.annotation?.categories.forEach((category) => {
-        const currentCount = categoryCountMap.get(category) || 0;
-        categoryCountMap.set(category, currentCount + 1);
+      rootSpan.annotation?.categories?.forEach((category) => {
+        allCategories.add(category);
       });
     });
-
-    const categoriesTemp: category[] = Array.from(
-      categoryCountMap.entries()
-    ).map(([name, count]) => ({ name, count }));
-
-    setCategories(categoriesTemp);
+    setCategories(Array.from(allCategories).map(name => ({ name, count: 0 }))); // Initialize counts to 0
   }, [annotatedRootSpans]);
 
-  useEffect(() => {
-    if (activeFilters.length === 0) {
-      setFilteredAnnotatedRootSpans(annotatedRootSpans);
-      return;
-    }
-
-    const filteredRootSpans = annotatedRootSpans.filter((rootSpan) => {
-      const annotationFilters = activeFilters.filter(
-        (f) => f === "Annotated" || f === "Not Annotated"
-      );
-      const categoryFilters = activeFilters.filter(
-        (f) => f !== "Annotated" && f !== "Not Annotated"
-      );
-
-      let passesAnnotationFilter = true;
-      if (
-        annotationFilters.includes("Annotated") &&
-        annotationFilters.length === 1
-      ) {
-        passesAnnotationFilter = rootSpan.note !== "";
-      } else if (
-        annotationFilters.includes("Not Annotated") &&
-        annotationFilters.length === 1
-      ) {
-        passesAnnotationFilter = rootSpan.note === "";
+  // Filter logic
+  const filteredRootSpans = useMemo(() => {
+    return annotatedRootSpans.filter((rootSpan) => {
+      // Search filter
+      if (activeFilters.includes("Search")) {
+        const searchTerm = activeFilters.find(f => f === "Search");
+        if (searchTerm) {
+          const lowerSearchTerm = searchTerm.toLowerCase();
+          const matchesInput = rootSpan.input.toLowerCase().includes(lowerSearchTerm);
+          const matchesOutput = rootSpan.output.toLowerCase().includes(lowerSearchTerm);
+          const matchesId = rootSpan.id.toLowerCase().includes(lowerSearchTerm);
+          if (!matchesInput && !matchesOutput && !matchesId) {
+            return false;
+          }
+        }
       }
 
+      // Annotation filter
+      let passesAnnotationFilter = true;
+      if (activeFilters.includes("Annotated") && activeFilters.length === 1) {
+        passesAnnotationFilter = rootSpan.annotation?.note !== "";
+      } else if (activeFilters.includes("Not Annotated") && activeFilters.length === 1) {
+        passesAnnotationFilter = !rootSpan.annotation || rootSpan.annotation.note === "";
+      }
+
+      // Category filter
       let passesCategoryFilter = true;
-      if (categoryFilters.length > 0) {
-        passesCategoryFilter = categoryFilters.some((categoryFilter) =>
-          rootSpan.categories.includes(categoryFilter)
-        );
+      if (activeFilters.length > 1) { // Only apply category filter if there are other filters
+        const categoryFilter = activeFilters.find(f => f !== "Annotated" && f !== "Not Annotated" && f !== "Search");
+        if (categoryFilter) {
+          passesCategoryFilter = rootSpan.annotation?.categories?.includes(categoryFilter) || false;
+        }
       }
 
       return passesAnnotationFilter && passesCategoryFilter;
     });
+  }, [annotatedRootSpans, activeFilters]);
 
+  useEffect(() => {
     setFilteredAnnotatedRootSpans(filteredRootSpans);
-  }, [activeFilters, annotatedRootSpans]);
+  }, [filteredRootSpans]);
 
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
     navigate(`/rootSpans/${annotatedRootSpan.traceId}`, { state: annotatedRootSpan });
@@ -182,7 +178,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
                     mb: 1,
                   }}
                   secondaryAction={
-                    annotatedRootSpan.note ? (
+                    annotatedRootSpan.annotation?.note ? (
                       <CheckCircleIcon />
                     ) : (
                       <CheckCircleOutlineIcon />

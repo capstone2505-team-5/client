@@ -56,25 +56,16 @@ const RootSpanDetail = () => {
           borderColor: "primary.light",
         }}
       >
-        <Typography variant="h4">Annotation Information</Typography>
-        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Box>
-            <h2>Note:</h2>
-            <p>{annotatedRootSpan.note || "No note"}</p>
-          </Box>
-          <Box>
-            <h2>Rating:</h2>
-            <p>{annotatedRootSpan.rating || "No rating"}</p>
-          </Box>
-          <Box>
-            <h2>Categories:</h2>
-            <p>
-              {annotatedRootSpan.categories.length > 0
-                ? annotatedRootSpan.categories.join(", ")
-                : "No categories"}
-            </p>
-          </Box>
-        </Box>
+        <h3>Annotation Details</h3>
+        <p>{annotatedRootSpan.annotation?.note || "No note"}</p>
+        <p>Rating: {annotatedRootSpan.annotation?.rating || "No rating"}</p>
+        
+        <h3>Categories</h3>
+        <p>
+          {annotatedRootSpan.annotation?.categories && annotatedRootSpan.annotation.categories.length > 0
+            ? annotatedRootSpan.annotation.categories.join(", ")
+            : "No categories"}
+        </p>
       </Box>
     </Container>
   );
