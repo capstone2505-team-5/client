@@ -2,12 +2,12 @@ import axios from 'axios';
 import type { AnnotatedRootSpan, Annotation, Rating, Project } from '../types/types';
 
 export const fetchRootSpans = async (): Promise<AnnotatedRootSpan[]> => {
-  const response = await axios.get<AnnotatedRootSpan[]>('/api/rootSpans')
-  return response.data
+  const response = await axios.get('/api/rootSpans');
+  return response.data.rootSpans; // Backend returns { rootSpans, totalCount }
 }
 
 export const fetchRootSpan = async (id: string): Promise<AnnotatedRootSpan> => {
-  const response = await axios.get<AnnotatedRootSpan>(`/api/rootSpan/${id}`);
+  const response = await axios.get<AnnotatedRootSpan>(`/api/rootSpans/${id}`);
   return response.data;
 }
 
@@ -50,7 +50,7 @@ export const fetchBatches = async (projectId: string): Promise<{
 
 export const fetchBatch = async (id: string): Promise<{ id: string; name: string; rootSpanIds: string[] }> => {
   const response = await axios.get(`/api/batches/${id}`);
-  return response.data;
+  return response.data.batchSummary; // Backend returns { rootSpans, batchSummary, totalCount }
 }
 
 export const createBatch = async (data: { name: string; projectId: string; rootSpanIds: string[] }) => {
@@ -76,4 +76,25 @@ export const getPhoenixDashboardUrl = async (): Promise<string> => {
 export const fetchProjects = async (): Promise<Project[]> => {
   const response = await axios.get('/api/projects');
   return response.data;
+}
+
+// Add new functions for batch/project-specific rootspan fetching
+export const fetchRootSpansByBatch = async (batchId: string): Promise<AnnotatedRootSpan[]> => {
+  const response = await axios.get(`/api/batches/${batchId}`);
+  return response.data.rootSpans; // Backend returns { rootSpans, batchSummary, totalCount }
+}
+
+export const fetchRootSpansByProject = async (projectId: string): Promise<AnnotatedRootSpan[]> => {
+  const response = await axios.get('/api/rootSpans', {
+    params: { projectId }
+  });
+  return response.data.rootSpans; // Backend returns { rootSpans, totalCount }
+}
+
+// Fetch unbatched spans for a project (useful for CreateBatch)
+export const fetchBatchlessSpansByProject = async (projectId: string): Promise<AnnotatedRootSpan[]> => {
+  const response = await axios.get('/api/batches/unbatched', {
+    params: { projectId }
+  });
+  return response.data.batchlessRootSpans; // Backend returns { batchlessRootSpans, totalCount }
 }

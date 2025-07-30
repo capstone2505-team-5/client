@@ -330,7 +330,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
         <Button
           variant="contained"
           startIcon={<AddIcon sx={{ color: 'black !important' }} />}
-          onClick={() => navigate("/create-batch", { 
+          onClick={() => navigate(`/batches/create`, { 
             state: { projectName: projectName, projectId: projectId } 
           })}
           sx={{

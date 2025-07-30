@@ -23,19 +23,25 @@ import { fetchProjects } from "../services/services";
 
 interface CreateBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
-  onCreateBatch: (name: string, rootSpanIds: string[]) => void;
+  onLoadRootSpans: (projectId: string) => void;
+  onCreateBatch: (name: string, projectId: string, rootSpanIds: string[]) => void;
 }
 
-const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBatchProps) => {
+const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch }: CreateBatchProps) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
-  const [projectFilter, setProjectFilter] = useState<string>("all");
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const location = useLocation();
   const { projectName, projectId } = location.state || {};
+  console.log(annotatedRootSpans)
+
+  useEffect(() => {
+    if (projectId && annotatedRootSpans.length === 0) {
+      onLoadRootSpans(projectId);
+    }
+  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
@@ -47,28 +53,15 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
       return t - 604_800_000; // 7d
     })();
 
-    return rootSpans
+    return annotatedRootSpans
       .filter(span => span.startTime !== null) // Filter out spans with null startTime
       .filter(span =>
-        (projectFilter === 'all' || span.projectId === projectFilter) &&
         (threshold === 0 || new Date(span.startTime!).getTime() >= threshold)
       )
       .sort((a, b) => new Date(b.startTime!).getTime() - new Date(a.startTime!).getTime());
-  }, [rootSpans, projectFilter, timeInterval, now]);
+  }, [annotatedRootSpans, timeInterval, now]);
 
-  // get projects - will remove later since we don't need to filter by project here
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        const projects = await fetchProjects();
-        setProjects(projects);
-      } catch (error) {
-        console.error('Failed to fetch projects:', error);
-      }
-    };
-    
-    loadProjects();
-  }, []);
+
 
   const allSelected = useMemo(() =>
     displayedSpans.length > 0 &&
@@ -111,9 +104,6 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
     setName(e.target.value);
   }, []);
 
-  const handleProjectFilterChange = useCallback((e: SelectChangeEvent) => {
-    setProjectFilter(e.target.value);
-  }, []);
 
   const handleTimeIntervalChange = useCallback((e: SelectChangeEvent) => {
     setTimeInterval(e.target.value as 'all' | '1h' | '24h' | '7d');
@@ -135,19 +125,7 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
 
       {/* Project & Time Interval Filters */}
       <Box mb={3} display="flex" gap={2}>
-        <FormControl sx={{ minWidth: 180 }}>
-          <InputLabel>Project</InputLabel>
-          <Select
-            value={projectFilter}
-            label="Project"
-            onChange={handleProjectFilterChange}
-          >
-            <MenuItem value="all">All Projects</MenuItem>
-            {projects.map((proj) => (
-              <MenuItem key={proj.id} value={proj.id}>{proj.name}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+
         <FormControl sx={{ minWidth: 180 }}>
           <InputLabel>Time Interval</InputLabel>
           <Select
@@ -191,7 +169,9 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
       </List>
 
       <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
-        <Button onClick={() => navigate("/batches")}>Cancel</Button>
+        <Button onClick={() => navigate(`/projects/${projectId}`, { 
+          state: { projectName, projectId} 
+        })}>Cancel</Button>
         <Button
           variant="contained"
           disabled={!name || selectedRootSpanIds.length === 0}

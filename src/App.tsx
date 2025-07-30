@@ -16,7 +16,8 @@ import type { AnnotatedRootSpan, Rating } from "./types/types";
 import FilteredRootSpans from "./components/FilteredRootSpans";
 import {
   fetchRootSpans,
-  fetchAnnotations,
+  fetchRootSpansByBatch,
+  fetchRootSpansByProject,
   categorizeAnnotations,
 } from "./services/services";
 import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
@@ -24,24 +25,61 @@ import EditBatch from "./components/EditBatch";
 
 const App = () => {
   const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentContext, setCurrentContext] = useState<{
+    type: 'all' | 'batch' | 'project';
+    id?: string;
+  }>({ type: 'all' });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
-        const rootSpans = await fetchRootSpans();
+  // Generic fetch function that handles different contexts
+  const fetchData = async (context: { type: 'all' | 'batch' | 'project'; id?: string }) => {
+    try {
+      setIsLoading(true);
+      let rootSpans: AnnotatedRootSpan[] = [];
 
-        setAnnotatedRootSpans(rootSpans);
-      } catch (error) {
-        console.error("Failed to fetch root spans or annotations", error);
-      } finally {
-        setIsLoading(false)
+      switch (context.type) {
+        case 'batch':
+          if (context.id) {
+            rootSpans = await fetchRootSpansByBatch(context.id);
+          }
+          break;
+        case 'project':
+          if (context.id) {
+            rootSpans = await fetchRootSpansByProject(context.id);
+          }
+          break;
+        case 'all':
+        default:
+          rootSpans = await fetchRootSpans();
+          break;
       }
-    };
 
-    fetchData();
-  }, []);
+      setAnnotatedRootSpans(rootSpans);
+      setCurrentContext(context);
+    } catch (error) {
+      console.error("Failed to fetch root spans", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Functions that child components can call to trigger specific fetches
+  const loadRootSpansByBatch = (batchId: string) => {
+    fetchData({ type: 'batch', id: batchId });
+  };
+
+  const loadRootSpansByProject = (projectId: string) => {
+    fetchData({ type: 'project', id: projectId });
+  };
+
+  const loadAllRootSpans = () => {
+    fetchData({ type: 'all' });
+  };
+
+  // Refresh current context (useful after updates)
+  const refreshCurrentData = () => {
+    fetchData(currentContext);
+  };
 
   const handleCategorize = async () => {
     try {
@@ -184,10 +222,11 @@ const App = () => {
           <Route path="/projects" element={<Projects />} />
           <Route path="/projects/:id" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
           <Route
-            path="/create-batch"
+            path="/batches/create"
             element={
               <CreateBatch
                 annotatedRootSpans={annotatedRootSpans}
+                onLoadRootSpans={loadRootSpansByProject}
                 onCreateBatch={handleCreateBatch}
               />
             }
