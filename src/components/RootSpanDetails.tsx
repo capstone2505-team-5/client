@@ -1,4 +1,3 @@
-import React from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Container, Typography, Box, Paper, Chip, Button, useTheme as muiUseTheme } from "@mui/material";
 import { useTheme } from "../contexts/ThemeContext";
@@ -6,7 +5,6 @@ import { getPhoenixDashboardUrl } from "../services/services";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { AnnotatedRootSpan } from "../types/types";
 import RateReviewIcon from '@mui/icons-material/RateReview';
@@ -15,7 +13,6 @@ const RootSpanDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
-  const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
   const { projectId, batchId } = params;
   const { projectName, batchName, annotatedRootSpan } = location.state || {};
@@ -53,7 +50,7 @@ const RootSpanDetail = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 2 }}>
 
       {/* CSS Grid Layout */}
       <Box
@@ -96,18 +93,20 @@ const RootSpanDetail = () => {
           minHeight: '600px'
         }}
       >
-        {/* Header Section */}
+
+                {/* Header Section */}
         <Box
           sx={{
             gridArea: 'header',
-            display: 'flex',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
             alignItems: 'center',
-            justifyContent: 'space-between',
             gap: 2,
-            py: 2
+            py: 1
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Left Section - Breadcrumbs */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-start' }}>
             {/* Project Box */}
             {projectName && (
             <>
@@ -210,10 +209,25 @@ const RootSpanDetail = () => {
               </Box>
             </>
           )}
-
           </Box>
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+
+          {/* Center Section - Title */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Typography 
+              variant="h3" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 'bold',
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                textAlign: 'center'
+              }}
+            >
+              Span Details
+            </Typography>
+          </Box>
+
+          {/* Right Section - Action Buttons */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, justifyContent: 'flex-end' }}>
           <Button
             variant="contained"
             startIcon={<RateReviewIcon />}
@@ -337,7 +351,7 @@ const RootSpanDetail = () => {
                 try {
                   const phoenixUrl = await getPhoenixDashboardUrl();
                   // Open Phoenix dashboard in a new tab
-                  window.open(`${phoenixUrl}/projects/${finalProjectId}/spans/${annotatedRootSpan.traceId}`, '_blank');
+                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${annotatedRootSpan.traceId}`, '_blank');
                 } catch (error) {
                   console.error('Failed to get Phoenix dashboard URL:', error);
                 }
