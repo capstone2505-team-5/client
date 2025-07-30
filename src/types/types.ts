@@ -39,10 +39,12 @@ export interface AnnotatedRootSpan {
 
 export interface Batch {
   id: string;
+  projectId: string;
   name: string;
-  totalSpans: number;
-  annotatedCount: number;
-  goodCount: number;
+  createdAt: string;
+  spanCount: number;
+  percentAnnotated: number;
+  percentGood: number;
   categories: string[];
 }
 

@@ -113,9 +113,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       align: 'center',
       renderCell: (params) => {
         const batch = params.row as Batch;
-        const percent = batch.totalSpans 
-          ? Math.round((batch.annotatedCount / batch.totalSpans) * 100)
-          : 0;
+        const percent = Math.round(batch.percentAnnotated || 0);
         return (
           <Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 'medium' }}>
             {percent}%
@@ -132,9 +130,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       align: 'center',
       renderCell: (params) => {
         const batch = params.row as Batch;
-        const percent = batch.annotatedCount
-          ? Math.round((batch.goodCount / batch.annotatedCount) * 100)
-          : 0;
+        const percent = Math.round(batch.percentGood || 0);
         return (
           <Typography 
             variant="body1" 
@@ -157,7 +153,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       align: 'left',
       renderCell: (params) => (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 1 }}>
-          {(params.value as string[]).map((category, index) => (
+          {params.value.length > 0 ? (params.value as string[]).map((category, index) => (
             <Chip
               key={index}
               label={category}
@@ -169,7 +165,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
                 '& .MuiChip-label': { px: 1 }
               }}
             />
-          ))}
+          )) : <Typography variant="body1" sx={{ color: 'text.primary' }}>No categories</Typography>}
         </Box>
       ),
     },
@@ -213,7 +209,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
               color="primary"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/edit-batch/${params.row.id}`);
+                navigate(`/batches/${params.row.id}/edit`);
               }}
               sx={{ 
                 border: '1px solid',
@@ -308,18 +304,31 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
 
         {/* Centered Title Content */}
         <Box sx={{ textAlign: 'center' }}>
-          <Typography 
-            variant="h3" 
-            component="h1" 
-            gutterBottom 
-            sx={{ 
-              fontWeight: 'bold',
-              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-              mb: 2
-            }}
-          >
-            Batches
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
+            <Typography 
+              variant="h3" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 'bold',
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+              }}
+            >
+              Batches
+            </Typography>
+            <Chip
+              label={batches.length}
+              sx={{
+                backgroundColor: 'secondary.main',
+                color: 'black',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                height: '32px',
+                '& .MuiChip-label': {
+                  px: 1.5
+                }
+              }}
+            />
+          </Box>
           <Typography variant="h6" color="text.secondary" sx={{ mt: -1 }}>
             Manage and track your evaluation batches
           </Typography>

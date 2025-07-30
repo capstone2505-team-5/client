@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -122,10 +122,11 @@ const ratingFilterOperators: GridFilterOperator[] = [
 
 interface RootSpansProps {
   annotatedRootSpans: AnnotatedRootSpan[];
+  onLoadRootSpans: (batchId: string) => void;
   onCategorize: () => Promise<void>;
 }
 
-const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
+const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize }: RootSpansProps) => {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
@@ -135,7 +136,11 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
 
-
+  useEffect(() => {
+    if (id && annotatedRootSpans.length === 0) {
+      onLoadRootSpans(id);
+    }
+  }, [id]);
 
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
     navigate(`/rootSpans/${annotatedRootSpan.traceId}`, { state: { projectName, projectId, batchName, batchId: id, annotatedRootSpan } });

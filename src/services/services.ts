@@ -40,10 +40,13 @@ export const categorizeAnnotations = async (): Promise<
 
 export const fetchBatches = async (projectId: string): Promise<{ 
   id: string;
+  projectId: string;
   name: string;
-  totalSpans: number;
-  annotatedCount: number;
-  goodCount: number; }[]> => {
+  createdAt: string;
+  spanCount: number;
+  percentAnnotated: number;
+  percentGood: number;
+  categories: string[]; }[]> => {
   const response = await axios.get(`/api/projects/${projectId}`);
   return response.data;
 }

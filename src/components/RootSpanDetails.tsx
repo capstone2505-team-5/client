@@ -206,48 +206,9 @@ const RootSpanDetail = () => {
                   {batchName}
                 </Typography>
               </Box>
-              <ChevronRightIcon sx={{ color: 'text.secondary', fontSize: '1.5rem' }} />
             </>
           )}
 
-          {/* Span ID Box */}
-          <Box sx={{
-            px: 2,
-            py: 0.75,
-            backgroundColor: theme.palette.mode === 'dark' 
-              ? 'rgba(0, 0, 0, 0.4)' 
-              : 'rgba(255, 255, 255, 0.9)',
-            borderRadius: 2,
-            border: '2px solid',
-            borderColor: 'secondary.main',
-            boxShadow: theme.palette.mode === 'dark'
-              ? '0 2px 8px rgba(76, 175, 80, 0.2)'
-              : '0 2px 8px rgba(76, 175, 80, 0.3)',
-          }}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-                fontWeight: 'medium',
-                fontSize: '0.875rem',
-                letterSpacing: '0.5px'
-              }}
-            >
-              SPAN ID
-            </Typography>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-                fontWeight: 'bold',
-                fontSize: '1rem',
-                fontFamily: 'monospace',
-                mt: -0.5
-              }}
-            >
-              {annotatedRootSpan.id}
-            </Typography>
-          </Box>
           </Box>
           
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
@@ -331,6 +292,14 @@ const RootSpanDetail = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: 2
           }}>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Span ID
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+              {annotatedRootSpan.id || 'N/A'}
+            </Typography>
+          </Box>
           <Box>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Span Name

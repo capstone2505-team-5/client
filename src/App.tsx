@@ -13,7 +13,7 @@ import CreateBatch from "./components/CreateBatch";
 import RootSpanDetails from "./components/RootSpanDetails";
 import Footer from "./components/Footer";
 import type { AnnotatedRootSpan, Rating } from "./types/types";
-import FilteredRootSpans from "./components/FilteredRootSpans";
+import RootSpans from "./components/RootSpans";
 import {
   fetchRootSpans,
   fetchRootSpansByBatch,
@@ -232,7 +232,7 @@ const App = () => {
             }
           />
           <Route
-            path="/edit-batch/:id"
+            path="/batches/:id/edit"
             element={
               <EditBatch
                 annotatedRootSpans={annotatedRootSpans}
@@ -243,8 +243,9 @@ const App = () => {
           <Route
             path="/batches/:id"
             element={
-              <FilteredRootSpans
-                allSpans={annotatedRootSpans}
+              <RootSpans
+                annotatedRootSpans={annotatedRootSpans}
+                onLoadRootSpans={loadRootSpansByBatch}
                 onCategorize={handleCategorize}
               />
             }
