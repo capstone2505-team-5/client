@@ -11,9 +11,9 @@ import type { AnnotatedRootSpan } from "../types/types";
 const RootSpanDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const annotatedRootSpan = location.state as AnnotatedRootSpan;
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
+  const { projectName, batchName, annotatedRootSpan } = location.state || {};
 
   if (!annotatedRootSpan) {
     return (
@@ -50,22 +50,55 @@ const RootSpanDetail = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header with Back Button */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-          variant="outlined"
-          sx={{ mr: 3 }}
-        >
-          Back
-        </Button>
-        <Typography variant="h3" component="h1" sx={{ 
-          fontWeight: 'bold',
-          color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121'
-        }}>
-          Root Span Details
-        </Typography>
-      </Box>
+{/* Project Name Box - Far Left */}
+        {(projectName || (annotatedRootSpans.length > 0 && annotatedRootSpans[0].projectName)) && (
+          <Box sx={{ 
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}>
+            <Box sx={{
+              px: 2,
+              py: 0.75,
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(0, 0, 0, 0.4)' 
+                : 'rgba(255, 255, 255, 0.9)',
+              borderRadius: 2,
+              border: '2px solid',
+              borderColor: 'secondary.main',
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 2px 8px rgba(255, 235, 59, 0.2)'
+                : '0 2px 8px rgba(255, 235, 59, 0.3)',
+            }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                  fontWeight: 'medium',
+                  fontSize: '0.875rem',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                PROJECT
+              </Typography>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  mt: -0.5
+                }}
+              >
+                {projectName || annotatedRootSpans[0]?.projectName}
+              </Typography>
+            </Box>
+          </Box>
+        )}
 
       {/* CSS Grid Layout */}
       <Box

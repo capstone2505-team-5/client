@@ -138,7 +138,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
 
 
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
-    navigate(`/rootSpans/${annotatedRootSpan.traceId}`, { state: annotatedRootSpan });
+    navigate(`/rootSpans/${annotatedRootSpan.traceId}`, { state: { projectName, batchName, annotatedRootSpan } });
   };
 
   const handleDelete = async (rootSpanId: string) => {
