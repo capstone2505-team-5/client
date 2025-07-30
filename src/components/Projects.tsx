@@ -61,8 +61,7 @@ const Projects = () => {
 
   const handleProjectClick = (projectId: string, projectName: string) => {
     console.log('projectId', projectId);
-    // console.log('projectName', projectName);
-    navigate('/batches', { state: { projectId, projectName } });
+    navigate(`/projects/${projectId}`, { state: { projectId, projectName } });
   };
 
   // Filter projects based on search term

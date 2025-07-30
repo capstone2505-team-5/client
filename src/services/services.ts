@@ -38,13 +38,13 @@ export const categorizeAnnotations = async (): Promise<
   return response.data;
 };
 
-export const fetchBatches = async (): Promise<{ 
+export const fetchBatches = async (projectId: string): Promise<{ 
   id: string;
   name: string;
   totalSpans: number;
   annotatedCount: number;
   goodCount: number; }[]> => {
-  const response = await axios.get('/api/batches');
+  const response = await axios.get(`/api/projects/${projectId}`);
   return response.data;
 }
 
@@ -53,7 +53,7 @@ export const fetchBatch = async (id: string): Promise<{ id: string; name: string
   return response.data;
 }
 
-export const createBatch = async (data: { name: string; rootSpanIds: string[] }) => {
+export const createBatch = async (data: { name: string; projectId: string; rootSpanIds: string[] }) => {
   const response = await axios.post('/api/batches', data);
   return response.data;
 }

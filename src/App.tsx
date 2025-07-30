@@ -113,9 +113,9 @@ const App = () => {
     }
   };
 
-  const handleCreateBatch = async (name: string, rootSpanIds: string[]) => {
+  const handleCreateBatch = async (name: string, projectId: string, rootSpanIds: string[]) => {
     try {
-      const { id: batchId } = await createBatch({ name, rootSpanIds });
+      const { id: batchId } = await createBatch({ name, projectId, rootSpanIds });
 
       const idSet = new Set(rootSpanIds);
       setAnnotatedRootSpans(prev =>
@@ -182,7 +182,7 @@ const App = () => {
             <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
-          <Route path="/batches" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
+          <Route path="/projects/:id" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
           <Route
             path="/create-batch"
             element={

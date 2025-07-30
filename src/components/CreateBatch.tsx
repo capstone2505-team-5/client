@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -34,6 +34,8 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const location = useLocation();
+  const { projectName, projectId } = location.state || {};
 
   const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
@@ -99,8 +101,10 @@ const CreateBatch = ({ annotatedRootSpans: rootSpans, onCreateBatch }: CreateBat
 
   const handleSubmit = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0) return;
-    onCreateBatch(name, selectedRootSpanIds);
-    navigate("/batches");
+    onCreateBatch(name, projectId, selectedRootSpanIds);
+    navigate(`/projects/${projectId}`, { 
+      state: { projectName: projectName, projectId: projectId } 
+    });
   }, [name, selectedRootSpanIds, onCreateBatch, navigate]);
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

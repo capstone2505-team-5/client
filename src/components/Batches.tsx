@@ -53,13 +53,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await fetchBatches();
-        // Add mock categories for now since backend doesn't have them yet
-        const batchesWithCategories = data.map(batch => ({
-          ...batch,
-          categories: ['Quality', 'Performance', 'Accuracy'] // Mock data - backend doesn't have categories yet
-        }));
-        setBatches(batchesWithCategories);
+        const data = await fetchBatches(projectId);
+        setBatches(data);
       } catch (error) {
         console.error("Failed to fetch batches", error);
       }
@@ -96,7 +91,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       ),
     },
     {
-      field: 'totalSpans',
+      field: 'spanCount',
       headerName: 'Spans',
       flex: 0.75,
       minWidth: 100,
@@ -335,7 +330,9 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
         <Button
           variant="contained"
           startIcon={<AddIcon sx={{ color: 'black !important' }} />}
-          onClick={() => navigate("/create-batch")}
+          onClick={() => navigate("/create-batch", { 
+            state: { projectName: projectName, projectId: projectId } 
+          })}
           sx={{
             backgroundColor: 'secondary.main',
             color: 'black',
