@@ -165,7 +165,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
                 '& .MuiChip-label': { px: 1 }
               }}
             />
-          )) : <Typography variant="body1" sx={{ color: 'text.primary' }}>No categories</Typography>}
+          )) : <Typography variant="body1" sx={{ color: 'text.primary', fontStyle: 'italic' }}>No categories</Typography>}
         </Box>
       ),
     },

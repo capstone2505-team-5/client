@@ -527,6 +527,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize }: RootSp
             sx={{ 
               px: 3, 
               minWidth: 225,
+              maxHeight: 35,
               backgroundColor: 'secondary.main',
               color: 'black',
               fontWeight: 600,
@@ -546,6 +547,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize }: RootSp
             sx={{ 
               px: 3,
               minWidth: 225,
+              maxHeight: 35,
               borderColor: 'secondary.main',
               color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
               fontWeight: 600,

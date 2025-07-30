@@ -4,7 +4,7 @@ import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/materi
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useTheme } from "./contexts/ThemeContext";
 import { darkTheme, lightTheme } from "./theme/theme";
-import FilteredAnnotation from "./components/FilteredAnnotation";
+import Annotation from "./components/Annotation";
 import Home from "./components/Home";
 import Projects from "./components/Projects";
 import Batches from "./components/Batches";
@@ -254,8 +254,8 @@ const App = () => {
           <Route
             path="/batches/:id/annotation"
             element={
-              <FilteredAnnotation
-                allSpans={annotatedRootSpans}
+              <Annotation
+                annotatedRootSpans={annotatedRootSpans}
                 onSave={handleSaveAnnotation}
               />
             }
