@@ -268,7 +268,11 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             alignItems: 'center',
             gap: 1
           }}>
-            <Box sx={{
+            <Box 
+            onClick={() => navigate(`/projects/${projectId}`, { 
+              state: { projectName: projectName, projectId: projectId } 
+            })}
+            sx={{ 
               px: 2,
               py: 0.75,
               backgroundColor: theme.palette.mode === 'dark' 

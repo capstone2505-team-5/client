@@ -421,7 +421,11 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
             alignItems: 'center',
             gap: 2
           }}>
-            <Box sx={{
+            <Box 
+            onClick={() => navigate(`/projects/${projectId}`, { 
+              state: { projectName: projectName, projectId: projectId } 
+            })}
+            sx={{
               px: 2,
               py: 0.75,
               backgroundColor: theme.palette.mode === 'dark' 
@@ -433,6 +437,11 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
               boxShadow: theme.palette.mode === 'dark'
                 ? '0 2px 8px rgba(255, 235, 59, 0.2)'
                 : '0 2px 8px rgba(255, 235, 59, 0.3)',
+              cursor: 'pointer',
+              '&:hover': {
+                borderColor: 'secondary.dark',
+                backgroundColor: 'rgba(255, 235, 59, 0.1)',
+              },
             }}>
               <Typography 
                 variant="body2" 
