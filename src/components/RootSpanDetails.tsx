@@ -9,13 +9,14 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { AnnotatedRootSpan } from "../types/types";
+import RateReviewIcon from '@mui/icons-material/RateReview';
 
 const RootSpanDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
-  const { projectName, projectId, batchName, annotatedRootSpan } = location.state || {};
+  const { projectName, projectId, batchName, batchId, annotatedRootSpan } = location.state || {};
 
   if (!annotatedRootSpan) {
     return (
@@ -93,18 +94,20 @@ const RootSpanDetail = () => {
           minHeight: '600px'
         }}
       >
-                {/* Header Section */}
+        {/* Header Section */}
         <Box
           sx={{
             gridArea: 'header',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: 2,
             py: 2
           }}
         >
-          {/* Project Box */}
-          {projectName && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Project Box */}
+            {projectName && (
             <>
               <Box sx={{
                 px: 2,
@@ -227,6 +230,68 @@ const RootSpanDetail = () => {
               {annotatedRootSpan.id}
             </Typography>
           </Box>
+          </Box>
+          
+                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<RateReviewIcon />}
+            onClick={() => navigate(`/batches/${batchId}/annotation`, { 
+              state: { projectName: projectName } 
+            })}
+            size="large"
+            sx={{ 
+              px: 3, 
+              minWidth: 225,
+              backgroundColor: 'secondary.main',
+              color: 'black',
+              fontWeight: 600,
+              '&:hover': {
+                backgroundColor: 'secondary.dark',
+              },
+            }}
+          >
+            Edit Grade
+          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                     <Button
+             variant="outlined"
+             onClick={() => {}} // TODO: Add logic to go to previous span
+             size="small"
+             sx={{ 
+               px: 3, 
+               minWidth: 102,
+               borderColor: 'secondary.main',
+               color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+               fontWeight: 600,
+               '&:hover': {
+                 borderColor: 'secondary.dark',
+                 backgroundColor: 'rgba(255, 235, 59, 0.1)',
+               },
+             }}
+           >
+             Prev
+           </Button>
+           <Button
+             variant="outlined"
+             onClick={() => {}} // TODO: Add logic to go to next span
+             size="small"
+             sx={{ 
+               px: 3, 
+               minWidth: 102,
+               borderColor: 'secondary.main',
+               color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+               fontWeight: 600,
+               '&:hover': {
+                 borderColor: 'secondary.dark',
+                 backgroundColor: 'rgba(255, 235, 59, 0.1)',
+               },
+             }}
+           >
+             Next
+           </Button>
+          </Box>
+          </Box>
         </Box>
 
         {/* Metadata Section */}
@@ -234,13 +299,20 @@ const RootSpanDetail = () => {
           elevation={2}
           sx={{
             gridArea: 'metadata',
-            p: 2,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 2,
-            backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#fafafa'
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
           }}
         >
+          <Box sx={{ 
+            p: 2, 
+            flex: 1, 
+            overflow: 'auto',
+            backgroundColor: theme.palette.background.paper,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: 2
+          }}>
           <Box>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Span Name
@@ -284,6 +356,7 @@ const RootSpanDetail = () => {
             >
               View Details in Phoenix →
             </Button>
+          </Box>
           </Box>
         </Paper>
 
