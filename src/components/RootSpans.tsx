@@ -131,14 +131,14 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
-  const { projectName, batchName } = location.state || {};
+  const { projectName, projectId, batchName } = location.state || {};
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
 
 
 
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
-    navigate(`/rootSpans/${annotatedRootSpan.traceId}`, { state: { projectName, batchName, annotatedRootSpan } });
+    navigate(`/rootSpans/${annotatedRootSpan.traceId}`, { state: { projectName, projectId, batchName, annotatedRootSpan } });
   };
 
   const handleDelete = async (rootSpanId: string) => {
@@ -507,7 +507,7 @@ const RootSpans = ({ annotatedRootSpans, onCategorize }: RootSpansProps) => {
             variant="contained"
             startIcon={<RateReviewIcon />}
             onClick={() => navigate(`/batches/${id}/annotation`, { 
-              state: { projectName: projectName || annotatedRootSpans[0]?.projectName, batchName } 
+              state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
             })}
             size="large"
             sx={{ 

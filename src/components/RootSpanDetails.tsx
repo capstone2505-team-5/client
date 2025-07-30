@@ -2,10 +2,12 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Container, Typography, Box, Paper, Chip, Button, useTheme as muiUseTheme } from "@mui/material";
 import { useTheme } from "../contexts/ThemeContext";
+import { getPhoenixDashboardUrl } from "../services/services";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { AnnotatedRootSpan } from "../types/types";
 
 const RootSpanDetail = () => {
@@ -13,7 +15,7 @@ const RootSpanDetail = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
-  const { projectName, batchName, annotatedRootSpan } = location.state || {};
+  const { projectName, projectId, batchName, annotatedRootSpan } = location.state || {};
 
   if (!annotatedRootSpan) {
     return (
@@ -49,56 +51,6 @@ const RootSpanDetail = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header with Back Button */}
-{/* Project Name Box - Far Left */}
-        {(projectName || (annotatedRootSpans.length > 0 && annotatedRootSpans[0].projectName)) && (
-          <Box sx={{ 
-            position: 'absolute',
-            left: 0,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
-          }}>
-            <Box sx={{
-              px: 2,
-              py: 0.75,
-              backgroundColor: theme.palette.mode === 'dark' 
-                ? 'rgba(0, 0, 0, 0.4)' 
-                : 'rgba(255, 255, 255, 0.9)',
-              borderRadius: 2,
-              border: '2px solid',
-              borderColor: 'secondary.main',
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 2px 8px rgba(255, 235, 59, 0.2)'
-                : '0 2px 8px rgba(255, 235, 59, 0.3)',
-            }}>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-                  fontWeight: 'medium',
-                  fontSize: '0.875rem',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                PROJECT
-              </Typography>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-                  fontWeight: 'bold',
-                  fontSize: '1rem',
-                  mt: -0.5
-                }}
-              >
-                {projectName || annotatedRootSpans[0]?.projectName}
-              </Typography>
-            </Box>
-          </Box>
-        )}
 
       {/* CSS Grid Layout */}
       <Box
@@ -107,12 +59,12 @@ const RootSpanDetail = () => {
           gridTemplateColumns: {
             xs: '1fr',
             md: '1fr 1fr',
-            lg: '2fr 3fr 1fr'
+            lg: '1fr 2fr 1fr'
           },
           gridTemplateRows: {
             xs: 'auto auto auto auto auto',
-            md: 'auto auto auto',
-            lg: 'auto 1fr auto'
+            md: 'auto auto auto 2fr auto',
+            lg: 'auto auto 1fr 1fr'
           },
           gridTemplateAreas: {
             xs: `
@@ -125,13 +77,15 @@ const RootSpanDetail = () => {
             md: `
               "header header"
               "metadata metadata"
-              "input output"
+              "input input"
+              "output output"
               "annotation annotation"
             `,
             lg: `
-              "header header annotation"
+              "header header header"
+              "metadata output annotation"
               "input output annotation"
-              "metadata metadata annotation"
+              "input output annotation"
             `
           },
           gap: 3,
@@ -139,40 +93,141 @@ const RootSpanDetail = () => {
           minHeight: '600px'
         }}
       >
-        {/* Header Section */}
-        <Paper
-          elevation={2}
+                {/* Header Section */}
+        <Box
           sx={{
             gridArea: 'header',
-            p: 2,
-            background: theme.palette.mode === 'dark' 
-              ? 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)'
-              : 'linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%)',
-            border: '1px solid',
-            borderColor: 'divider'
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            py: 2
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 'medium' }}>
-              Span ID:
+          {/* Project Box */}
+          {projectName && (
+            <>
+              <Box sx={{
+                px: 2,
+                py: 0.75,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(0, 0, 0, 0.4)' 
+                  : 'rgba(255, 255, 255, 0.9)',
+                borderRadius: 2,
+                border: '2px solid',
+                borderColor: 'secondary.main',
+                boxShadow: theme.palette.mode === 'dark'
+                  ? '0 2px 8px rgba(255, 235, 59, 0.2)'
+                  : '0 2px 8px rgba(255, 235, 59, 0.3)',
+              }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                    fontWeight: 'medium',
+                    fontSize: '0.875rem',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  PROJECT
+                </Typography>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    mt: -0.5
+                  }}
+                >
+                  {projectName}
+                </Typography>
+              </Box>
+              <ChevronRightIcon sx={{ color: 'text.secondary', fontSize: '1.5rem' }} />
+            </>
+          )}
+
+          {/* Batch Box */}
+          {batchName && (
+            <>
+              <Box sx={{
+                px: 2,
+                py: 0.75,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(0, 0, 0, 0.4)' 
+                  : 'rgba(255, 255, 255, 0.9)',
+                borderRadius: 2,
+                border: '2px solid',
+                borderColor: 'secondary.main',
+                boxShadow: theme.palette.mode === 'dark'
+                  ? '0 2px 8px rgba(33, 150, 243, 0.2)'
+                  : '0 2px 8px rgba(33, 150, 243, 0.3)',
+              }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                    fontWeight: 'medium',
+                    fontSize: '0.875rem',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  BATCH
+                </Typography>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    mt: -0.5
+                  }}
+                >
+                  {batchName}
+                </Typography>
+              </Box>
+              <ChevronRightIcon sx={{ color: 'text.secondary', fontSize: '1.5rem' }} />
+            </>
+          )}
+
+          {/* Span ID Box */}
+          <Box sx={{
+            px: 2,
+            py: 0.75,
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(0, 0, 0, 0.4)' 
+              : 'rgba(255, 255, 255, 0.9)',
+            borderRadius: 2,
+            border: '2px solid',
+            borderColor: 'secondary.main',
+            boxShadow: theme.palette.mode === 'dark'
+              ? '0 2px 8px rgba(76, 175, 80, 0.2)'
+              : '0 2px 8px rgba(76, 175, 80, 0.3)',
+          }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                fontWeight: 'medium',
+                fontSize: '0.875rem',
+                letterSpacing: '0.5px'
+              }}
+            >
+              SPAN ID
             </Typography>
             <Typography 
-              variant="h5" 
+              variant="h6" 
               sx={{ 
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                fontWeight: 'bold',
+                fontSize: '1rem',
                 fontFamily: 'monospace',
-                color: 'primary.main',
-                fontWeight: 'bold'
+                mt: -0.5
               }}
             >
               {annotatedRootSpan.id}
             </Typography>
           </Box>
-          {annotatedRootSpan.spanName && (
-            <Typography variant="h6" color="text.secondary" sx={{ mt: 1 }}>
-              {annotatedRootSpan.spanName}
-            </Typography>
-          )}
-        </Paper>
+        </Box>
 
         {/* Metadata Section */}
         <Paper
@@ -188,25 +243,10 @@ const RootSpanDetail = () => {
         >
           <Box>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Project
+              Span Name
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-              {annotatedRootSpan.projectName || 'N/A'}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Trace ID
-            </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontFamily: 'monospace',
-                color: 'text.primary',
-                wordBreak: 'break-all'
-              }}
-            >
-              {annotatedRootSpan.traceId}
+              {annotatedRootSpan.spanName || 'N/A'}
             </Typography>
           </Box>
           <Box>
@@ -216,6 +256,34 @@ const RootSpanDetail = () => {
             <Typography variant="body1">
               {annotatedRootSpan.startTime ? new Date(annotatedRootSpan.startTime).toLocaleString() : "N/A"}
             </Typography>
+          </Box>
+          <Box>
+
+            <Button
+              variant="text"
+              size="medium"
+              sx={{ 
+                p: 0,
+                minWidth: 'auto',
+                textTransform: 'none',
+                color: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                  textDecoration: 'underline'
+                }
+              }}
+              onClick={async () => {
+                try {
+                  const phoenixUrl = await getPhoenixDashboardUrl();
+                  // Open Phoenix dashboard in a new tab
+                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${annotatedRootSpan.traceId}`, '_blank');
+                } catch (error) {
+                  console.error('Failed to get Phoenix dashboard URL:', error);
+                }
+              }}
+            >
+              View Details in Phoenix →
+            </Button>
           </Box>
         </Paper>
 
@@ -235,7 +303,7 @@ const RootSpanDetail = () => {
             borderBottom: '1px solid',
             borderBottomColor: 'divider'
           }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Input
             </Typography>
           </Box>
@@ -273,7 +341,7 @@ const RootSpanDetail = () => {
             borderBottom: '1px solid',
             borderBottomColor: 'divider'
           }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Output
             </Typography>
           </Box>
@@ -304,18 +372,7 @@ const RootSpanDetail = () => {
             flexDirection: 'column',
             backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a' : '#f5f5f5'
           }}
-        >
-          <Box sx={{ 
-            p: 2, 
-            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e1f5fe',
-            borderBottom: '1px solid',
-            borderBottomColor: 'divider'
-          }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'info.main' }}>
-              Annotation Details
-            </Typography>
-          </Box>
-          
+        >          
           <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Rating */}
             <Box>
@@ -337,7 +394,7 @@ const RootSpanDetail = () => {
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {annotatedRootSpan.annotation?.categories && annotatedRootSpan.annotation.categories.length > 0 ? (
-                  annotatedRootSpan.annotation.categories.map((category, index) => (
+                  annotatedRootSpan.annotation.categories.map((category: string, index: number) => (
                     <Chip
                       key={index}
                       label={category}
@@ -364,8 +421,8 @@ const RootSpanDetail = () => {
                 sx={{
                   p: 2,
                   backgroundColor: theme.palette.background.paper,
-                  minHeight: '120px',
-                  maxHeight: '200px',
+                  minHeight: '250px',
+                  maxHeight: '400px',
                   overflow: 'auto'
                 }}
               >

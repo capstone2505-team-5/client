@@ -60,6 +60,8 @@ const Projects = () => {
   };
 
   const handleProjectClick = (projectId: string, projectName: string) => {
+    console.log('projectId', projectId);
+    // console.log('projectName', projectName);
     navigate('/batches', { state: { projectId, projectName } });
   };
 
