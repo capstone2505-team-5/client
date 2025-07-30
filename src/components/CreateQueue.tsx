@@ -86,7 +86,7 @@ const CreateQueue = ({ annotatedRootSpans: rootSpans, onCreateQueue }: CreateQue
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: 2 }}>
       <Typography variant="h4" mb={2}>
         Create New Queue
       </Typography>

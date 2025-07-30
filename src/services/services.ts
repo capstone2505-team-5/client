@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { RootSpan, Annotation } from '../types/types';
+import type { RootSpan, Annotation, Project } from '../types/types';
 
 export const fetchRootSpans = async (): Promise<RootSpan[]> => {
   const response = await axios.get<RootSpan[]>('/api/rootSpans');
@@ -65,5 +65,15 @@ export const updateQueue = async (id: string, data: { name: string; rootSpanIds:
 
 export const deleteQueue = async (id: string) => {
   const response = await axios.delete(`/api/queues/${id}`);
+  return response.data;
+}
+
+export const getPhoenixDashboardUrl = async (): Promise<string> => {
+  const response = await axios.get('/api/phoenix/dashboard-url');
+  return response.data;
+};
+
+export const fetchProjects = async (): Promise<Project[]> => {
+  const response = await axios.get('/api/projects');
   return response.data;
 }

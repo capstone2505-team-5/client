@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { useTheme } from "./contexts/ThemeContext";
+import { darkTheme, lightTheme } from "./theme/theme";
 import FilteredAnnotation from "./components/FilteredAnnotation";
 import Home from "./components/Home";
+import Projects from "./components/Projects";
 import Queues from "./components/Queues";
 import NavBar from "./components/NavBar";
 import CreateQueue from "./components/CreateQueue";
 import RootSpanDetails from "./components/RootSpanDetails";
+import Footer from "./components/Footer";
 import type { AnnotatedRootSpan, Rating } from "./types/types";
 import FilteredRootSpans from "./components/FilteredRootSpans";
 import {
@@ -18,7 +24,7 @@ import EditQueue from "./components/EditQueue";
 
 const App = () => {
   const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +52,7 @@ const App = () => {
             tsEnd: Date.parse(rootSpan.endTime),
             projectName: rootSpan.projectName,
             spanName: rootSpan.spanName,
+            created_at: rootSpan.created_at,
             annotationId: match?.id ?? "",
             note: match?.note ?? "",
             rating: match?.rating ?? "none",
@@ -181,56 +188,75 @@ const App = () => {
     }
   };
 
+  const AppContent = () => {
+    const { isDarkMode } = useTheme();
+    const showNavBar = true; // Always show NavBar now
+
+    return (
+      <MuiThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+        <CssBaseline />
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          {showNavBar && <NavBar />}
+          <Box component="main" sx={{ flex: 1 }}>
+            <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue} />} />
+          <Route
+            path="/create-queue"
+            element={
+              <CreateQueue
+                annotatedRootSpans={annotatedRootSpans}
+                onCreateQueue={handleCreateQueue}
+              />
+            }
+          />
+          <Route
+            path="/edit-queue/:id"
+            element={
+              <EditQueue
+                annotatedRootSpans={annotatedRootSpans}
+                onUpdateQueue={handleUpdateQueue}
+              />
+            }
+          />
+          <Route
+            path="/queues/:id"
+            element={
+              <FilteredRootSpans
+                allSpans={annotatedRootSpans}
+                onCategorize={handleCategorize}
+              />
+            }
+          />
+          <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
+          <Route
+            path="/queues/:id/annotation"
+            element={
+              <FilteredAnnotation
+                allSpans={annotatedRootSpans}
+                onSave={handleSaveAnnotation}
+              />
+            }
+          />
+            </Routes>
+          </Box>
+          <Footer />
+        </Box>
+      </MuiThemeProvider>
+    );
+  };
+
   if (isLoading) {
     return <>Loading...</>
   }
 
-
   return (
-    <BrowserRouter>
-      <NavBar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue}/>}/>
-        <Route
-          path="/create-queue"
-          element={
-            <CreateQueue
-              annotatedRootSpans={annotatedRootSpans}
-              onCreateQueue={handleCreateQueue}
-            />
-          }
-        />
-        <Route
-          path="/edit-queue/:id"
-          element={
-            <EditQueue
-              annotatedRootSpans={annotatedRootSpans}
-              onUpdateQueue={handleUpdateQueue}
-            />
-          }
-        />
-        <Route
-          path="/queues/:id"
-          element={
-            <FilteredRootSpans
-              allSpans={annotatedRootSpans}
-              onCategorize={handleCategorize}
-            />
-          }
-        />
-        <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
-        <Route
-          path="/queues/:id/annotation"
-          element={
-            <FilteredAnnotation
-              allSpans={annotatedRootSpans}
-              onSave={handleSaveAnnotation}
-            />
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 };
 

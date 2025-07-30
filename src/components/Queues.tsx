@@ -58,7 +58,7 @@ const Queues = ({ onDeleteQueue }: QueueProps) => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: 2 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h3">Queues</Typography>
         <Button

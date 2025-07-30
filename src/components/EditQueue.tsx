@@ -104,7 +104,7 @@ const EditQueue = ({ annotatedRootSpans: rootSpans, onUpdateQueue }: EditQueuePr
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: 2 }}>
     
       <Box mb={2} display="flex" alignItems="center" justifyContent="space-between">
         <Typography variant="h4">

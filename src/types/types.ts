@@ -20,6 +20,7 @@ export interface RootSpan {
   output: string;
   projectName: string;
   spanName: string;
+  created_at: string; // or Date - matches server response
 }
 
 export type AnnotatedRootSpan = RootSpan & {
@@ -32,4 +33,13 @@ export interface Queue {
   totalSpans: number;
   annotatedCount: number;
   goodCount: number;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  rootSpanCount: number;
+  numBatches: number;
 }
