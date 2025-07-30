@@ -26,7 +26,7 @@ interface EditBatchProps {
 }
 
 const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch }: EditBatchProps) => {
-  const { id } = useParams<{ id: string }>();
+  const { batchId } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [projectFilter, setProjectFilter] = useState<string>("all");
@@ -37,8 +37,8 @@ const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch }: EditBatchPr
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (!id) return;
-        const batch = await fetchBatch(id);
+        if (!batchId) return;
+        const batch = await fetchBatch(batchId);
         setName(batch.name);
         setSelectedSet(new Set(batch.rootSpanIds));
       } catch (error) { 
@@ -47,7 +47,7 @@ const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch }: EditBatchPr
       }
     };
     fetchData();
-  }, [id]);
+  }, [batchId]);
 
   // filtered + sorted spans
   const now = useMemo(() => new Date(), []);
@@ -98,8 +98,8 @@ const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch }: EditBatchPr
 
   // save
   const handleSubmit = async () => {
-    if (!id) return;
-    onUpdateBatch(id, name, selectedRootSpanIds);
+    if (!batchId) return;
+    onUpdateBatch(batchId, name, selectedRootSpanIds);
     navigate("/batches");
   };
 
@@ -114,10 +114,10 @@ const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch }: EditBatchPr
           color="error"
           variant="contained"
           onClick={async () => {
-            if (!id) return;
+            if (!batchId) return;
             const confirm = window.confirm('Delete this batch?  This cannot be undone.');
             if (!confirm) return;
-            await deleteBatch(id);
+            await deleteBatch(batchId);
             navigate('/batches');
           }}
         >

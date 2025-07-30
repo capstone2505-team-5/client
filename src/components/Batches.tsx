@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -35,7 +35,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   const [open, setOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const location = useLocation();
-  const { projectId, projectName } = location.state || {};
+  const { projectName } = location.state || {};
+  const { projectId } = useParams();
   const theme = useTheme();
 
   const handleClose = () => {
@@ -448,7 +449,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             pageSizeOptions={[5, 10, 25]}
             disableRowSelectionOnClick
             getRowHeight={() => 80}
-            onRowClick={(params) => navigate(`/batches/${params.row.id}`, { state: { projectName, projectId, batchName: params.row.name } })}
+            onRowClick={(params) => navigate(`/projects/${projectId}/batches/${params.row.id}`, { state: { projectName, projectId, batchName: params.row.name } })}
             slots={{
               noRowsOverlay: () => (
                 <Box sx={{ 

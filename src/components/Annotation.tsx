@@ -13,7 +13,7 @@ interface Props {
 }
 
 const Annotation = ({ annotatedRootSpans, onSave, projectName, batchName }: Props) => {
-  const { id: batchId } = useParams<{ id: string }>();
+  const { batchId } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
   const [note, setNote] = useState("");
   const [rating, setRating] = useState<RatingType | null>(null);

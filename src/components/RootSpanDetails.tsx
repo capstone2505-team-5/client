@@ -1,5 +1,5 @@
 import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Container, Typography, Box, Paper, Chip, Button, useTheme as muiUseTheme } from "@mui/material";
 import { useTheme } from "../contexts/ThemeContext";
 import { getPhoenixDashboardUrl } from "../services/services";
@@ -14,9 +14,11 @@ import RateReviewIcon from '@mui/icons-material/RateReview';
 const RootSpanDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const params = useParams();
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
-  const { projectName, projectId, batchName, batchId, annotatedRootSpan } = location.state || {};
+  const { projectId, batchId } = params;
+  const { projectName, batchName, annotatedRootSpan } = location.state || {};
 
   if (!annotatedRootSpan) {
     return (
@@ -110,8 +112,8 @@ const RootSpanDetail = () => {
             {projectName && (
             <>
               <Box 
-              onClick={() => navigate(`/batches/${batchId}`, { 
-                state: { projectName, projectId, batchName, batchId } 
+              onClick={() => navigate(`/projects/${projectId}`, { 
+                state: { projectName, batchName } 
               })}
               sx={{
                 px: 2,
@@ -162,8 +164,8 @@ const RootSpanDetail = () => {
           {batchName && (
             <>
               <Box 
-              onClick={() => navigate(`/batches/${batchId}`, { 
-                state: { projectName, projectId, batchName, batchId } 
+              onClick={() => navigate(`/projects/${projectId}/batches/${batchId}`, { 
+                state: { projectName, batchName } 
               })}
               sx={{
                 px: 2,
@@ -215,7 +217,7 @@ const RootSpanDetail = () => {
           <Button
             variant="contained"
             startIcon={<RateReviewIcon />}
-            onClick={() => navigate(`/batches/${batchId}/annotation`, { 
+            onClick={() => navigate(`projects/${projectId}/batches/${batchId}/annotation`, { 
               state: { projectName: projectName } 
             })}
             size="large"
@@ -335,7 +337,7 @@ const RootSpanDetail = () => {
                 try {
                   const phoenixUrl = await getPhoenixDashboardUrl();
                   // Open Phoenix dashboard in a new tab
-                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${annotatedRootSpan.traceId}`, '_blank');
+                  window.open(`${phoenixUrl}/projects/${finalProjectId}/spans/${annotatedRootSpan.traceId}`, '_blank');
                 } catch (error) {
                   console.error('Failed to get Phoenix dashboard URL:', error);
                 }

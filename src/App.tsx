@@ -220,9 +220,19 @@ const App = () => {
             <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:id" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
+          <Route path="/projects/:projectId" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
           <Route
-            path="/batches/create"
+            path="/projects/:projectId/batches/:batchId"
+            element={
+              <RootSpans
+                annotatedRootSpans={annotatedRootSpans}
+                onLoadRootSpans={loadRootSpansByBatch}
+                onCategorize={handleCategorize}
+              />
+            }
+          />
+          <Route
+            path="/projects/:projectId/batches/create"
             element={
               <CreateBatch
                 annotatedRootSpans={annotatedRootSpans}
@@ -232,7 +242,7 @@ const App = () => {
             }
           />
           <Route
-            path="/batches/:id/edit"
+            path="/projects/:projectId/batches/:batchId/edit"
             element={
               <EditBatch
                 annotatedRootSpans={annotatedRootSpans}
@@ -240,19 +250,10 @@ const App = () => {
               />
             }
           />
+
+          <Route path="/projects/:projectId/batches/:batchId/rootSpans/:traceId" element={<RootSpanDetails />} />
           <Route
-            path="/batches/:id"
-            element={
-              <RootSpans
-                annotatedRootSpans={annotatedRootSpans}
-                onLoadRootSpans={loadRootSpansByBatch}
-                onCategorize={handleCategorize}
-              />
-            }
-          />
-          <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
-          <Route
-            path="/batches/:id/annotation"
+            path="/projects/:projectId/batches/:batchId/annotation"
             element={
               <Annotation
                 annotatedRootSpans={annotatedRootSpans}
