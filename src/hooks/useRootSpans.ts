@@ -37,14 +37,19 @@ export const useRootSpansByProject = (projectId: string | null) => {
 export const useRootSpansContext = (context: {
   type: 'batch' | 'project';
   id?: string;
-}) => {
-  // Only the queries we actually use
+} | null) => {
+  // Always call hooks (Rules of Hooks) - but with null when no context
   const batchQuery = useRootSpansByBatch(
-    context.type === 'batch' ? context.id || null : null
+    context?.type === 'batch' ? context.id || null : null
   );
   const projectQuery = useRootSpansByProject(
-    context.type === 'project' ? context.id || null : null
+    context?.type === 'project' ? context.id || null : null
   );
+
+  // If no context, return empty state
+  if (!context) {
+    return { data: [], isLoading: false, error: null };
+  }
 
   // Return the relevant query based on context
   // This is what becomes your `annotatedRootSpans` data

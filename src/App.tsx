@@ -32,9 +32,8 @@ const AppWithQuery = () => {
   } | null>(null); // Start with null - no data loaded initially
 
   // Use TanStack Query instead of manual state management
-  // Only run query if we have a valid context
-  const queryResult = currentContext ? useRootSpansContext(currentContext) : { data: [], isLoading: false, error: null };
-  const { data: annotatedRootSpans = [], isLoading, error } = queryResult;
+  // Always call the hook - handle null context inside the hook
+  const { data: annotatedRootSpans = [], isLoading, error } = useRootSpansContext(currentContext);
   const { updateRootSpanInCache, invalidateAll, invalidateBatch, invalidateProject } = useRootSpanMutations();
 
   // Track last fetched IDs to maintain your existing logic
