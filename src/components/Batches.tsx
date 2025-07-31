@@ -24,6 +24,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import { fetchBatches, deleteBatch } from "../services/services";
 import type { Batch } from "../types/types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface BatchProps {
   onDeleteBatch: (batchId: string) => void;
@@ -31,7 +32,7 @@ interface BatchProps {
 
 const Batches = ({ onDeleteBatch }: BatchProps) => {
   const navigate = useNavigate();
-  const [batches, setBatches] = useState<Batch[]>([]);
+  // const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const location = useLocation();
@@ -51,23 +52,24 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!projectId) return;
-        const data = await fetchBatches(projectId);
-        setBatches(data);
-      } catch (error) {
-        console.error("Failed to fetch batches", error);
-      }
-    };
-    fetchData();
-  }, [projectId]);
+  const {
+    data: batches = [],
+    isLoading: batchesLoading,
+    error: batchesError,
+  } = useQuery({
+    queryKey: ['batches', projectId],
+    queryFn: () => fetchBatches(projectId!),
+    enabled: !!projectId, // Only run query if projectId exists
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  })
 
+  const queryClient = useQueryClient();
+  
   const handleDelete = async (batchId: string) => {
     try {
       await deleteBatch(batchId);
-      setBatches((prev) => prev.filter((b) => b.id !== batchId));
+      // Invalidate batches query to refetch data
+      queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
       onDeleteBatch(batchId);
     } catch (error) {
       console.error("Failed to delete batch", error);
@@ -77,7 +79,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   const handleAnnotate = (batchId: string, batchName: string) => {
     const batch = batches.find(b => b.id === batchId);
     navigate(`/projects/${projectId}/batches/${batchId}/annotation`, {
-      state: { projectName, batchName: batch?.name }
+      state: { projectName, batchName: batchName}
     });
   };
 
@@ -445,6 +447,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
           <DataGrid
             rows={batches}
             columns={columns}
+            loading={batchesLoading}
             initialState={{
               pagination: {
                 paginationModel: { page: 0, pageSize: 10 },

@@ -234,7 +234,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
         { value: 'bad', label: 'Bad' },
         { value: 'none', label: 'Not Rated' },
       ],
-             valueGetter: (value, row) => row.annotation?.rating || 'none',
+        valueGetter: (value, row) => row.annotation?.rating || 'none',
        renderCell: (params) => {
          const rating = params.value as string;
         const getStatusIcon = () => {
