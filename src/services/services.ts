@@ -1,15 +1,6 @@
 import axios from 'axios';
 import type { AnnotatedRootSpan, Annotation, Rating, Project } from '../types/types';
 
-export const fetchRootSpans = async (): Promise<AnnotatedRootSpan[]> => {
-  const response = await axios.get('/api/rootSpans', {
-    params: {
-      numPerPage: 1000 // Large number to get all spans
-    }
-  });
-  return response.data.rootSpans; // Backend returns { rootSpans, totalCount }
-}
-
 export const fetchRootSpan = async (id: string): Promise<AnnotatedRootSpan> => {
   const response = await axios.get<AnnotatedRootSpan>(`/api/rootSpans/${id}`);
   return response.data;

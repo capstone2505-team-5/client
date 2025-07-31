@@ -124,9 +124,10 @@ interface RootSpansProps {
   annotatedRootSpans: AnnotatedRootSpan[];
   onLoadRootSpans: (batchId: string) => void;
   onCategorize: () => Promise<void>;
+  isLoading: boolean;
 }
 
-const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize }: RootSpansProps) => {
+const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoading }: RootSpansProps) => {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
@@ -785,6 +786,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize }: RootSp
                 </Box>
               )
             }}
+            loading={isLoading}
           />
         </Box>
       </Paper>

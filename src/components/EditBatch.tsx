@@ -23,9 +23,10 @@ import type { AnnotatedRootSpan } from "../types/types";
 interface EditBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
   onUpdateBatch: (id: string, name: string, rootSpanIds: string[]) => void;
+  isLoading: boolean;
 }
 
-const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch }: EditBatchProps) => {
+const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch, isLoading }: EditBatchProps) => {
   const { batchId } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState("");

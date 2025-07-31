@@ -24,9 +24,10 @@ interface CreateBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
   onLoadRootSpans: (projectId: string) => void;
   onCreateBatch: (name: string, projectId: string, rootSpanIds: string[]) => void;
+  isLoading: boolean;
 }
 
-const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch }: CreateBatchProps) => {
+const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoading }: CreateBatchProps) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
