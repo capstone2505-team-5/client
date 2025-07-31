@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -19,7 +19,6 @@ import {
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material";
 import type { AnnotatedRootSpan, Project } from "../types/types";
-import { fetchProjects } from "../services/services";
 
 interface CreateBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
@@ -34,14 +33,14 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch }: Cre
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
   const location = useLocation();
-  const { projectName, projectId } = location.state || {};
-  console.log(annotatedRootSpans)
-
+  const { projectName } = location.state || {};
+  const { projectId } = useParams<{ projectId: string }>();
+  
   useEffect(() => {
-    if (projectId && annotatedRootSpans.length === 0) {
+    if (projectId) {
       onLoadRootSpans(projectId);
     }
-  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [projectId, onLoadRootSpans]);
 
   const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
@@ -93,12 +92,12 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch }: Cre
   );
 
   const handleSubmit = useCallback(async () => {
-    if (!name || selectedRootSpanIds.length === 0) return;
+    if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
     onCreateBatch(name, projectId, selectedRootSpanIds);
     navigate(`/projects/${projectId}`, { 
       state: { projectName: projectName, projectId: projectId } 
     });
-  }, [name, selectedRootSpanIds, onCreateBatch, navigate]);
+  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId]);
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -161,7 +160,10 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch }: Cre
         {displayedSpans.map((rootSpan) => (
           <ListItem key={rootSpan.id} disablePadding>
             <ListItemButton onClick={() => toggle(rootSpan.id)} sx={{ py: 1, px: 2 }}>
-              <Checkbox checked={selectedSet.has(rootSpan.id)} />
+              <Checkbox 
+                checked={selectedSet.has(rootSpan.id)} 
+                onClick={(e) => e.stopPropagation()} // Prevent double-click
+              />
               <ListItemText primary={`${rootSpan.traceId} — ${rootSpan.spanName}`} />
             </ListItemButton>
           </ListItem>

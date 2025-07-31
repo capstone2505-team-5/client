@@ -85,7 +85,6 @@ export const fetchProjects = async (): Promise<Project[]> => {
   return response.data;
 }
 
-// Add new functions for batch/project-specific rootspan fetching
 export const fetchRootSpansByBatch = async (batchId: string): Promise<AnnotatedRootSpan[]> => {
   const response = await axios.get(`/api/batches/${batchId}`, {
     params: {
@@ -99,7 +98,7 @@ export const fetchRootSpansByProject = async (projectId: string): Promise<Annota
   const response = await axios.get('/api/rootSpans', {
     params: { 
       projectId,
-      numPerPage: 1000 // Large number to get all spans
+      numPerPage: 2000 // Large number to get all spans
     }
   });
   return response.data.rootSpans; // Backend returns { rootSpans, totalCount }

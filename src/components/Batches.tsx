@@ -54,6 +54,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!projectId) return;
         const data = await fetchBatches(projectId);
         setBatches(data);
       } catch (error) {
@@ -61,7 +62,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       }
     };
     fetchData();
-  }, []);
+  }, [projectId]);
 
   const handleDelete = async (batchId: string) => {
     try {
@@ -73,8 +74,11 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     }
   };
 
-  const handleAnnotate = (batchId: string) => {
-    navigate(`/batches/${batchId}/annotation`);
+  const handleAnnotate = (batchId: string, batchName: string) => {
+    const batch = batches.find(b => b.id === batchId);
+    navigate(`/projects/${projectId}/batches/${batchId}/annotation`, {
+      state: { projectName, batchName: batch?.name }
+    });
   };
 
   const columns: GridColDef[] = [
@@ -185,7 +189,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
             startIcon={<RateReviewIcon />}
             onClick={(e) => {
               e.stopPropagation();
-              handleAnnotate(params.row.id);
+              handleAnnotate(params.row.id, params.row.name);
             }}
             sx={{ 
               minWidth: '110px', 
@@ -201,7 +205,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
               }
             }}
           >
-            Annotate
+            Grade Batch
           </Button>
           
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -340,7 +344,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
         <Button
           variant="contained"
           startIcon={<AddIcon sx={{ color: 'black !important' }} />}
-          onClick={() => navigate(`/batches/create`, { 
+          onClick={() => navigate(`/projects/${projectId}/batches/create`, { 
             state: { projectName: projectName, projectId: projectId } 
           })}
           sx={{

@@ -130,17 +130,17 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize }: RootSp
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
-  const { batchId } = useParams();
+  const { projectId, batchId } = useParams<{ projectId: string, batchId: string }>();
   const location = useLocation();
-  const { projectName, projectId, batchName } = location.state || {};
+  const { projectName, batchName } = location.state || {};
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
-
+  
   useEffect(() => {
-    if (batchId && annotatedRootSpans.length === 0) {
+    if (batchId) {
       onLoadRootSpans(batchId);
     }
-  }, [batchId]);
+  }, [batchId, onLoadRootSpans]);
 
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
     navigate(`rootSpans/${annotatedRootSpan.traceId}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
@@ -520,7 +520,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize }: RootSp
           <Button
             variant="contained"
             startIcon={<RateReviewIcon />}
-            onClick={() => navigate(`/batches/${batchId}/annotation`, { 
+            onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation`, { 
               state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
             })}
             size="large"

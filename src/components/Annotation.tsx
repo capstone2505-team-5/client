@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Container, Typography, Box, Button, TextField, Chip } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
@@ -8,17 +8,16 @@ import type { AnnotatedRootSpan, Rating as RatingType } from "../types/types";
 interface Props {
   annotatedRootSpans: AnnotatedRootSpan[];
   onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => void;
-  projectName?: string;
-  batchName?: string;
 }
 
-const Annotation = ({ annotatedRootSpans, onSave, projectName, batchName }: Props) => {
-  const { batchId } = useParams<{ batchId: string }>();
+const Annotation = ({ annotatedRootSpans, onSave}: Props) => {
+  const { projectId, batchId } = useParams<{ projectId: string, batchId: string }>();
   const navigate = useNavigate();
   const [note, setNote] = useState("");
   const [rating, setRating] = useState<RatingType | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-
+  const location = useLocation();
+  const { projectName, batchName } = location.state || {};
   const currentSpan = annotatedRootSpans[currentIndex];
 
   useEffect(() => {
@@ -61,7 +60,7 @@ const Annotation = ({ annotatedRootSpans, onSave, projectName, batchName }: Prop
           <Typography variant="h3" component="h1" gutterBottom>
             Annotation Queue
           </Typography>
-          <Button variant="contained" onClick={() => navigate(`/batches/${batchId}`, {
+          <Button variant="contained" onClick={() => navigate(`/projects/${projectId}/batches/${batchId}`, {
             state: { projectName, batchName }
           })}>
             Back to Batch

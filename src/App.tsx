@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -31,8 +31,12 @@ const App = () => {
     id?: string;
   }>({ type: 'all' });
 
+  // Track last fetched IDs at App level to persist across component remounts
+  const lastFetchedBatchId = useRef<string | null>(null);
+  const lastFetchedProjectId = useRef<string | null>(null);
+
   // Generic fetch function that handles different contexts
-  const fetchData = async (context: { type: 'all' | 'batch' | 'project'; id?: string }) => {
+  const fetchData = useCallback(async (context: { type: 'all' | 'batch' | 'project'; id?: string }) => {
     try {
       setIsLoading(true);
       let rootSpans: AnnotatedRootSpan[] = [];
@@ -61,27 +65,30 @@ const App = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // Functions that child components can call to trigger specific fetches
-  const loadRootSpansByBatch = (batchId: string) => {
-    fetchData({ type: 'batch', id: batchId });
-  };
+  const loadRootSpansByBatch = useCallback((batchId: string) => {
+    if (batchId !== lastFetchedBatchId.current) {
+      console.log('App level: Loading batch', batchId, 'lastFetched:', lastFetchedBatchId.current);
+      lastFetchedBatchId.current = batchId;
+      fetchData({ type: 'batch', id: batchId });
+    } else {
+      console.log('App level: Skipping batch fetch, already loaded:', batchId);
+    }
+  }, [fetchData]);
 
-  const loadRootSpansByProject = (projectId: string) => {
-    fetchData({ type: 'project', id: projectId });
-  };
+  const loadRootSpansByProject = useCallback((projectId: string) => {
+    if (projectId !== lastFetchedProjectId.current) {
+      console.log('App level: Loading project', projectId, 'lastFetched:', lastFetchedProjectId.current);
+      lastFetchedProjectId.current = projectId;
+      fetchData({ type: 'project', id: projectId });
+    } else {
+      console.log('App level: Skipping project fetch, already loaded:', projectId);
+    }
+  }, [fetchData]);
 
-  const loadAllRootSpans = () => {
-    fetchData({ type: 'all' });
-  };
-
-  // Refresh current context (useful after updates)
-  const refreshCurrentData = () => {
-    fetchData(currentContext);
-  };
-
-  const handleCategorize = async () => {
+  const handleCategorize = useCallback(async () => {
     try {
       const rootSpanCategories = await categorizeAnnotations();
 
@@ -102,7 +109,7 @@ const App = () => {
     } catch (error) {
       console.log("Error categorizing annotations", error);
     }
-  };
+  }, [annotatedRootSpans]);
 
   const handleSaveAnnotation = async (
     annotationId: string,
@@ -151,7 +158,7 @@ const App = () => {
     }
   };
 
-  const handleCreateBatch = async (name: string, projectId: string, rootSpanIds: string[]) => {
+  const handleCreateBatch = useCallback(async (name: string, projectId: string, rootSpanIds: string[]) => {
     try {
       const { id: batchId } = await createBatch({ name, projectId, rootSpanIds });
 
@@ -164,7 +171,7 @@ const App = () => {
     } catch (error) {
       console.error("Failed to create batch", error);
     }
-  };
+  }, []);
 
   const handleUpdateBatch = async (
     batchId: string,
@@ -251,9 +258,9 @@ const App = () => {
             }
           />
 
-          <Route path="/projects/:projectId/batches/:batchId/rootSpans/:traceId" element={<RootSpanDetails />} />
+          <Route path="/projects/:projectId/batches/:batchId/rootSpans/:rootSpanId" element={<RootSpanDetails />} />
           <Route
-            path="/projects/:projectId/batches/:batchId/annotation"
+            path="/projects/:projectId/batches/:batchId/annotation" // TODO: change to annotation/:rootSpanId
             element={
               <Annotation
                 annotatedRootSpans={annotatedRootSpans}
