@@ -216,7 +216,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
               color="primary"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/batches/${params.row.id}/edit`);
+                navigate(`/projects/${projectId}/batches/${params.row.id}/edit`);
               }}
               sx={{ 
                 border: '1px solid',

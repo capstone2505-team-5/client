@@ -209,6 +209,7 @@ const AppWithQuery = () => {
             element={
               <EditBatch
                 annotatedRootSpans={annotatedRootSpans}
+                onLoadRootSpans={loadRootSpansByProject}
                 onUpdateBatch={handleUpdateBatch}
                 isLoading={isLoading}
               />

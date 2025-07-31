@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, use } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Container,
@@ -22,11 +22,12 @@ import type { AnnotatedRootSpan } from "../types/types";
 
 interface EditBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
+  onLoadRootSpans: (projectId: string) => void;
   onUpdateBatch: (id: string, name: string, rootSpanIds: string[]) => void;
   isLoading: boolean;
 }
 
-const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch, isLoading }: EditBatchProps) => {
+const EditBatch = ({ annotatedRootSpans: rootSpans, onLoadRootSpans, onUpdateBatch, isLoading }: EditBatchProps) => {
   const { batchId } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -34,21 +35,13 @@ const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch, isLoading }: 
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
+  const { projectId } = useParams();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!batchId) return;
-        const batch = await fetchBatch(batchId);
-        setName(batch.name);
-        setSelectedSet(new Set(batch.rootSpanIds));
-      } catch (error) { 
-        console.error("Failed to fetch batch", error);
-        navigate(`/batches`);
-      }
-    };
-    fetchData();
-  }, [batchId]);
+    if (projectId) {
+      onLoadRootSpans(projectId);
+    }
+  }, [projectId, onLoadRootSpans]);
 
   // filtered + sorted spans
   const now = useMemo(() => new Date(), []);
@@ -61,9 +54,13 @@ const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch, isLoading }: 
         if (timeInterval === '1h') threshold.setHours(now.getHours() - 1);
         if (timeInterval === '24h') threshold.setDate(now.getDate() - 1);
         if (timeInterval === '7d') threshold.setDate(now.getDate() - 7);
-        return new Date(s.startTime) >= threshold;
+        return s.startTime ? new Date(s.startTime) >= threshold : false;
       })
-      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+      .sort((a, b) => {
+        const aTime = a.startTime ? new Date(a.startTime).getTime() : 0;
+        const bTime = b.startTime ? new Date(b.startTime).getTime() : 0;
+        return bTime - aTime;
+      });
   }, [rootSpans, projectFilter, timeInterval, now]);
 
   // distinct projects for dropdown
@@ -191,7 +188,7 @@ const EditBatch = ({ annotatedRootSpans: rootSpans, onUpdateBatch, isLoading }: 
       </List>
 
       <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
-        <Button onClick={() => navigate("/batches")}>Cancel</Button>
+        <Button onClick={() => navigate(`/projects/${projectId}/batches/${batchId}`)}>Cancel</Button>
         <Button
           variant="contained"
           disabled={!name || selectedRootSpanIds.length === 0}

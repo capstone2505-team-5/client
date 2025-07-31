@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import {
   Container,
   Typography,
@@ -28,8 +28,14 @@ import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef, GridFilterOperator, GridFilterInputValueProps } from "@mui/x-data-grid";
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import CategoryIcon from '@mui/icons-material/Category';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 import { useTheme } from "../contexts/ThemeContext";
 import type { AnnotatedRootSpan } from "../types/types";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Custom Rating Filter Component
 const RatingFilterInputValue = (props: GridFilterInputValueProps) => {
@@ -130,27 +136,45 @@ interface RootSpansProps {
 const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoading }: RootSpansProps) => {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [open, setOpen] = useState(false);
+  const [rootSpanToDelete, setRootSpanToDelete] = useState<string | null>(null);
   const navigate = useNavigate();
   const { projectId, batchId } = useParams<{ projectId: string, batchId: string }>();
   const location = useLocation();
   const { projectName, batchName } = location.state || {};
   const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
-  
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     if (batchId) {
       onLoadRootSpans(batchId);
     }
   }, [batchId, onLoadRootSpans]);
 
+  const handleClose = () => {
+    setOpen(false);
+    setRootSpanToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (rootSpanToDelete) {
+      await handleDelete(rootSpanToDelete);
+      handleClose();
+    }
+  };
+
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
     navigate(`rootSpans/${annotatedRootSpan.traceId}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
   };
 
   const handleDelete = async (rootSpanId: string) => {
-    if (window.confirm("Are you sure you want to delete this root span?")) {
-      // TODO: Implement delete functionality
-      console.log("Delete root span:", rootSpanId);
+    try {
+      // await deleteRootSpan(rootSpanId); // TODO: Implement delete functionality
+      queryClient.invalidateQueries({ queryKey: ['rootSpans', batchId] });
+      handleClose();
+    } catch (error) {
+      console.error("Failed to delete root span", error);
     }
   };
 
@@ -375,7 +399,8 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
             color="error"
             onClick={(e) => {
               e.stopPropagation();
-              handleDelete(params.row.id);
+              setRootSpanToDelete(params.row.id);
+              setOpen(true)
             }}
             sx={{ 
               border: '1px solid',
@@ -790,6 +815,59 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
           />
         </Box>
       </Paper>
+      <Fragment>
+        <Dialog
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedtext="alert-dialog-description"
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle 
+            id="alert-dialog-title"
+            sx={{ 
+              color: 'error.main',
+              fontWeight: 'bold',
+              pb: 1
+            }}
+          >
+            Delete Root Span From Batch
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText 
+              id="alert-dialog-description"
+              sx={{ fontSize: '1rem', color: 'text.primary' }}
+            >
+              Are you sure you want to delete this root span from the batch?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+            <Button 
+              onClick={handleClose} 
+              variant="outlined"
+              sx={{ 
+                minWidth: '100px',
+                borderColor: 'grey.400',
+                color: 'text.secondary'
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmDelete}
+              variant="contained"
+              color="error"
+              sx={{ 
+                minWidth: '100px',
+                fontWeight: 'bold'
+              }}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Fragment>
     </Container>
   );
 };
