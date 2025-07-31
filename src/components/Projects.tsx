@@ -4,6 +4,8 @@ import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButto
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import AddIcon from '@mui/icons-material/Add';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -13,43 +15,34 @@ import DialogActions from '@mui/material/DialogActions';
 import type { GridColDef } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
 import { getPhoenixDashboardUrl, fetchProjects } from "../services/services";
-import type { Project } from "../types/types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const Projects = () => {
   const navigate = useNavigate();
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
-  const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
-  const [projects, setProjects] = useState<Project[]>([]);
 
+  const {
+    data: projects = [],
+    isLoading: projectsLoading,
+    error: projectsError,
+  } = useQuery({
+    queryKey: ['projects'],
+    queryFn: fetchProjects,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        const projects = await fetchProjects();
-        setProjects(projects);
-      } catch (error) {
-        console.error('Failed to fetch projects:', error);
-      }
-    };
-    
-    loadProjects();
-  }, []);
-
-  useEffect(() => {
-    const fetchPhoenixUrl = async () => {
-      try {
-        const url = await getPhoenixDashboardUrl();
-        setPhoenixDashboardUrl(url);
-      } catch (error) {
-        console.error('Failed to fetch Phoenix dashboard URL:', error);
-      }
-    };
-    
-    fetchPhoenixUrl();
-  }, []);
+  const {
+    data: phoenixDashboardUrl = '',
+    isLoading: urlLoading,
+  } = useQuery({
+    queryKey: ['phoenixDashboardUrl'],
+    queryFn: getPhoenixDashboardUrl,
+    staleTime: Infinity
+  })
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -66,7 +59,7 @@ const Projects = () => {
 
   // Filter projects based on search term
   const filteredProjects = useMemo(() => {
-    if (!searchTerm.trim()) return projects;
+    if (!projects || !searchTerm.trim()) return projects || [];
     
     return projects.filter(project =>
       project.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -441,6 +434,7 @@ const Projects = () => {
                     <DataGrid
             rows={filteredProjects}
             columns={columns}
+            loading={projectsLoading}
             initialState={{
               pagination: {
                 paginationModel: { page: 0, pageSize: 10 },
@@ -454,40 +448,102 @@ const Projects = () => {
               setPageSize(model.pageSize);
             }}
             slots={{
-              noRowsOverlay: () => (
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  height: '100%',
-                  py: 4
-                }}>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      mb: 1,
-                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
-                    }}
-                  >
-                    {projects.length === 0 
-                      ? 'No projects available' 
-                      : 'No projects found'
-                    }
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    sx={{
-                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'
-                    }}
-                  >
-                    {projects.length === 0 
-                      ? 'Projects will appear here once data is loaded'
-                      : `No projects match your search "${searchTerm}"`
-                    }
-                  </Typography>
-                </Box>
-              )
+              noRowsOverlay: () => {
+                // Show error state if there's an error
+                if (projectsError) {
+                  return (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      height: '100%',
+                      py: 4,
+                      px: 2
+                    }}>
+                      <ErrorOutlineIcon 
+                        sx={{ 
+                          fontSize: '3rem', 
+                          color: 'error.main',
+                          mb: 2
+                        }} 
+                      />
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          mb: 1,
+                          color: 'error.main',
+                          textAlign: 'center'
+                        }}
+                      >
+                        Failed to load projects
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        sx={{
+                          color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                          textAlign: 'center',
+                          mb: 3,
+                          maxWidth: '400px'
+                        }}
+                      >
+                        {projectsError instanceof Error 
+                          ? projectsError.message 
+                          : 'An unexpected error occurred while loading projects'}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<RefreshIcon />}
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ['projects'] })}
+                        sx={{
+                          backgroundColor: 'error.main',
+                          '&:hover': {
+                            backgroundColor: 'error.dark',
+                          }
+                        }}
+                      >
+                        Retry
+                      </Button>
+                    </Box>
+                  );
+                }
+
+                // Show no data state
+                return (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    height: '100%',
+                    py: 4
+                  }}>
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        mb: 1,
+                        color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                      }}
+                    >
+                      {(projects?.length || 0) === 0 
+                        ? 'No projects available' 
+                        : 'No projects found'
+                      }
+                    </Typography>
+                    <Typography 
+                      variant="body2" 
+                      sx={{
+                        color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'
+                      }}
+                    >
+                      {(projects?.length || 0) === 0 
+                        ? 'Projects will appear here once data is loaded'
+                        : `No projects match your search "${searchTerm}"`
+                      }
+                    </Typography>
+                  </Box>
+                );
+              }
             }}
             sx={{
               '& .MuiDataGrid-virtualScroller': {

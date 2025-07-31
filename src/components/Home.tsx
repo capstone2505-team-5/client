@@ -6,13 +6,22 @@ import CloseIcon from '@mui/icons-material/Close';
 import { getPhoenixDashboardUrl } from "../services/services";
 import llmonadeWhiteText from "../assets/icons/Updated_OG_Tag_White.svg";
 import llmonadeDarkText from "../assets/icons/Updated_OG_Tag_Dark.svg";
+import { useQuery } from "@tanstack/react-query";
 
 const Home = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
+
+  const {
+    data: phoenixDashboardUrl = '',
+    isLoading: urlLoading,
+  } = useQuery({
+    queryKey: ['phoenixDashboardUrl'],
+    queryFn: getPhoenixDashboardUrl,
+    staleTime: Infinity
+  })
 
 
   const handleStepClick = (stepIndex: number) => {
@@ -24,19 +33,6 @@ const Home = () => {
     setModalOpen(false);
     setSelectedStep(null);
   };
-
-  useEffect(() => {
-    const fetchPhoenixUrl = async () => {
-      try {
-        const url = await getPhoenixDashboardUrl();
-        setPhoenixDashboardUrl(url);
-      } catch (error) {
-        console.error('Failed to fetch Phoenix dashboard URL:', error);
-      }
-    };
-    
-    fetchPhoenixUrl();
-  }, []);
 
   const steps: Array<{
     title: string;
