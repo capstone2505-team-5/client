@@ -13,8 +13,7 @@ const Home = () => {
   const theme = useTheme();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
-
-  const {
+    const {
     data: phoenixDashboardUrl = '',
     isLoading: urlLoading,
   } = useQuery({
@@ -98,8 +97,18 @@ const Home = () => {
       {/* Welcome Section */}
       <Box sx={{ textAlign: 'center', mb: 3 }}>
         {theme.palette.mode === 'dark' ? 
-        <img src={llmonadeWhiteText} alt="LLMonade White Text" style={{ width: "800px", height: "100px" }} /> : 
-        <img src={llmonadeDarkText} alt="LLMonade Dark Text" style={{ width: "800px", height: "100px" }} />}
+        <img 
+          src={llmonadeWhiteText} 
+          alt="LLMonade White Text" 
+          loading="eager"
+          style={{ width: "800px", height: "100px" }}
+        /> : 
+        <img 
+          src={llmonadeDarkText} 
+          alt="LLMonade Dark Text" 
+          loading="eager"
+          style={{ width: "800px", height: "100px" }}
+        />}
         
         <Typography 
           variant="h5" 
