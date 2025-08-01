@@ -45,7 +45,7 @@ export interface Batch {
   spanCount: number;
   percentAnnotated: number;
   percentGood: number;
-  categories: string[];
+  categories: Record<string, number>;
 }
 
 export interface Project {

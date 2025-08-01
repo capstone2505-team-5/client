@@ -15,10 +15,36 @@ const Annotation = ({ annotatedRootSpans, onSave}: Props) => {
   const navigate = useNavigate();
   const [note, setNote] = useState("");
   const [rating, setRating] = useState<RatingType | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  // Create a unique key for this batch to store the current index
+  const storageKey = `annotation-index-${projectId}-${batchId}`;
+  
+  // Initialize currentIndex from sessionStorage or default to 0
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const savedIndex = sessionStorage.getItem(storageKey);
+    const parsedIndex = savedIndex ? parseInt(savedIndex, 10) : 0;
+    // Ensure the saved index is valid for the current spans array
+    return parsedIndex < annotatedRootSpans.length ? parsedIndex : 0;
+  });
+  
   const location = useLocation();
   const { projectName, batchName } = location.state || {};
   const currentSpan = annotatedRootSpans[currentIndex];
+
+  // Save currentIndex to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem(storageKey, currentIndex.toString());
+  }, [currentIndex, storageKey]);
+
+  // Clean up sessionStorage when component unmounts
+  useEffect(() => {
+    return () => {
+      // Optional: clean up when navigating away from the batch
+      if (currentIndex >= annotatedRootSpans.length - 1) {
+        sessionStorage.removeItem(storageKey);
+      }
+    };
+  }, [storageKey, currentIndex, annotatedRootSpans.length]);
 
   useEffect(() => {
     if (currentSpan) {

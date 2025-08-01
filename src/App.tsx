@@ -61,11 +61,6 @@ const AppWithQuery = () => {
     }
   }, []);
 
-  const handleCategorize = useCallback(async () => {
-    // TODO: Implement categorization logic later
-    console.log("Categorize functionality temporarily disabled");
-  }, []);
-
   const handleSaveAnnotation = async (
     annotationId: string,
     rootSpanId: string,
@@ -188,7 +183,6 @@ const AppWithQuery = () => {
               <RootSpans
                 annotatedRootSpans={annotatedRootSpans}
                 onLoadRootSpans={loadRootSpansByBatch}
-                onCategorize={handleCategorize}
                 isLoading={isLoading}
               />
             }

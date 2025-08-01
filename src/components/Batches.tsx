@@ -87,8 +87,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'name',
       headerName: 'Batch Name',
-      flex: 1.5,
-      minWidth: 100,
+      flex: 1,
+      minWidth: 120,
       headerAlign: 'left',
       align: 'left',
       renderCell: (params) => (
@@ -100,8 +100,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'spanCount',
       headerName: 'Spans',
-      flex: 0.75,
-      minWidth: 100,
+      flex: 0.5,
+      minWidth: 80,
       headerAlign: 'center',
       align: 'center',
       type: 'number',
@@ -114,8 +114,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'annotatedPercent',
       headerName: 'Annotated',
-      flex: 0.75,
-      minWidth: 100,
+      flex: 0.5,
+      minWidth: 90,
       headerAlign: 'center',
       align: 'center',
       renderCell: (params) => {
@@ -131,8 +131,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'gradePercent',
       headerName: 'Grade',
-      flex: 0.75,
-      minWidth: 100,
+      flex: 0.5,
+      minWidth: 80,
       headerAlign: 'center',
       align: 'center',
       renderCell: (params) => {
@@ -154,27 +154,35 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     {
       field: 'categories',
       headerName: 'Categories',
-      flex: 2.5,
-      minWidth: 200,
+      flex: 3.5,
+      minWidth: 300,
       headerAlign: 'left',
       align: 'left',
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 1 }}>
-          {params.value.length > 0 ? (params.value as string[]).map((category, index) => (
-            <Chip
-              key={index}
-              label={category}
-              size="small"
-              variant="outlined"
-              sx={{ 
-                fontSize: '0.75rem',
-                height: '24px',
-                '& .MuiChip-label': { px: 1 }
-              }}
-            />
-          )) : <Typography variant="body1" sx={{ color: 'text.primary', fontStyle: 'italic' }}>No categories</Typography>}
-        </Box>
-      ),
+      renderCell: (params) => {
+        const categories = params.value as Record<string, number>;
+        const categoryEntries = Object.entries(categories || {});
+        
+        // Sort by count (highest to lowest)
+        const sortedCategories = categoryEntries.sort(([, countA], [, countB]) => countB - countA);
+        
+        return (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 1 }}>
+            {sortedCategories.length > 0 ? sortedCategories.map(([category, count], index) => (
+              <Chip
+                key={index}
+                label={`${category} (${count})`}
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  fontSize: '0.75rem',
+                  height: '24px',
+                  '& .MuiChip-label': { px: 1 }
+                }}
+              />
+            )) : <Typography variant="body1" sx={{ color: 'text.primary', fontStyle: 'italic' }}>No categories</Typography>}
+          </Box>
+        );
+      },
     },
     {
       field: 'actions',

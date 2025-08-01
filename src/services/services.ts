@@ -26,10 +26,10 @@ export const updateAnnotation = async (annotationId: string, note: string, ratin
   return response.data
 }
 
-export const categorizeAnnotations = async (): Promise<
-  { rootSpanId: string; categories: string[] }[]
+export const categorizeAnnotations = async (batchId: string): Promise<
+  Record<string, number>
 > => {
-  const response = await axios.post("/api/categorize");
+  const response = await axios.post(`/api/categorize/${batchId}`);
   return response.data;
 };
 
@@ -41,7 +41,7 @@ export const fetchBatches = async (projectId: string): Promise<{
   spanCount: number;
   percentAnnotated: number;
   percentGood: number;
-  categories: string[]; }[]> => {
+  categories: Record<string, number>; }[]> => {
   const response = await axios.get(`/api/projects/${projectId}`);
   return response.data;
 }

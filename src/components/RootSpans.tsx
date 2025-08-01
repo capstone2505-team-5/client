@@ -16,6 +16,8 @@ import {
   FormControl,
   ListItemIcon,
   ListItemText,
+  CircularProgress,
+  Backdrop,
   useTheme as muiUseTheme,
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
@@ -36,6 +38,7 @@ import DialogActions from '@mui/material/DialogActions';
 import { useTheme } from "../contexts/ThemeContext";
 import type { AnnotatedRootSpan } from "../types/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { categorizeAnnotations } from "../services/services";
 
 // Custom Rating Filter Component
 const RatingFilterInputValue = (props: GridFilterInputValueProps) => {
@@ -129,22 +132,23 @@ const ratingFilterOperators: GridFilterOperator[] = [
 interface RootSpansProps {
   annotatedRootSpans: AnnotatedRootSpan[];
   onLoadRootSpans: (batchId: string) => void;
-  onCategorize: () => Promise<void>;
   isLoading: boolean;
 }
 
-const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoading }: RootSpansProps) => {
+const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpansProps) => {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
   const [rootSpanToDelete, setRootSpanToDelete] = useState<string | null>(null);
+  const [categorizeModalOpen, setCategorizeModalOpen] = useState(false);
+  const [categorizeResults, setCategorizeResults] = useState<Record<string, number> | null>(null);
   const navigate = useNavigate();
   const { projectId, batchId } = useParams<{ projectId: string, batchId: string }>();
   const location = useLocation();
   const { projectName, batchName } = location.state || {};
-  const { isDarkMode } = useTheme();
   const theme = muiUseTheme();
   const queryClient = useQueryClient();
+  const [isCategorizing, setIsCategorizing] = useState(false);
 
   useEffect(() => {
     if (batchId) {
@@ -157,6 +161,11 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
     setRootSpanToDelete(null);
   };
 
+  const handleCategorizeModalClose = () => {
+    setCategorizeModalOpen(false);
+    setCategorizeResults(null);
+  };
+
   const handleConfirmDelete = async () => {
     if (rootSpanToDelete) {
       await handleDelete(rootSpanToDelete);
@@ -166,6 +175,47 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
 
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
     navigate(`rootSpans/${annotatedRootSpan.traceId}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
+  };
+
+  const handleCategorize = async () => {
+    try {
+      if (batchId) {  
+        setIsCategorizing(true);
+        const result = await categorizeAnnotations(batchId);
+        
+        // Check if no categories were created (no bad annotations)
+        if (!result || Object.keys(result).length === 0) {
+          // Still show modal to inform user
+          setCategorizeResults({});
+          setCategorizeModalOpen(true);
+        } else {
+          setCategorizeResults(result);
+          setCategorizeModalOpen(true);
+        }
+        
+        // Reload the root spans data to reflect updated annotations
+        queryClient.invalidateQueries({ queryKey: ['rootSpans', batchId] });
+        // Also reload batches data to update category counts
+        queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
+        
+        // Reload the current data
+        if (batchId) {
+          onLoadRootSpans(batchId);
+        }
+      }
+    } catch (error: any) {
+      console.error("Failed to categorize annotations", error);
+      
+      // Show error in results modal
+      setCategorizeResults(null);
+      setCategorizeModalOpen(true);
+      
+      // Store error for display
+      const errorMessage = error?.response?.data?.error || error?.message || 'Categorization failed';
+      setCategorizeResults({ __error: errorMessage } as any);
+    } finally {
+      setIsCategorizing(false);
+    }
   };
 
   const handleDelete = async (rootSpanId: string) => {
@@ -354,13 +404,14 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
       ),
     },
     {
-      field: 'annotation?.categories',
+      field: 'categories',
       headerName: 'Categories',
       flex: 2,
       minWidth: 250,
       headerAlign: 'left',
       align: 'left',
       sortable: false,
+      valueGetter: (_value, row) => row.annotation?.categories || [],
       renderCell: (params) => (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 1 }}>
           {(params.value as string[])?.length > 0 ? (
@@ -567,9 +618,9 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
           <Button
             variant="outlined"
             startIcon={<CategoryIcon />}
-            onClick={onCategorize}
+            onClick={() => handleCategorize()}
             size="large"
-            disabled={!allSpansRated}
+            disabled={!allSpansRated || isCategorizing}
             sx={{ 
               px: 3,
               minWidth: 225,
@@ -577,7 +628,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
               borderColor: 'secondary.main',
               color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
               fontWeight: 600,
-              opacity: allSpansRated ? 1 : 0.5,
+              opacity: (allSpansRated && !isCategorizing) ? 1 : 0.5,
               '&:hover': {
                 borderColor: 'secondary.dark',
                 backgroundColor: 'rgba(255, 235, 59, 0.1)',
@@ -588,7 +639,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
               }
             }}
           >
-            Categorize ({annotatedRootSpans.filter(span => span.annotation?.rating !== undefined && span.annotation?.rating !== null).length}/{annotatedRootSpans.length})
+            {isCategorizing ? 'Categorizing...' : `Categorize (${annotatedRootSpans.filter(span => span.annotation?.rating !== undefined && span.annotation?.rating !== null).length}/${annotatedRootSpans.length})`}
           </Button>
         </Box>
       </Box>
@@ -867,6 +918,214 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, onCategorize, isLoadin
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Categorization Results Modal */}
+        <Dialog
+          open={categorizeModalOpen}
+          onClose={handleCategorizeModalClose}
+          aria-labelledby="categorize-dialog-title"
+          aria-describedby="categorize-dialog-description"
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle 
+            id="categorize-dialog-title"
+            sx={{ 
+              color: categorizeResults && '__error' in categorizeResults 
+                ? 'error.main' 
+                : 'primary.main',
+              fontWeight: 'bold',
+              pb: 1
+            }}
+          >
+            {categorizeResults && '__error' in categorizeResults 
+              ? 'Categorization Failed' 
+              : 'Categorization Complete'
+            }
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText 
+              id="categorize-dialog-description"
+              sx={{ fontSize: '1rem', color: 'text.primary', mb: 2 }}
+            >
+              {categorizeResults && '__error' in categorizeResults
+                ? 'An error occurred during categorization:'
+                : 'The following categories were identified and applied to your annotations:'
+              }
+            </DialogContentText>
+            
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {categorizeResults && '__error' in categorizeResults ? (
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    backgroundColor: 'error.light',
+                    border: '1px solid',
+                    borderColor: 'error.main',
+                    width: '100%'
+                  }}
+                >
+                  <Typography variant="body1" sx={{ color: 'error.contrastText', fontWeight: 'medium' }}>
+                    {(categorizeResults as any).__error}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'error.contrastText', mt: 1, opacity: 0.9 }}>
+                    This could be due to:
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'error.contrastText', mt: 0.5, opacity: 0.9 }}>
+                    • AI service temporarily unavailable
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'error.contrastText', opacity: 0.9 }}>
+                    • Network connectivity issues
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'error.contrastText', opacity: 0.9 }}>
+                    • Invalid batch data
+                  </Typography>
+                </Box>
+              ) : categorizeResults && Object.entries(categorizeResults).length > 0 ? (
+                Object.entries(categorizeResults)
+                  .sort(([, countA], [, countB]) => countB - countA)
+                  .map(([category, count]) => (
+                    <Chip
+                      key={category}
+                      label={`${category} (${count})`}
+                      variant="filled"
+                      color="primary"
+                      sx={{ 
+                        fontSize: '0.875rem',
+                        height: '32px',
+                        fontWeight: 'medium'
+                      }}
+                    />
+                  ))
+              ) : (
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    backgroundColor: 'info.light',
+                    border: '1px solid',
+                    borderColor: 'info.main',
+                    width: '100%'
+                  }}
+                >
+                  <Typography variant="body1" sx={{ color: 'info.contrastText', fontWeight: 'medium' }}>
+                    No categories were identified
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'info.contrastText', mt: 1, opacity: 0.9 }}>
+                    This may happen if there are no "bad" rated annotations to categorize, or if the annotations don't contain patterns that can be grouped into meaningful categories.
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+            {categorizeResults && '__error' in categorizeResults && (
+              <Button 
+                onClick={() => {
+                  handleCategorizeModalClose();
+                  handleCategorize();
+                }}
+                variant="outlined"
+                color="primary"
+                sx={{ 
+                  minWidth: '100px',
+                  fontWeight: 'bold'
+                }}
+              >
+                Try Again
+              </Button>
+            )}
+            <Button 
+              onClick={handleCategorizeModalClose} 
+              variant="contained"
+              color="primary"
+              sx={{ 
+                minWidth: '100px',
+                fontWeight: 'bold'
+              }}
+            >
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Loading Backdrop for Categorization */}
+        <Backdrop
+          sx={{
+            color: '#fff',
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(4px)',
+          }}
+          open={isCategorizing}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+              p: 4,
+              borderRadius: 2,
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(40, 40, 40, 0.95)' 
+                : 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid',
+              borderColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.1)' 
+                : 'rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              minWidth: 300,
+            }}
+          >
+            <CircularProgress 
+              size={60} 
+              thickness={4}
+              sx={{ 
+                color: 'secondary.main',
+                mb: 3 
+              }} 
+            />
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontWeight: 'bold',
+                mb: 1,
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121'
+              }}
+            >
+              Categorizing Annotations
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.7)' 
+                  : 'rgba(0, 0, 0, 0.6)',
+                maxWidth: 400,
+                lineHeight: 1.5
+              }}
+            >
+              We are analyzing your annotations and creating categories. This may take a few moments...
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.5)' 
+                  : 'rgba(0, 0, 0, 0.4)',
+                mt: 2,
+                fontStyle: 'italic'
+              }}
+            >
+              Please do not navigate away from this page
+            </Typography>
+          </Box>
+        </Backdrop>
       </Fragment>
     </Container>
   );
