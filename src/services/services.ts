@@ -91,7 +91,7 @@ export const fetchProjects = async (): Promise<Project[]> => {
 export const fetchRootSpansByBatch = async (batchId: string): Promise<AnnotatedRootSpan[]> => {
   const response = await axios.get(`/api/batches/${batchId}`, {
     params: {
-      numPerPage: 200
+      numPerPage: 100
     }
   });
   return response.data.rootSpans;
@@ -101,7 +101,7 @@ export const fetchRootSpansByProject = async (projectId: string): Promise<Annota
   const response = await axios.get('/api/rootSpans', {
     params: { 
       projectId,
-      numPerPage: 2000 // Large number to get all spans
+      numPerPage: 100 // Large number to get all spans
     }
   });
   return response.data.rootSpans;
@@ -112,7 +112,7 @@ export const fetchBatchlessSpansByProject = async (projectId: string): Promise<A
   const response = await axios.get('/api/batches/unbatched', {
     params: { 
       projectId,
-      numPerPage: 1000 // Large number to get all spans
+      numPerPage: 100 // Large number to get all spans
     }
   });
   return response.data.batchlessRootSpans;
