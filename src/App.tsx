@@ -19,7 +19,7 @@ import {
 } from "./services/services";
 import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
 import EditBatch from "./components/EditBatch";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useRootSpansContext, useRootSpanMutations } from "./hooks/useRootSpans";
 
 const queryClient = new QueryClient();
@@ -35,6 +35,9 @@ const AppWithQuery = () => {
   // Always call the hook - handle null context inside the hook
   const { data: annotatedRootSpans = [], isLoading, error } = useRootSpansContext(currentContext);
   const { updateRootSpanInCache, invalidateAll, invalidateBatch, invalidateProject } = useRootSpanMutations();
+  
+  // Add the queryClient hook
+  const queryClient = useQueryClient();
 
   // Track last fetched IDs to maintain your existing logic
   const lastFetchedBatchId = useRef<string | null>(null);
@@ -113,10 +116,17 @@ const AppWithQuery = () => {
 
       // Invalidate related queries to ensure consistency
       invalidateProject(projectId);
+      
+      // Also invalidate the batches query so the batches list updates
+      queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
+      
+      // Return the batch ID so the calling component can use it
+      return batchId;
     } catch (error) {
       console.error("Failed to create batch", error);
+      throw error; // Re-throw so calling component can handle the error
     }
-  }, [updateRootSpanInCache, invalidateProject]);
+  }, [updateRootSpanInCache, invalidateProject, queryClient]);
 
   const handleUpdateBatch = async (
     batchId: string,
