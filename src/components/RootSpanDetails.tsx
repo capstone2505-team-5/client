@@ -8,16 +8,76 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { AnnotatedRootSpan } from "../types/types";
 import RateReviewIcon from '@mui/icons-material/RateReview';
+import { useRootSpansByBatch } from "../hooks/useRootSpans";
+import { useEffect } from "react";
 
 const RootSpanDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
   const theme = muiUseTheme();
-  const { projectId, batchId } = params;
+  const { projectId, batchId, rootSpanId } = params;
   const { projectName, batchName, annotatedRootSpan } = location.state || {};
 
-  if (!annotatedRootSpan) {
+  // Fetch all root spans for the batch to enable navigation
+  const { data: allRootSpans = [], isLoading: isLoadingSpans } = useRootSpansByBatch(batchId || null);
+
+  // Find current span and its index
+  const currentSpanIndex = allRootSpans.findIndex(span => 
+    span.traceId === rootSpanId || span.id === annotatedRootSpan?.id
+  );
+  
+  // Use the span from the API data if available, otherwise fall back to the passed one
+  const currentSpan = allRootSpans[currentSpanIndex] || annotatedRootSpan;
+
+  // Navigation functions
+  const goToPreviousSpan = () => {
+    if (currentSpanIndex > 0) {
+      const previousSpan = allRootSpans[currentSpanIndex - 1];
+      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${previousSpan.traceId}`, {
+        state: { projectName, batchName, annotatedRootSpan: previousSpan }
+      });
+    }
+  };
+
+  const goToNextSpan = () => {
+    if (currentSpanIndex < allRootSpans.length - 1) {
+      const nextSpan = allRootSpans[currentSpanIndex + 1];
+      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${nextSpan.traceId}`, {
+        state: { projectName, batchName, annotatedRootSpan: nextSpan }
+      });
+    }
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Only handle navigation keys if no input elements are focused
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (event.key) {
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          event.preventDefault();
+          goToPreviousSpan();
+          break;
+        case 'ArrowRight':
+        case 'ArrowDown':
+          event.preventDefault();
+          goToNextSpan();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [currentSpanIndex, allRootSpans.length]);
+
+  if (!currentSpan || isLoadingSpans) {
     return (
       <Container maxWidth="xl">
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -212,7 +272,7 @@ const RootSpanDetail = () => {
           </Box>
 
           {/* Center Section - Title */}
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Typography 
               variant="h3" 
               component="h1" 
@@ -224,6 +284,18 @@ const RootSpanDetail = () => {
             >
               Span Details
             </Typography>
+            {allRootSpans.length > 0 && (
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: 'text.secondary',
+                  mt: 0.5,
+                  fontSize: '0.875rem'
+                }}
+              >
+                {currentSpanIndex + 1} of {allRootSpans.length}
+              </Typography>
+            )}
           </Box>
 
           {/* Right Section - Action Buttons */}
@@ -231,7 +303,7 @@ const RootSpanDetail = () => {
           <Button
             variant="contained"
             startIcon={<RateReviewIcon />}
-            onClick={() => navigate(`projects/${projectId}/batches/${batchId}/annotation`, { 
+            onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation`, { 
               state: { projectName: projectName } 
             })}
             size="large"
@@ -251,7 +323,8 @@ const RootSpanDetail = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                      <Button
              variant="outlined"
-             onClick={() => {}} // TODO: Add logic to go to previous span
+             onClick={goToPreviousSpan}
+             disabled={currentSpanIndex <= 0}
              size="small"
              sx={{ 
                px: 3, 
@@ -263,13 +336,18 @@ const RootSpanDetail = () => {
                  borderColor: 'secondary.dark',
                  backgroundColor: 'rgba(255, 235, 59, 0.1)',
                },
+               '&.Mui-disabled': {
+                 borderColor: 'text.disabled',
+                 color: 'text.disabled',
+               }
              }}
            >
              Prev
            </Button>
            <Button
              variant="outlined"
-             onClick={() => {}} // TODO: Add logic to go to next span
+             onClick={goToNextSpan}
+             disabled={currentSpanIndex >= allRootSpans.length - 1}
              size="small"
              sx={{ 
                px: 3, 
@@ -281,6 +359,10 @@ const RootSpanDetail = () => {
                  borderColor: 'secondary.dark',
                  backgroundColor: 'rgba(255, 235, 59, 0.1)',
                },
+               '&.Mui-disabled': {
+                 borderColor: 'text.disabled',
+                 color: 'text.disabled',
+               }
              }}
            >
              Next
@@ -313,7 +395,7 @@ const RootSpanDetail = () => {
               Span ID
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-              {annotatedRootSpan.id || 'N/A'}
+              {currentSpan.id || 'N/A'}
             </Typography>
           </Box>
           <Box>
@@ -321,7 +403,7 @@ const RootSpanDetail = () => {
               Span Name
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-              {annotatedRootSpan.spanName || 'N/A'}
+              {currentSpan.spanName || 'N/A'}
             </Typography>
           </Box>
           <Box>
@@ -329,7 +411,7 @@ const RootSpanDetail = () => {
               Start Time
             </Typography>
             <Typography variant="body1">
-              {annotatedRootSpan.startTime ? new Date(annotatedRootSpan.startTime).toLocaleString() : "N/A"}
+              {currentSpan.startTime ? new Date(currentSpan.startTime).toLocaleString() : "N/A"}
             </Typography>
           </Box>
           <Box>
@@ -351,7 +433,7 @@ const RootSpanDetail = () => {
                 try {
                   const phoenixUrl = await getPhoenixDashboardUrl();
                   // Open Phoenix dashboard in a new tab
-                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${annotatedRootSpan.traceId}`, '_blank');
+                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${currentSpan.traceId}`, '_blank');
                 } catch (error) {
                   console.error('Failed to get Phoenix dashboard URL:', error);
                 }
@@ -396,7 +478,7 @@ const RootSpanDetail = () => {
               fontSize: '0.9rem',
               lineHeight: 1.5
             }}>
-              {annotatedRootSpan.input}
+              {currentSpan.input}
             </pre>
           </Box>
         </Paper>
@@ -434,7 +516,7 @@ const RootSpanDetail = () => {
               fontSize: '0.9rem',
               lineHeight: 1.5
             }}>
-              {annotatedRootSpan.output}
+              {currentSpan.output}
             </pre>
           </Box>
         </Paper>
@@ -456,9 +538,9 @@ const RootSpanDetail = () => {
                 Rating
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {getRatingIcon(annotatedRootSpan.annotation?.rating || '')}
+                {getRatingIcon(currentSpan.annotation?.rating || '')}
                 <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                  {getRatingLabel(annotatedRootSpan.annotation?.rating || '')}
+                  {getRatingLabel(currentSpan.annotation?.rating || '')}
                 </Typography>
               </Box>
             </Box>
@@ -469,8 +551,8 @@ const RootSpanDetail = () => {
                 Categories
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {annotatedRootSpan.annotation?.categories && annotatedRootSpan.annotation.categories.length > 0 ? (
-                  annotatedRootSpan.annotation.categories.map((category: string, index: number) => (
+                {currentSpan.annotation?.categories && currentSpan.annotation.categories.length > 0 ? (
+                  currentSpan.annotation.categories.map((category: string, index: number) => (
                     <Chip
                       key={index}
                       label={category}
@@ -503,7 +585,7 @@ const RootSpanDetail = () => {
                 }}
               >
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {annotatedRootSpan.annotation?.note || 'No notes available'}
+                  {currentSpan.annotation?.note || 'No notes available'}
                 </Typography>
               </Paper>
             </Box>
