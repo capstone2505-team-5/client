@@ -186,6 +186,15 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       const toastData = JSON.parse(pending);
       setSnackbar(toastData);
     }
+
+    // Check for pending categorization modal after re-renders
+    const pendingCategorize = sessionStorage.getItem('pendingCategorizeModal');
+    if (pendingCategorize) {
+      sessionStorage.removeItem('pendingCategorizeModal');
+      const modalData = JSON.parse(pendingCategorize);
+      setCategorizeResults(modalData.results);
+      setCategorizeModalOpen(true);
+    }
   }, [annotatedRootSpans]); // Trigger when data changes
 
   const handleConfirmDelete = async () => {
@@ -205,15 +214,11 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         setIsCategorizing(true);
         const result = await categorizeAnnotations(batchId);
         
-        // Check if no categories were created (no bad annotations)
-        if (!result || Object.keys(result).length === 0) {
-          // Still show modal to inform user
-          setCategorizeResults({});
-          setCategorizeModalOpen(true);
-        } else {
-          setCategorizeResults(result);
-          setCategorizeModalOpen(true);
-        }
+        // Store categorization results in sessionStorage (survives re-renders)
+        const resultsToStore = (!result || Object.keys(result).length === 0) ? {} : result;
+        sessionStorage.setItem('pendingCategorizeModal', JSON.stringify({
+          results: resultsToStore
+        }));
         
         // Reload the root spans data to reflect updated annotations
         queryClient.invalidateQueries({ queryKey: ['rootSpans', 'batch', batchId] });
@@ -228,13 +233,16 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     } catch (error: any) {
       console.error("Failed to categorize annotations", error);
       
-      // Show error in results modal
-      setCategorizeResults(null);
-      setCategorizeModalOpen(true);
-      
-      // Store error for display
+      // Store error for display in sessionStorage (survives re-renders)
       const errorMessage = error?.response?.data?.error || error?.message || 'Categorization failed';
-      setCategorizeResults({ __error: errorMessage } as any);
+      sessionStorage.setItem('pendingCategorizeModal', JSON.stringify({
+        results: { __error: errorMessage }
+      }));
+      
+      // Trigger re-render to show the modal
+      if (batchId) {
+        onLoadRootSpans(batchId);
+      }
     } finally {
       setIsCategorizing(false);
     }
