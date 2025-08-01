@@ -22,7 +22,7 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from "@mui/icons-material/Delete";
 import RateReviewIcon from '@mui/icons-material/RateReview';
-import { fetchBatches, deleteBatch } from "../services/services";
+import { fetchBatches, deleteBatch, fetchRootSpansByBatch } from "../services/services";
 import type { Batch } from "../types/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -76,11 +76,27 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
     }
   };
 
-  const handleAnnotate = (batchId: string, batchName: string) => {
-    const batch = batches.find(b => b.id === batchId);
-    navigate(`/projects/${projectId}/batches/${batchId}/annotation`, {
-      state: { projectName, batchName: batchName}
-    });
+  const handleAnnotate = async (batchId: string, batchName: string) => {
+    try {
+      // Fetch the root spans for this batch to get the first one's ID
+      const rootSpans = await queryClient.fetchQuery({
+        queryKey: ['rootSpans', 'batch', batchId],
+        queryFn: () => fetchRootSpansByBatch(batchId),
+        staleTime: 1000 * 60 * 5, // 5 minutes
+      });
+
+      if (rootSpans.length === 0) {
+        console.warn(`No root spans found in batch ${batchId}`);
+        return;
+      }
+
+      // Navigate to the annotation page with the first root span's ID
+      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${rootSpans[0].id}`, {
+        state: { projectName, batchName: batchName, projectId }
+      });
+    } catch (error) {
+      console.error("Failed to fetch root spans for batch:", error);
+    }
   };
 
   const columns: GridColDef[] = [

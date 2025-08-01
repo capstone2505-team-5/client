@@ -8,73 +8,60 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import type { AnnotatedRootSpan, Rating as RatingType } from "../types/types";
+import { useRootSpansByBatch } from "../hooks/useRootSpans";
 
 interface Props {
-  annotatedRootSpans: AnnotatedRootSpan[];
   onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => void;
 }
 
-const Annotation = ({ annotatedRootSpans, onSave}: Props) => {
-  const { projectId, batchId } = useParams<{ projectId: string, batchId: string }>();
+const Annotation = ({ onSave}: Props) => {
+  const { projectId, batchId, rootSpanId } = useParams<{ projectId: string, batchId: string, rootSpanId: string }>();
   const navigate = useNavigate();
   const theme = muiUseTheme();
   const [note, setNote] = useState("");
   const [rating, setRating] = useState<RatingType | null>(null);
-  
-  // Create a unique key for this batch to store the current index
-  const storageKey = `annotation-index-${projectId}-${batchId}`;
-  
-  // Initialize currentIndex from sessionStorage or default to 0
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    const savedIndex = sessionStorage.getItem(storageKey);
-    const parsedIndex = savedIndex ? parseInt(savedIndex, 10) : 0;
-    // Ensure the saved index is valid for the current spans array
-    return parsedIndex < annotatedRootSpans.length ? parsedIndex : 0;
-  });
-  
   const location = useLocation();
   const { projectName, batchName } = location.state || {};
-  const currentSpan = annotatedRootSpans[currentIndex];
 
-  // Save currentIndex to sessionStorage whenever it changes
-  useEffect(() => {
-    sessionStorage.setItem(storageKey, currentIndex.toString());
-  }, [currentIndex, storageKey]);
 
-  // Clean up sessionStorage when component unmounts
-  useEffect(() => {
-    return () => {
-      // Optional: clean up when navigating away from the batch
-      if (currentIndex >= annotatedRootSpans.length - 1) {
-        sessionStorage.removeItem(storageKey);
-      }
-    };
-  }, [storageKey, currentIndex, annotatedRootSpans.length]);
+  const {data: annotatedRootSpans = [], isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
 
-  useEffect(() => {
-    if (currentSpan) {
-      setNote(currentSpan.annotation?.note || '');
-      setRating(currentSpan.annotation?.rating === 'good' || currentSpan.annotation?.rating === 'bad' ? currentSpan.annotation.rating : null);
+  // Find current span and its index
+  const currentSpanIndex = annotatedRootSpans.findIndex(span => 
+    span.id === rootSpanId
+  );
+
+  const currentSpan = annotatedRootSpans[currentSpanIndex];
+
+  
+  // Use the span from the API data if available, otherwise fall back to the passed one
+  // const currentSpan = annotatedRootSpans[currentSpanIndex];
+
+  // Navigation functions
+  const goToPreviousSpan = () => {
+    if (currentSpanIndex > 0) {
+      const previousSpan = annotatedRootSpans[currentSpanIndex - 1];
+      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${previousSpan.traceId}`, {
+        state: { projectName, batchName, annotatedRootSpan: previousSpan }
+      });
     }
-  }, [currentSpan]);
+  };
 
-  const isSaveDisabled = rating === 'bad' && !note.trim();
+  const goToNextSpan = () => {
+    if (currentSpanIndex < annotatedRootSpans.length - 1) {
+      const nextSpan = annotatedRootSpans[currentSpanIndex + 1];
+      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${nextSpan.traceId}`, {
+        state: { projectName, batchName, annotatedRootSpan: nextSpan }
+      });
+    }
+  };
+
+
+  const isSaveDisabled = rating === 'bad' && !currentSpan.annotation?.note.trim();
   
   const handleSave = () => {
     if (currentSpan && rating) {
-      onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < annotatedRootSpans.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      onSave(currentSpan.annotation?.id || "", currentSpan.id, currentSpan.annotation?.note || "", rating);
     }
   };
 
@@ -281,7 +268,7 @@ const Annotation = ({ annotatedRootSpans, onSave}: Props) => {
                 textAlign: 'center'
               }}
             >
-              Annotation Queue
+              Grading RootSpan
             </Typography>
             {annotatedRootSpans.length > 0 && (
               <Typography 
@@ -292,7 +279,7 @@ const Annotation = ({ annotatedRootSpans, onSave}: Props) => {
                   fontSize: '0.875rem'
                 }}
               >
-                {currentIndex + 1} of {annotatedRootSpans.length}
+                {currentSpanIndex + 1} of {annotatedRootSpans.length}
               </Typography>
             )}
           </Box>
@@ -301,8 +288,8 @@ const Annotation = ({ annotatedRootSpans, onSave}: Props) => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
             <Button
               variant="outlined"
-              onClick={handlePrevious}
-              disabled={currentIndex === 0}
+              onClick={goToPreviousSpan}
+              disabled={currentSpanIndex === 0}
               size="small"
               sx={{ 
                 px: 3, 
@@ -324,8 +311,8 @@ const Annotation = ({ annotatedRootSpans, onSave}: Props) => {
             </Button>
             <Button
               variant="outlined"
-              onClick={handleNext}
-              disabled={currentIndex === annotatedRootSpans.length - 1}
+              onClick={goToNextSpan}
+              disabled={currentSpanIndex === annotatedRootSpans.length - 1}
               size="small"
               sx={{ 
                 px: 3, 

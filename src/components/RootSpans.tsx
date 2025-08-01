@@ -658,7 +658,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           <Button
             variant="contained"
             startIcon={<RateReviewIcon />}
-            onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation`, { 
+            onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${annotatedRootSpans[0].id}`, { 
               state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
             })}
             size="large"

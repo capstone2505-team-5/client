@@ -24,7 +24,7 @@ const RootSpanDetail = () => {
 
   // Find current span and its index
   const currentSpanIndex = allRootSpans.findIndex(span => 
-    span.traceId === rootSpanId || span.id === annotatedRootSpan?.id
+    span.id === rootSpanId || span.id === annotatedRootSpan?.id
   );
   
   // Use the span from the API data if available, otherwise fall back to the passed one
@@ -34,7 +34,7 @@ const RootSpanDetail = () => {
   const goToPreviousSpan = () => {
     if (currentSpanIndex > 0) {
       const previousSpan = allRootSpans[currentSpanIndex - 1];
-      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${previousSpan.traceId}`, {
+      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${previousSpan.id}`, {
         state: { projectName, batchName, annotatedRootSpan: previousSpan }
       });
     }
@@ -43,7 +43,7 @@ const RootSpanDetail = () => {
   const goToNextSpan = () => {
     if (currentSpanIndex < allRootSpans.length - 1) {
       const nextSpan = allRootSpans[currentSpanIndex + 1];
-      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${nextSpan.traceId}`, {
+      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${nextSpan.id}`, {
         state: { projectName, batchName, annotatedRootSpan: nextSpan }
       });
     }
@@ -303,7 +303,7 @@ const RootSpanDetail = () => {
           <Button
             variant="contained"
             startIcon={<RateReviewIcon />}
-            onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation`, { 
+            onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${currentSpan.id}`, { 
               state: { projectName: projectName } 
             })}
             size="large"
@@ -433,7 +433,7 @@ const RootSpanDetail = () => {
                 try {
                   const phoenixUrl = await getPhoenixDashboardUrl();
                   // Open Phoenix dashboard in a new tab
-                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${currentSpan.traceId}`, '_blank');
+                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${currentSpan.id}`, '_blank');
                 } catch (error) {
                   console.error('Failed to get Phoenix dashboard URL:', error);
                 }

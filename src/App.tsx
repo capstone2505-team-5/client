@@ -222,10 +222,9 @@ const AppWithQuery = () => {
 
           <Route path="/projects/:projectId/batches/:batchId/rootSpans/:rootSpanId" element={<RootSpanDetails />} />
           <Route
-            path="/projects/:projectId/batches/:batchId/annotation" // TODO: change to annotation/:rootSpanId
+            path="/projects/:projectId/batches/:batchId/annotation/:rootSpanId"
             element={
               <Annotation
-                annotatedRootSpans={annotatedRootSpans}
                 onSave={handleSaveAnnotation}
               />
             }
