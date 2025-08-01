@@ -23,7 +23,7 @@ import type { AnnotatedRootSpan, Project } from "../types/types";
 interface CreateBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
   onLoadRootSpans: (projectId: string) => void;
-  onCreateBatch: (name: string, projectId: string, rootSpanIds: string[]) => void;
+  onCreateBatch: (name: string, projectId: string, rootSpanIds: string[]) => Promise<string>;
   isLoading: boolean;
 }
 
@@ -94,11 +94,18 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
 
   const handleSubmit = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
-    onCreateBatch(name, projectId, selectedRootSpanIds);
-    navigate(`/projects/${projectId}`, { 
-      state: { projectName: projectName, projectId: projectId } 
-    });
-  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId]);
+    
+    try {
+      console.log("Creating batch", name, projectId, selectedRootSpanIds);
+      const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
+      console.log("Batch created with ID:", batchId);
+      navigate(`/projects/${projectId}/batches/${batchId}`, { 
+        state: { projectName: projectName, projectId: projectId, batchName: name } 
+      });
+    } catch (error) {
+      console.error("Failed to create batch:", error);
+    }
+  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName]);
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);

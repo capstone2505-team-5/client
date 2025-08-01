@@ -15,10 +15,10 @@ const Footer = () => {
 
   const steps = [
     { title: 'Select a project', routes: ['/projects'] },
-    { title: 'Create a Batch', routes: ['/create-queue'] },
-    { title: 'Grade Batch', routes: ['/queues/:id/annotation'] },
-    { title: 'Categorize Batch', routes: ['/queues/:id'] },
-    { title: 'Inspect Results', routes: ['/queues/:id'] }
+    { title: 'Create a Batch', routes: ['/projects/:projectId/batches/create'] },
+    { title: 'Grade Batch', routes: ['/projects/:projectId/batches/:batchId/annotation'] },
+    { title: 'Categorize Batch', routes: ['/projects/:projectId/batches/:batchId'] },
+    { title: 'Inspect Results', routes: ['/projects/:projectId/batches/:batchId'] }
   ];
 
   // Determine current step based on route
@@ -26,10 +26,10 @@ const Footer = () => {
     const path = location.pathname;
     
     if (path === '/projects') return 0;
-    if (path === '/create-batch' || path.startsWith('/edit-batch') || path === '/batches') return 1;
+    if (path.includes('/batches/create') || path.includes('/batches/') && path.includes('/edit')) return 1;
     if (path.includes('/annotation')) return 2;
-    if (path.startsWith('/batches/') && !path.includes('/annotation')) return 3; // need to add logic if annotation is done for the batch
-    if (path.startsWith('/batches/') && path.includes('results')) return 4; // need to add logic if categorization is done for the batch
+    if (path.includes('/batches/') && !path.includes('/annotation') && !path.includes('/create') && !path.includes('/edit')) return 3;
+    if (path.includes('/batches/') && path.includes('results')) return 4; // for future results page
     
     return -1; // No active step (home page, etc.)
   };

@@ -112,7 +112,7 @@ export const fetchBatchlessSpansByProject = async (projectId: string): Promise<A
   const response = await axios.get('/api/batches/unbatched', {
     params: { 
       projectId,
-      numPerPage: 100 // Large number to get all spans
+      numPerPage: 100
     }
   });
   return response.data.batchlessRootSpans;
