@@ -304,7 +304,7 @@ const RootSpanDetail = () => {
             variant="contained"
             startIcon={<RateReviewIcon />}
             onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${currentSpan.id}`, { 
-              state: { projectName: projectName } 
+              state: { projectName: projectName, batchName: batchName, annotatedRootSpan: currentSpan } 
             })}
             size="large"
             sx={{ 

@@ -41,7 +41,7 @@ const Annotation = ({ onSave}: Props) => {
   const goToPreviousSpan = () => {
     if (currentSpanIndex > 0) {
       const previousSpan = annotatedRootSpans[currentSpanIndex - 1];
-      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${previousSpan.traceId}`, {
+      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${previousSpan.id}`, {
         state: { projectName, batchName, annotatedRootSpan: previousSpan }
       });
     }
@@ -50,7 +50,7 @@ const Annotation = ({ onSave}: Props) => {
   const goToNextSpan = () => {
     if (currentSpanIndex < annotatedRootSpans.length - 1) {
       const nextSpan = annotatedRootSpans[currentSpanIndex + 1];
-      navigate(`/projects/${projectId}/batches/${batchId}/rootSpans/${nextSpan.traceId}`, {
+      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${nextSpan.id}`, {
         state: { projectName, batchName, annotatedRootSpan: nextSpan }
       });
     }
@@ -519,7 +519,7 @@ const Annotation = ({ onSave}: Props) => {
               </Typography>
               <TextField
                 multiline
-                rows={8}
+                rows={15}
                 fullWidth
                 variant="outlined"
                 value={note}
