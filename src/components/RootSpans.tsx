@@ -18,6 +18,8 @@ import {
   ListItemText,
   CircularProgress,
   Backdrop,
+  Snackbar,
+  Alert,
   useTheme as muiUseTheme,
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
@@ -35,10 +37,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
-import { useTheme } from "../contexts/ThemeContext";
 import type { AnnotatedRootSpan } from "../types/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { categorizeAnnotations } from "../services/services";
+import { categorizeAnnotations, deleteRootSpan, deleteAnnotation } from "../services/services";
 
 // Custom Rating Filter Component
 const RatingFilterInputValue = (props: GridFilterInputValueProps) => {
@@ -149,12 +150,19 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   const theme = muiUseTheme();
   const queryClient = useQueryClient();
   const [isCategorizing, setIsCategorizing] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+  });
 
   useEffect(() => {
     if (batchId) {
       onLoadRootSpans(batchId);
     }
   }, [batchId, onLoadRootSpans]);
+
+
 
   const handleClose = () => {
     setOpen(false);
@@ -165,6 +173,20 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     setCategorizeModalOpen(false);
     setCategorizeResults(null);
   };
+
+  const handleSnackbarClose = () => {
+    setSnackbar((prev: typeof snackbar) => ({ ...prev, open: false }));
+  };
+
+  // Check for pending toast after re-renders (from React Query refetch)
+  useEffect(() => {
+    const pending = sessionStorage.getItem('pendingToast');
+    if (pending) {
+      sessionStorage.removeItem('pendingToast');
+      const toastData = JSON.parse(pending);
+      setSnackbar(toastData);
+    }
+  }, [annotatedRootSpans]); // Trigger when data changes
 
   const handleConfirmDelete = async () => {
     if (rootSpanToDelete) {
@@ -194,7 +216,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         }
         
         // Reload the root spans data to reflect updated annotations
-        queryClient.invalidateQueries({ queryKey: ['rootSpans', batchId] });
+        queryClient.invalidateQueries({ queryKey: ['rootSpans', 'batch', batchId] });
         // Also reload batches data to update category counts
         queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
         
@@ -220,11 +242,42 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
 
   const handleDelete = async (rootSpanId: string) => {
     try {
-      // await deleteRootSpan(rootSpanId); // TODO: Implement delete functionality
-      queryClient.invalidateQueries({ queryKey: ['rootSpans', batchId] });
+      if (!batchId) return;
+      
+      // Delete root span from batch (always succeeds)
+      await deleteRootSpan(batchId, rootSpanId);
+      
+      // Try to delete annotation (may not exist)
+      try {
+        await deleteAnnotation(rootSpanId);
+      } catch (annotationError) {
+        // Ignore if annotation doesn't exist
+        console.log("No annotation to delete for span:", rootSpanId);
+      }
+      
       handleClose();
+      
+      // Store success toast in sessionStorage (survives re-renders)
+      sessionStorage.setItem('pendingToast', JSON.stringify({
+        open: true,
+        message: 'Root span successfully removed from batch',
+        severity: 'success'
+      }));
+      
+      // Refresh data immediately
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['rootSpans', 'batch', batchId] }),
+        queryClient.invalidateQueries({ queryKey: ['batches', projectId] })
+      ]);
     } catch (error) {
       console.error("Failed to delete root span", error);
+      
+      // Show error toast
+      setSnackbar({
+        open: true,
+        message: 'Failed to remove root span from batch',
+        severity: 'error'
+      });
     }
   };
 
@@ -639,7 +692,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
               }
             }}
           >
-            {isCategorizing ? 'Categorizing...' : `Categorize (${annotatedRootSpans.filter(span => span.annotation?.rating !== undefined && span.annotation?.rating !== null).length}/${annotatedRootSpans.length})`}
+            {isCategorizing ? 'Categorizing...' : `Categorize`}
           </Button>
         </Box>
       </Box>
@@ -1127,6 +1180,30 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           </Box>
         </Backdrop>
       </Fragment>
+
+      {/* Toast Notification - Positioned in nav area */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          top: '192px !important', // Position below the nav area
+          zIndex: 9999 // Much higher z-index
+        }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ 
+            width: '100%',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+              </Snackbar>
     </Container>
   );
 };

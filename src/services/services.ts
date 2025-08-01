@@ -26,6 +26,11 @@ export const updateAnnotation = async (annotationId: string, note: string, ratin
   return response.data
 }
 
+export const deleteAnnotation = async (annotationId: string) => {
+  const response = await axios.delete(`/api/annotations/${annotationId}`);
+  return response.data;
+}
+
 export const categorizeAnnotations = async (batchId: string): Promise<
   Record<string, number>
 > => {
@@ -48,7 +53,7 @@ export const fetchBatches = async (projectId: string): Promise<{
 
 export const fetchBatch = async (id: string): Promise<{ id: string; name: string; rootSpanIds: string[] }> => {
   const response = await axios.get(`/api/batches/${id}`);
-  return response.data.batchSummary; // Backend returns { rootSpans, batchSummary, totalCount }
+  return response.data.batchSummary;
 }
 
 export const createBatch = async (data: { name: string; projectId: string; rootSpanIds: string[] }) => {
@@ -66,6 +71,13 @@ export const deleteBatch = async (id: string) => {
   return response.data;
 }
 
+export const deleteRootSpan = async (batchId: string, spanId: string) => {
+  const response = await axios.delete(`/api/batches/${batchId}/spans/${spanId}`);
+  return response.data;
+}
+
+
+
 export const getPhoenixDashboardUrl = async (): Promise<string> => {
   const response = await axios.get('/api/phoenixDashboardUrl');
   return response.data;
@@ -82,7 +94,7 @@ export const fetchRootSpansByBatch = async (batchId: string): Promise<AnnotatedR
       numPerPage: 200
     }
   });
-  return response.data.rootSpans; // Backend returns { rootSpans, batchSummary, totalCount }
+  return response.data.rootSpans;
 }
 
 export const fetchRootSpansByProject = async (projectId: string): Promise<AnnotatedRootSpan[]> => {
@@ -92,7 +104,7 @@ export const fetchRootSpansByProject = async (projectId: string): Promise<Annota
       numPerPage: 2000 // Large number to get all spans
     }
   });
-  return response.data.rootSpans; // Backend returns { rootSpans, totalCount }
+  return response.data.rootSpans;
 }
 
 // Fetch unbatched spans for a project (useful for CreateBatch)
@@ -103,5 +115,5 @@ export const fetchBatchlessSpansByProject = async (projectId: string): Promise<A
       numPerPage: 1000 // Large number to get all spans
     }
   });
-  return response.data.batchlessRootSpans; // Backend returns { batchlessRootSpans, totalCount }
+  return response.data.batchlessRootSpans;
 }
