@@ -309,7 +309,7 @@ const RootSpanDetail = () => {
             size="large"
             sx={{ 
               px: 3, 
-              minWidth: 225,
+              minWidth: 345,
               backgroundColor: 'secondary.main',
               color: 'black',
               fontWeight: 600,
@@ -328,7 +328,7 @@ const RootSpanDetail = () => {
              size="small"
              sx={{ 
                px: 3, 
-               minWidth: 102,
+               minWidth: 165,
                borderColor: 'secondary.main',
                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
                fontWeight: 600,
@@ -351,7 +351,7 @@ const RootSpanDetail = () => {
              size="small"
              sx={{ 
                px: 3, 
-               minWidth: 102,
+               minWidth: 165,
                borderColor: 'secondary.main',
                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
                fontWeight: 600,
