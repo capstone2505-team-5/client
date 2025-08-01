@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, use } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Container,
@@ -17,37 +17,31 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import { fetchQueue, deleteQueue } from "../services/services";
+import { fetchBatch, deleteBatch } from "../services/services";
 import type { AnnotatedRootSpan } from "../types/types";
 
-interface EditQueueProps {
+interface EditBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
-  onUpdateQueue: (id: string, name: string, rootSpanIds: string[]) => void;
+  onLoadRootSpans: (projectId: string) => void;
+  onUpdateBatch: (id: string, name: string, rootSpanIds: string[]) => void;
+  isLoading: boolean;
 }
 
-const EditQueue = ({ annotatedRootSpans: rootSpans, onUpdateQueue }: EditQueueProps) => {
-  const { id } = useParams<{ id: string }>();
+const EditBatch = ({ annotatedRootSpans: rootSpans, onLoadRootSpans, onUpdateBatch, isLoading }: EditBatchProps) => {
+  const { batchId } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
+  const { projectId } = useParams();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!id) return;
-        const queue = await fetchQueue(id);
-        setName(queue.name);
-        setSelectedSet(new Set(queue.rootSpanIds));
-      } catch (error) { 
-        console.error("Failed to fetch queue", error);
-        navigate(`/queues`);
-      }
-    };
-    fetchData();
-  }, [id]);
+    if (projectId) {
+      onLoadRootSpans(projectId);
+    }
+  }, [projectId, onLoadRootSpans]);
 
   // filtered + sorted spans
   const now = useMemo(() => new Date(), []);
@@ -60,9 +54,13 @@ const EditQueue = ({ annotatedRootSpans: rootSpans, onUpdateQueue }: EditQueuePr
         if (timeInterval === '1h') threshold.setHours(now.getHours() - 1);
         if (timeInterval === '24h') threshold.setDate(now.getDate() - 1);
         if (timeInterval === '7d') threshold.setDate(now.getDate() - 7);
-        return new Date(s.startTime) >= threshold;
+        return s.startTime ? new Date(s.startTime) >= threshold : false;
       })
-      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+      .sort((a, b) => {
+        const aTime = a.startTime ? new Date(a.startTime).getTime() : 0;
+        const bTime = b.startTime ? new Date(b.startTime).getTime() : 0;
+        return bTime - aTime;
+      });
   }, [rootSpans, projectFilter, timeInterval, now]);
 
   // distinct projects for dropdown
@@ -98,9 +96,9 @@ const EditQueue = ({ annotatedRootSpans: rootSpans, onUpdateQueue }: EditQueuePr
 
   // save
   const handleSubmit = async () => {
-    if (!id) return;
-    onUpdateQueue(id, name, selectedRootSpanIds);
-    navigate("/queues");
+    if (!batchId) return;
+    onUpdateBatch(batchId, name, selectedRootSpanIds);
+    navigate("/batches");
   };
 
   return (
@@ -108,27 +106,27 @@ const EditQueue = ({ annotatedRootSpans: rootSpans, onUpdateQueue }: EditQueuePr
     
       <Box mb={2} display="flex" alignItems="center" justifyContent="space-between">
         <Typography variant="h4">
-          Edit Queue
+          Edit Batch
         </Typography>
         <Button
           color="error"
           variant="contained"
           onClick={async () => {
-            if (!id) return;
-            const confirm = window.confirm('Delete this queue?  This cannot be undone.');
+            if (!batchId) return;
+            const confirm = window.confirm('Delete this batch?  This cannot be undone.');
             if (!confirm) return;
-            await deleteQueue(id);
-            navigate('/queues');
+            await deleteBatch(batchId);
+            navigate('/batches');
           }}
         >
-          Delete Queue
+          Delete Batch
         </Button>
       </Box>
 
       <Box mb={3}>
         <TextField
           fullWidth
-          label="Queue Name"
+          label="Batch Name"
           value={name}
           onChange={e => setName(e.target.value)}
         />
@@ -190,17 +188,17 @@ const EditQueue = ({ annotatedRootSpans: rootSpans, onUpdateQueue }: EditQueuePr
       </List>
 
       <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
-        <Button onClick={() => navigate("/queues")}>Cancel</Button>
+        <Button onClick={() => navigate(`/projects/${projectId}/batches/${batchId}`)}>Cancel</Button>
         <Button
           variant="contained"
           disabled={!name || selectedRootSpanIds.length === 0}
           onClick={handleSubmit}
         >
-          Save Queue
+          Save Batch
         </Button>
       </Box>
     </Container>
   );
 };
 
-export default EditQueue;
+export default EditBatch; 

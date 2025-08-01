@@ -4,6 +4,8 @@ import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButto
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import AddIcon from '@mui/icons-material/Add';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -13,43 +15,34 @@ import DialogActions from '@mui/material/DialogActions';
 import type { GridColDef } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
 import { getPhoenixDashboardUrl, fetchProjects } from "../services/services";
-import type { Project } from "../types/types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const Projects = () => {
   const navigate = useNavigate();
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
-  const [phoenixDashboardUrl, setPhoenixDashboardUrl] = useState<string>('');
-  const [projects, setProjects] = useState<Project[]>([]);
 
+  const {
+    data: projects = [],
+    isLoading: projectsLoading,
+    error: projectsError,
+  } = useQuery({
+    queryKey: ['projects'],
+    queryFn: fetchProjects,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        const projects = await fetchProjects();
-        setProjects(projects);
-      } catch (error) {
-        console.error('Failed to fetch projects:', error);
-      }
-    };
-    
-    loadProjects();
-  }, []);
-
-  useEffect(() => {
-    const fetchPhoenixUrl = async () => {
-      try {
-        const url = await getPhoenixDashboardUrl();
-        setPhoenixDashboardUrl(url);
-      } catch (error) {
-        console.error('Failed to fetch Phoenix dashboard URL:', error);
-      }
-    };
-    
-    fetchPhoenixUrl();
-  }, []);
+  const {
+    data: phoenixDashboardUrl = '',
+    isLoading: urlLoading,
+  } = useQuery({
+    queryKey: ['phoenixDashboardUrl'],
+    queryFn: getPhoenixDashboardUrl,
+    staleTime: Infinity
+  })
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -59,20 +52,21 @@ const Projects = () => {
     setOpen(false);
   };
 
-  const handleProjectClick = (projectName: string) => {
-    navigate('/queues');
+  const handleProjectClick = (projectId: string, projectName: string) => {
+    console.log('projectId', projectId);
+    navigate(`/projects/${projectId}`, { state: { projectId, projectName } });
   };
 
   // Filter projects based on search term
   const filteredProjects = useMemo(() => {
-    if (!searchTerm.trim()) return projects;
+    if (!projects || !searchTerm.trim()) return projects || [];
     
     return projects.filter(project =>
       project.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [projects, searchTerm]);
 
-  // Calculate dynamic height based on page size
+  // Calculate dynamic height based on rows per page in data grid
   const getDataGridHeight = () => {
     const headerHeight = 56;
     const footerHeight = 56;
@@ -316,9 +310,6 @@ const Projects = () => {
             startIcon={<AddIcon sx={{ color: 'black !important' }} />}
             size="small"
             onClick={handleClickOpen}
-            // href="https://arize.com/docs/phoenix/integrations"
-            // target="_blank"
-            // rel="noopener noreferrer"
             sx={{
               whiteSpace: 'nowrap',
               ml: 2,
@@ -334,36 +325,116 @@ const Projects = () => {
           </Button>
         </Box>
 
-        <Fragment>
-
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          {"Add Tracing to a New Application to Create a New Project"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Access your Phoenix Dashboard and follow instructions from the "Trace" button in the top right corner of the Phoenix UI to get started. Or consult the phoenix documentation for more information.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button href={phoenixDashboardUrl} target="_blank" rel="noopener noreferrer" onClick={handleClose}>Dashboard</Button>
-          <Button href="https://arize.com/docs/phoenix/integrations" target="_blank" rel="noopener noreferrer" onClick={handleClose}>Documentation</Button>
-          <Button onClick={handleClose} autoFocus>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Fragment>
+      <Fragment>
+        <Dialog
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle 
+            id="alert-dialog-title"
+            sx={{ 
+              color: 'primary.main',
+              fontWeight: 'bold',
+              fontSize: '1.5rem',
+              pb: 1,
+              textAlign: 'center'
+            }}
+          >
+            Create New Project
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+                         <DialogContentText 
+               id="alert-dialog-description"
+               sx={{ 
+                 fontSize: '1rem', 
+                 color: 'text.primary',
+                 textAlign: 'center',
+                 lineHeight: 1.6,
+                 mb: 2
+               }}
+             >
+               To create a new project, you'll need to add tracing to your application.
+             </DialogContentText>
+                         <Box sx={{ 
+               backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.1)' : 'rgba(33, 150, 243, 0.05)',
+               borderRadius: 2,
+               p: 2,
+               border: '1px solid',
+               borderColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.3)' : 'rgba(33, 150, 243, 0.2)'
+             }}>
+               <Typography variant="body2" sx={{ color: 'text.primary', mb: 1, textAlign: 'center' }}>
+                 Access your Phoenix Dashboard and follow the instructions from the "Trace" button in the top right corner of the Phoenix UI to get started.
+               </Typography>
+               <Typography 
+                 variant="body2" 
+                 sx={{ 
+                   color: 'text.secondary', 
+                   textAlign: 'center', 
+                   fontStyle: 'italic',
+                   my: 1 
+                 }}
+               >
+                 — or —
+               </Typography>
+               <Typography variant="body2" sx={{ color: 'text.primary', textAlign: 'center' }}>
+                 Reference the Phoenix documentation for more information.
+               </Typography>
+             </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1, justifyContent: 'center' }}>
+            <Button 
+              href={phoenixDashboardUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              onClick={handleClose}
+              variant="contained"
+              color="primary"
+              sx={{ 
+                minWidth: '120px',
+                fontWeight: 'bold'
+              }}
+            >
+              Dashboard
+            </Button>
+            <Button 
+              href="https://arize.com/docs/phoenix/integrations" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              onClick={handleClose}
+              variant="contained"
+              color="primary"
+              sx={{ 
+                minWidth: '120px',
+                borderColor: 'primary.main',
+                fontWeight: 'bold'
+              }}
+            >
+              Documentation
+            </Button>
+                         <Button 
+               onClick={handleClose} 
+               variant="contained"
+               color="primary"
+               sx={{ 
+                 minWidth: '100px',
+                 fontWeight: 'bold'
+               }}
+             >
+               Close
+             </Button>
+          </DialogActions>
+        </Dialog>
+      </Fragment>
 
         <Box sx={{ height: getDataGridHeight() }}>
                     <DataGrid
             rows={filteredProjects}
             columns={columns}
+            loading={projectsLoading}
             initialState={{
               pagination: {
                 paginationModel: { page: 0, pageSize: 10 },
@@ -372,45 +443,107 @@ const Projects = () => {
             pageSizeOptions={[5, 10, 25]}
             disableRowSelectionOnClick
             getRowHeight={() => 56}
-            onRowClick={(params) => handleProjectClick(params.row.name)}
+            onRowClick={(params) => handleProjectClick(params.row.id, params.row.name)}
             onPaginationModelChange={(model) => {
               setPageSize(model.pageSize);
             }}
             slots={{
-              noRowsOverlay: () => (
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  height: '100%',
-                  py: 4
-                }}>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      mb: 1,
-                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
-                    }}
-                  >
-                    {projects.length === 0 
-                      ? 'No projects available' 
-                      : 'No projects found'
-                    }
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    sx={{
-                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'
-                    }}
-                  >
-                    {projects.length === 0 
-                      ? 'Projects will appear here once data is loaded'
-                      : `No projects match your search "${searchTerm}"`
-                    }
-                  </Typography>
-                </Box>
-              )
+              noRowsOverlay: () => {
+                // Show error state if there's an error
+                if (projectsError) {
+                  return (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      height: '100%',
+                      py: 4,
+                      px: 2
+                    }}>
+                      <ErrorOutlineIcon 
+                        sx={{ 
+                          fontSize: '3rem', 
+                          color: 'error.main',
+                          mb: 2
+                        }} 
+                      />
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          mb: 1,
+                          color: 'error.main',
+                          textAlign: 'center'
+                        }}
+                      >
+                        Failed to load projects
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        sx={{
+                          color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                          textAlign: 'center',
+                          mb: 3,
+                          maxWidth: '400px'
+                        }}
+                      >
+                        {projectsError instanceof Error 
+                          ? projectsError.message 
+                          : 'An unexpected error occurred while loading projects'}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<RefreshIcon />}
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ['projects'] })}
+                        sx={{
+                          backgroundColor: 'error.main',
+                          '&:hover': {
+                            backgroundColor: 'error.dark',
+                          }
+                        }}
+                      >
+                        Retry
+                      </Button>
+                    </Box>
+                  );
+                }
+
+                // Show no data state
+                return (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    height: '100%',
+                    py: 4
+                  }}>
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        mb: 1,
+                        color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                      }}
+                    >
+                      {(projects?.length || 0) === 0 
+                        ? 'No projects available' 
+                        : 'No projects found'
+                      }
+                    </Typography>
+                    <Typography 
+                      variant="body2" 
+                      sx={{
+                        color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'
+                      }}
+                    >
+                      {(projects?.length || 0) === 0 
+                        ? 'Projects will appear here once data is loaded'
+                        : `No projects match your search "${searchTerm}"`
+                      }
+                    </Typography>
+                  </Box>
+                );
+              }
             }}
             sx={{
               '& .MuiDataGrid-virtualScroller': {

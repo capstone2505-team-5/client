@@ -1,190 +1,175 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useTheme } from "./contexts/ThemeContext";
 import { darkTheme, lightTheme } from "./theme/theme";
-import FilteredAnnotation from "./components/FilteredAnnotation";
+import Annotation from "./components/Annotation";
 import Home from "./components/Home";
 import Projects from "./components/Projects";
-import Queues from "./components/Queues";
+import Batches from "./components/Batches";
 import NavBar from "./components/NavBar";
-import CreateQueue from "./components/CreateQueue";
+import CreateBatch from "./components/CreateBatch";
 import RootSpanDetails from "./components/RootSpanDetails";
 import Footer from "./components/Footer";
 import type { AnnotatedRootSpan, Rating } from "./types/types";
-import FilteredRootSpans from "./components/FilteredRootSpans";
+import RootSpans from "./components/RootSpans";
 import {
-  fetchRootSpans,
-  fetchAnnotations,
   categorizeAnnotations,
 } from "./services/services";
-import { createAnnotation, updateAnnotation, createQueue, updateQueue } from "./services/services";
-import EditQueue from "./components/EditQueue";
+import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
+import EditBatch from "./components/EditBatch";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { useRootSpansContext, useRootSpanMutations } from "./hooks/useRootSpans";
 
-const App = () => {
-  const [annotatedRootSpans, setAnnotatedRootSpans] = useState<AnnotatedRootSpan[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const queryClient = new QueryClient();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
-        const [rootSpans, annotations] = await Promise.all([
-          fetchRootSpans(),
-          fetchAnnotations(),
-        ]);
+const AppWithQuery = () => {
+  // Keep track of current context for the unified query
+  const [currentContext, setCurrentContext] = useState<{
+    type: 'batch' | 'project';
+    id?: string;
+  } | null>(null); // Start with null - no data loaded initially
 
-        const combined: AnnotatedRootSpan[] = rootSpans.map((rootSpan) => {
-          const match = annotations.find(
-            (annotation) => annotation.rootSpanId === rootSpan.id
-          );
+  // Use TanStack Query instead of manual state management
+  // Always call the hook - handle null context inside the hook
+  const { data: annotatedRootSpans = [], isLoading, error } = useRootSpansContext(currentContext);
+  const { updateRootSpanInCache, invalidateAll, invalidateBatch, invalidateProject } = useRootSpanMutations();
+  
+  // Add the queryClient hook
+  const queryClient = useQueryClient();
 
-          return {
-            id: rootSpan.id,
-            input: rootSpan.input,
-            output: rootSpan.output,
-            traceId: rootSpan.traceId,
-            queueId: rootSpan.queueId,
-            startTime: rootSpan.startTime,
-            endTime: rootSpan.endTime,
-            tsStart: Date.parse(rootSpan.startTime),
-            tsEnd: Date.parse(rootSpan.endTime),
-            projectName: rootSpan.projectName,
-            spanName: rootSpan.spanName,
-            created_at: rootSpan.created_at,
-            annotationId: match?.id ?? "",
-            note: match?.note ?? "",
-            rating: match?.rating ?? "none",
-            categories: match?.categories ?? [],
-          };
-        });
+  // Track last fetched IDs to maintain your existing logic
+  const lastFetchedBatchId = useRef<string | null>(null);
+  const lastFetchedProjectId = useRef<string | null>(null);
 
-        setAnnotatedRootSpans(combined);
-      } catch (error) {
-        console.error("Failed to fetch root spans or annotations", error);
-      } finally {
-        setIsLoading(false)
-      }
-    };
-
-    fetchData();
+  // Functions that child components can call - now just update context for TanStack Query
+  const loadRootSpansByBatch = useCallback((batchId: string) => {
+    if (batchId !== lastFetchedBatchId.current) {
+      console.log('App level: Loading batch', batchId, 'lastFetched:', lastFetchedBatchId.current);
+      lastFetchedBatchId.current = batchId;
+      setCurrentContext({ type: 'batch', id: batchId });
+    } else {
+      console.log('App level: Skipping batch fetch, already loaded:', batchId);
+    }
   }, []);
 
-  const handleCategorize = async () => {
-    try {
-      const rootSpanCategories = await categorizeAnnotations();
-
-      const updatedAnnotatedRootSpans = annotatedRootSpans.map((annotatedRootSpan) => {
-        const match = rootSpanCategories.find(
-          ({ rootSpanId }) => rootSpanId === annotatedRootSpan.id
-        );
-        const categories = match ? match.categories : annotatedRootSpan.categories;
-        return {
-          ...annotatedRootSpan,
-          categories,
-        };
-      });
-      setAnnotatedRootSpans(updatedAnnotatedRootSpans);
-    } catch (error) {
-      console.log("Error categorizing annotations", error);
+  const loadRootSpansByProject = useCallback((projectId: string) => {
+    if (projectId !== lastFetchedProjectId.current) {
+      console.log('App level: Loading project', projectId, 'lastFetched:', lastFetchedProjectId.current);
+      lastFetchedProjectId.current = projectId;
+      setCurrentContext({ type: 'project', id: projectId });
+    } else {
+      console.log('App level: Skipping project fetch, already loaded:', projectId);
     }
-  };
+  }, []);
 
   const handleSaveAnnotation = async (
     annotationId: string,
     rootSpanId: string,
     note: string,
-    rating: Rating
+    rating: Rating | null
   ): Promise<void> => {
     try {
-      let res;
+      let res: any = null;
       if (annotationId === "") {
-        res = await createAnnotation(rootSpanId, note || "", rating || "none");
+        if (rating) {
+          res = await createAnnotation(rootSpanId, note || "", rating);
+        }
       } else {
-        res = await updateAnnotation(
-          annotationId,
-          note || "",
-          rating || "none"
-        );
+        if (rating) {
+          res = await updateAnnotation(annotationId, note || "", rating);
+        }
       }
 
-      setAnnotatedRootSpans((prev) => {
-        return prev.map((rootSpan) => {
-          if (rootSpan.id === rootSpanId) {
-            return {
-              ...rootSpan,
-              note,
-              rating,
-            };
-          } else {
-            return rootSpan;
-          }
-        });
-      });
+      // Optimistically update the cache
+      updateRootSpanInCache(rootSpanId, (span) => ({
+        ...span,
+        annotation: rating ? {
+          id: annotationId || res?.id || '',
+          note: note || '',
+          rating,
+          categories: span.annotation?.categories || []
+        } : null
+      }));
 
-      console.log(
-        annotationId ? "Annotation updated:" : "Annotation created:",
-        res
-      );
+      if (res) {
+        console.log(
+          annotationId ? "Annotation updated:" : "Annotation created:",
+          res
+        );
+      }
     } catch (err) {
       console.error("Failed to save annotation", err);
     }
   };
 
-  const handleCreateQueue = async (name: string, rootSpanIds: string[]) => {
+  const handleCreateBatch = useCallback(async (name: string, projectId: string, rootSpanIds: string[]) => {
     try {
-      const { id: queueId } = await createQueue({ name, rootSpanIds });
+      const { id: batchId } = await createBatch({ name, projectId, rootSpanIds });
 
+      // Optimistically update spans with new batch ID
       const idSet = new Set(rootSpanIds);
-      setAnnotatedRootSpans(prev =>
-        prev.map(span =>
-          idSet.has(span.id) ? { ...span, queueId } : span
-        )
-      );
-    } catch (error) {
-      console.error("Failed to create queue", error);
-    }
-  };
+      rootSpanIds.forEach(rootSpanId => {
+        updateRootSpanInCache(rootSpanId, (span) => ({ ...span, batchId }));
+      });
 
-  const handleUpdateQueue = async (
-    queueId: string,
+      // Invalidate related queries to ensure consistency
+      invalidateProject(projectId);
+      
+      // Also invalidate the batches query so the batches list updates
+      queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
+      
+      // Return the batch ID so the calling component can use it
+      return batchId;
+    } catch (error) {
+      console.error("Failed to create batch", error);
+      throw error; // Re-throw so calling component can handle the error
+    }
+  }, [updateRootSpanInCache, invalidateProject, queryClient]);
+
+  const handleUpdateBatch = async (
+    batchId: string,
     name: string,
     rootSpanIds: string[]
   ) => {
     try {
-      await updateQueue(queueId, { name, rootSpanIds });
+      await updateBatch(batchId, { name, rootSpanIds });
 
       const keepSet = new Set(rootSpanIds);
 
-      setAnnotatedRootSpans(prev =>
-        prev.map(span => {
-          const inQueueNow   = span.queueId === queueId;
-          const shouldBeIn   = keepSet.has(span.id);
+      // Update all spans in cache
+      annotatedRootSpans.forEach(span => {
+        const inBatchNow = span.batchId === batchId;
+        const shouldBeIn = keepSet.has(span.id);
 
-          if (!inQueueNow && shouldBeIn) {
-            return { ...span, queueId };
-          }
+        if (!inBatchNow && shouldBeIn) {
+          updateRootSpanInCache(span.id, s => ({ ...s, batchId: batchId }));
+        } else if (inBatchNow && !shouldBeIn) {
+          updateRootSpanInCache(span.id, s => ({ ...s, batchId: null }));
+        }
+      });
 
-          if (inQueueNow && !shouldBeIn) {
-            return { ...span, queueId: null };
-          }
-
-          return span;
-        })
-      );
+      // Invalidate batch-specific queries
+      invalidateBatch(batchId);
     } catch (error) {
-      console.error('Failed to update queue', error);
+      console.error('Failed to update batch', error);
     }
   };
 
-  const handleSpansOnDeleteQueue = async (queueId: string) => {
+  const handleSpansOnDeleteBatch = async (batchId: string) => {
     try {
-      setAnnotatedRootSpans(prev =>
-        prev.map(span => (span.queueId === queueId ? { ...span, queueId: null } : span))
-      );
+      // Update spans to remove batch association
+      annotatedRootSpans.forEach(span => {
+        if (span.batchId === batchId) {
+          updateRootSpanInCache(span.id, s => ({ ...s, batchId: null }));
+        }
+      });
+
+      // Invalidate queries
+      invalidateAll();
     } catch (error) {
-      console.error("Failed to delete queue", error);
+      console.error("Failed to delete batch", error);
     }
   };
 
@@ -201,40 +186,46 @@ const App = () => {
             <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
-          <Route path="/queues" element={<Queues onDeleteQueue={handleSpansOnDeleteQueue} />} />
+          <Route path="/projects/:projectId" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
           <Route
-            path="/create-queue"
+            path="/projects/:projectId/batches/:batchId"
             element={
-              <CreateQueue
+              <RootSpans
                 annotatedRootSpans={annotatedRootSpans}
-                onCreateQueue={handleCreateQueue}
+                onLoadRootSpans={loadRootSpansByBatch}
+                isLoading={isLoading}
               />
             }
           />
           <Route
-            path="/edit-queue/:id"
+            path="/projects/:projectId/batches/create"
             element={
-              <EditQueue
+              <CreateBatch
                 annotatedRootSpans={annotatedRootSpans}
-                onUpdateQueue={handleUpdateQueue}
+                onLoadRootSpans={loadRootSpansByProject}
+                onCreateBatch={handleCreateBatch}
+                isLoading={isLoading}
               />
             }
           />
           <Route
-            path="/queues/:id"
+            path="/projects/:projectId/batches/:batchId/edit"
             element={
-              <FilteredRootSpans
-                allSpans={annotatedRootSpans}
-                onCategorize={handleCategorize}
+              <EditBatch
+                annotatedRootSpans={annotatedRootSpans}
+                onLoadRootSpans={loadRootSpansByProject}
+                onUpdateBatch={handleUpdateBatch}
+                isLoading={isLoading}
               />
             }
           />
-          <Route path="/rootSpans/:id" element={<RootSpanDetails />} />
+
+          <Route path="/projects/:projectId/batches/:batchId/rootSpans/:rootSpanId" element={<RootSpanDetails />} />
           <Route
-            path="/queues/:id/annotation"
+            path="/projects/:projectId/batches/:batchId/annotation" // TODO: change to annotation/:rootSpanId
             element={
-              <FilteredAnnotation
-                allSpans={annotatedRootSpans}
+              <Annotation
+                annotatedRootSpans={annotatedRootSpans}
                 onSave={handleSaveAnnotation}
               />
             }
@@ -247,8 +238,8 @@ const App = () => {
     );
   };
 
-  if (isLoading) {
-    return <>Loading...</>
+  if (error) {
+    return <>Error loading data: {error.message}</>
   }
 
   return (
@@ -257,6 +248,14 @@ const App = () => {
         <AppContent />
       </BrowserRouter>
     </ThemeProvider>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppWithQuery />
+    </QueryClientProvider>
   );
 };
 
