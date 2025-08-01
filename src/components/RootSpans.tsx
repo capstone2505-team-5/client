@@ -521,10 +521,10 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     },
   ];
 
-  // Check if all root spans have ratings
-  const allSpansRated = useMemo(() => {
-    return annotatedRootSpans.length > 0 && annotatedRootSpans.every(span => 
-      span.annotation?.rating !== undefined && span.annotation?.rating !== null
+  // Check if there's at least one bad annotation to categorize
+  const hasBadAnnotations = useMemo(() => {
+    return annotatedRootSpans.some(span => 
+      span.annotation?.rating === 'bad'
     );
   }, [annotatedRootSpans]);
 
@@ -668,32 +668,40 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           >
             Grade Batch!
           </Button>
-          <Button
-            variant="outlined"
-            startIcon={<CategoryIcon />}
-            onClick={() => handleCategorize()}
-            size="large"
-            disabled={!allSpansRated || isCategorizing}
-            sx={{ 
-              px: 3,
-              minWidth: 225,
-              maxHeight: 35,
-              borderColor: 'secondary.main',
-              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
-              fontWeight: 600,
-              opacity: (allSpansRated && !isCategorizing) ? 1 : 0.5,
-              '&:hover': {
-                borderColor: 'secondary.dark',
-                backgroundColor: 'rgba(255, 235, 59, 0.1)',
-              },
-              '&.Mui-disabled': {
-                borderColor: 'text.disabled',
-                color: 'text.disabled',
-              }
-            }}
+          <Tooltip 
+            title={!hasBadAnnotations && !isCategorizing ? "No bad annotations to categorize" : ""}
+            placement="top"
+            arrow
           >
-            {isCategorizing ? 'Categorizing...' : `Categorize`}
-          </Button>
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={<CategoryIcon />}
+                onClick={() => handleCategorize()}
+                size="large"
+                disabled={!hasBadAnnotations || isCategorizing}
+                sx={{ 
+                  px: 3,
+                  minWidth: 225,
+                  maxHeight: 35,
+                  borderColor: 'secondary.main',
+                  color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
+                  fontWeight: 600,
+                  opacity: (hasBadAnnotations && !isCategorizing) ? 1 : 0.5,
+                  '&:hover': {
+                    borderColor: 'secondary.dark',
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                  },
+                  '&.Mui-disabled': {
+                    borderColor: 'text.disabled',
+                    color: 'text.disabled',
+                  }
+                }}
+              >
+                {isCategorizing ? 'Categorizing...' : `Categorize`}
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
       </Box>
 
