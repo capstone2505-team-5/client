@@ -50,6 +50,19 @@ const Annotation = ({ onSave}: Props) => {
     </Box>
   );
 
+  // Helper function to render key combinations
+  const renderKeyCombo = (modifier: string, key: string) => (
+    <>
+      {renderKey(modifier)} + {renderKey(key)}
+    </>
+  );
+
+  // Get the appropriate modifier key for the platform
+  const getModifierKey = () => {
+    const isMac = navigator.platform.toUpperCase().includes("MAC");
+    return isMac ? "⌘" : "Ctrl";
+  };
+
 
   const {data: annotatedRootSpans = [], isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
 
@@ -95,6 +108,50 @@ const Annotation = ({ onSave}: Props) => {
 
 
   const isSaveDisabled = !rating || (rating === 'bad' && !note.trim());
+  
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+  
+      const isMac = navigator.platform.toUpperCase().includes("MAC");
+      const modKey = isMac ? event.metaKey : event.ctrlKey;
+  
+      // Only handle when modifier is held
+      if (modKey && event.key.startsWith('Arrow')) {
+        event.preventDefault(); // stop OS/browser handling (e.g. jump to start/end)
+        switch (event.key) {
+          case 'ArrowLeft':
+            if (currentSpanIndex > 0) {
+              const previousSpan = annotatedRootSpans[currentSpanIndex - 1];
+              navigate(`/projects/${projectId}/batches/${batchId}/annotation/${previousSpan.id}`, {
+                state: { projectName, batchName, annotatedRootSpan: previousSpan }
+              });
+            }
+            break;
+          case 'ArrowRight':
+            if (currentSpanIndex < annotatedRootSpans.length - 1) {
+              const nextSpan = annotatedRootSpans[currentSpanIndex + 1];
+              navigate(`/projects/${projectId}/batches/${batchId}/annotation/${nextSpan.id}`, {
+                state: { projectName, batchName, annotatedRootSpan: nextSpan }
+              });
+            }
+            break;
+          case 'ArrowUp':
+            setRating('good');
+            break;
+          case 'ArrowDown':
+            setRating('bad');
+            break;
+          default:
+            break;
+        }
+      }
+    };
+  
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentSpanIndex, annotatedRootSpans, navigate, projectId, batchId, projectName, batchName, setRating]);
+  
   
   const handleSave = () => {
     if (currentSpan && rating) {
@@ -245,11 +302,12 @@ const Annotation = ({ onSave}: Props) => {
           {/* Batch Box */}
           {batchName && (
             <>
-              <Box 
-              onClick={() => navigate(`/projects/${projectId}/batches/${batchId}`, { 
-                state: { projectName, batchName } 
-              })}
-              sx={{
+              <Tooltip title={<>Back to batch {renderKey('Esc')}</>} arrow>
+                <Box 
+                onClick={() => navigate(`/projects/${projectId}/batches/${batchId}`, { 
+                  state: { projectName, batchName } 
+                })}
+                sx={{
                 px: 2,
                 py: 0.75,
                 backgroundColor: theme.palette.mode === 'dark' 
@@ -290,6 +348,7 @@ const Annotation = ({ onSave}: Props) => {
                   {batchName}
                 </Typography>
               </Box>
+              </Tooltip>
             </>
           )}
           </Box>
@@ -386,7 +445,7 @@ const Annotation = ({ onSave}: Props) => {
 
           {/* Right Section - Navigation */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-            <Tooltip title={<>Previous span {renderKey('A')}</>} arrow>
+            <Tooltip title={<>Previous span {renderKeyCombo(getModifierKey(), '←')}</>} arrow>
               <span>
                 <Button
                   variant="outlined"  
@@ -413,7 +472,7 @@ const Annotation = ({ onSave}: Props) => {
                 </Button>
               </span>
             </Tooltip>
-            <Tooltip title={<>Next span {renderKey('D')}</>} arrow>
+            <Tooltip title={<>Next span {renderKeyCombo(getModifierKey(), '→')}</>} arrow>
               <span>
                 <Button
                   variant="outlined"
@@ -678,7 +737,7 @@ const Annotation = ({ onSave}: Props) => {
                 Rate Response
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Tooltip title={<>Good {renderKey('S')}</>} arrow>
+                <Tooltip title={<>Good {renderKeyCombo(getModifierKey(), '↑')}</>} arrow>
                   <Button
                     variant={rating === 'good' ? 'contained' : 'outlined'}
                     color="success"
@@ -695,7 +754,7 @@ const Annotation = ({ onSave}: Props) => {
                     Good
                   </Button>
                 </Tooltip>
-                <Tooltip title={<>Bad {renderKey('W')}</>} arrow>
+                <Tooltip title={<>Bad {renderKeyCombo(getModifierKey(), '↓')}</>} arrow>
                   <Button
                     variant={rating === 'bad' ? 'contained' : 'outlined'}
                     color="error"
@@ -716,26 +775,30 @@ const Annotation = ({ onSave}: Props) => {
             </Box>
 
             {/* Save Button */}
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              disabled={isSaveDisabled}
-              size="large"
-              sx={{ 
-                backgroundColor: 'secondary.main',
-                color: 'black',
-                fontWeight: 600,
-                '&:hover': {
-                  backgroundColor: 'secondary.dark',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: 'text.disabled',
-                  color: 'rgba(0, 0, 0, 0.26)',
-                }
-              }}
-            >
-              Save Annotation
-            </Button>
+            <Tooltip title={<>Save annotation {renderKey('Enter')}</>} arrow>
+              <span>
+                <Button
+                  variant="contained"
+                  onClick={handleSave}
+                  disabled={isSaveDisabled}
+                  size="large"
+                  sx={{ 
+                    backgroundColor: 'secondary.main',
+                    color: 'black',
+                    fontWeight: 600,
+                    '&:hover': {
+                      backgroundColor: 'secondary.dark',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: 'text.disabled',
+                      color: 'rgba(0, 0, 0, 0.26)',
+                    }
+                  }}
+                >
+                  Save Annotation
+                </Button>
+              </span>
+            </Tooltip>
           </Box>
         </Paper>
       </Box>
