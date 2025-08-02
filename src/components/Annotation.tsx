@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -12,7 +12,7 @@ import { useRootSpansByBatch } from "../hooks/useRootSpans";
 import { getPhoenixDashboardUrl } from "../services/services";
 
 interface Props {
-  onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => void;
+  onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => Promise<{ isNew: boolean }>;
 }
 
 const Annotation = ({ onSave}: Props) => {
@@ -23,6 +23,13 @@ const Annotation = ({ onSave}: Props) => {
   const [rating, setRating] = useState<RatingType | null>(null);
   const location = useLocation();
   const { projectName, batchName } = location.state || {};
+  const notesFieldRef = useRef<HTMLTextAreaElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+  });
 
   // Helper function to render keyboard keys
   const renderKey = (key: string) => (
@@ -63,6 +70,10 @@ const Annotation = ({ onSave}: Props) => {
     return isMac ? "⌘" : "Ctrl";
   };
 
+  const handleSnackbarClose = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
 
   const {data: annotatedRootSpans = [], isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
 
@@ -82,6 +93,16 @@ const Annotation = ({ onSave}: Props) => {
       setRating(null);
       setNote("");
     }
+    
+    // Auto-focus the notes field when span changes
+    // Use a small delay to ensure the component has rendered
+    const timer = setTimeout(() => {
+      if (notesFieldRef.current) {
+        notesFieldRef.current.focus();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [currentSpan?.id]);
   
   // Use the span from the API data if available, otherwise fall back to the passed one
@@ -109,6 +130,35 @@ const Annotation = ({ onSave}: Props) => {
 
   const isSaveDisabled = !rating || (rating === 'bad' && !note.trim());
   
+  const handleSave = async () => {
+    if (currentSpan && rating) {
+      try {
+        setIsSaving(true);
+        const result = await onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
+        
+        // Show success toast based on whether annotation was created or modified
+        setSnackbar({
+          open: true,
+          message: result.isNew 
+            ? 'Annotation created successfully!' 
+            : 'Annotation updated successfully!',
+          severity: 'success'
+        });
+      } catch (error: any) {
+        console.error("Failed to save annotation", error);
+        
+        // Show error toast
+        setSnackbar({
+          open: true,
+          message: error?.response?.data?.error || error?.message || 'Failed to save annotation',
+          severity: 'error'
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+  
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -116,6 +166,24 @@ const Annotation = ({ onSave}: Props) => {
       const isMac = navigator.platform.toUpperCase().includes("MAC");
       const modKey = isMac ? event.metaKey : event.ctrlKey;
   
+      // Handle Enter key for saving (when not in textarea)
+      if (event.key === 'Enter' && event.target !== notesFieldRef.current) {
+        if (!isSaveDisabled && !isSaving) {
+          event.preventDefault();
+          handleSave();
+        }
+        return;
+      }
+
+      // Handle Escape key for going back to batch
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        navigate(`/projects/${projectId}/batches/${batchId}`, { 
+          state: { projectName, batchName } 
+        });
+        return;
+      }
+
       // Only handle when modifier is held
       if (modKey && event.key.startsWith('Arrow')) {
         event.preventDefault(); // stop OS/browser handling (e.g. jump to start/end)
@@ -150,15 +218,8 @@ const Annotation = ({ onSave}: Props) => {
   
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentSpanIndex, annotatedRootSpans, navigate, projectId, batchId, projectName, batchName, setRating]);
+  }, [currentSpanIndex, annotatedRootSpans, navigate, projectId, batchId, projectName, batchName, setRating, isSaveDisabled, isSaving, handleSave]);
   
-  
-  const handleSave = () => {
-    if (currentSpan && rating) {
-      onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
-    }
-  };
-
   const getRatingIcon = (rating: string) => {
     switch (rating) {
       case 'good':
@@ -722,6 +783,7 @@ const Annotation = ({ onSave}: Props) => {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder={rating === 'bad' ? 'Note required for bad rating.' : 'Add your notes here...'}
+                inputRef={notesFieldRef}
                 sx={{ 
                   flex: 1,
                   '& .MuiOutlinedInput-root': {
@@ -780,7 +842,7 @@ const Annotation = ({ onSave}: Props) => {
                 <Button
                   variant="contained"
                   onClick={handleSave}
-                  disabled={isSaveDisabled}
+                  disabled={isSaveDisabled || isSaving}
                   size="large"
                   sx={{ 
                     backgroundColor: 'secondary.main',
@@ -795,13 +857,37 @@ const Annotation = ({ onSave}: Props) => {
                     }
                   }}
                 >
-                  Save Annotation
+                  {isSaving ? 'Saving...' : 'Save Annotation'}
                 </Button>
               </span>
             </Tooltip>
           </Box>
         </Paper>
       </Box>
+
+      {/* Toast Notification */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          top: '24px !important', // Position near the top
+          zIndex: 9999
+        }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ 
+            width: '100%',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

@@ -69,10 +69,12 @@ const AppWithQuery = () => {
     rootSpanId: string,
     note: string,
     rating: Rating | null
-  ): Promise<void> => {
+  ): Promise<{ isNew: boolean }> => {
+    let res: any = null;
+    const isNew = annotationId === "";
+    
     try {
-      let res: any = null;
-      if (annotationId === "") {
+      if (isNew) {
         if (rating) {
           res = await createAnnotation(rootSpanId, note || "", rating);
         }
@@ -95,12 +97,15 @@ const AppWithQuery = () => {
 
       if (res) {
         console.log(
-          annotationId ? "Annotation updated:" : "Annotation created:",
+          isNew ? "Annotation created:" : "Annotation updated:",
           res
         );
       }
+      
+      return { isNew };
     } catch (err) {
       console.error("Failed to save annotation", err);
+      throw err; // Re-throw the error so the Annotation component can handle it
     }
   };
 
