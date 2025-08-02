@@ -170,7 +170,6 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
             <ListItemButton onClick={() => toggle(rootSpan.id)} sx={{ py: 1, px: 2 }}>
               <Checkbox 
                 checked={selectedSet.has(rootSpan.id)} 
-                onClick={(e) => e.stopPropagation()} // Prevent double-click
               />
               <ListItemText primary={`${rootSpan.traceId} — ${rootSpan.spanName}`} />
             </ListItemButton>
