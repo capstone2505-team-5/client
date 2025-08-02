@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, LinearProgress } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import type { AnnotatedRootSpan, Rating as RatingType } from "../types/types";
+import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
 import { getPhoenixDashboardUrl } from "../services/services";
 
@@ -270,86 +270,92 @@ const Annotation = ({ onSave}: Props) => {
 
                     {/* Center Section - Progress */}
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '400px' }}>
-            {annotatedRootSpans.length > 0 && (
-              <>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121', mb: 1 }}>
-                  Grading Progress
-                </Typography>
-                
-                {/* Enhanced Progress Bar Container */}
-                <Box sx={{ 
-                  position: 'relative', 
-                  width: '100%', 
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
-                  border: '2px solid',
-                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
-                  overflow: 'hidden',
-                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  {/* Progress Fill */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      height: '100%',
-                      width: `${((currentSpanIndex + 1) / annotatedRootSpans.length) * 100}%`,
-                      background: `linear-gradient(135deg, 
-                        ${theme.palette.secondary.main} 0%, 
-                        ${theme.palette.secondary.light} 50%, 
-                        ${theme.palette.secondary.main} 100%)`,
-                      borderRadius: 'inherit',
-                      transition: 'width 0.3s ease-in-out',
-                      boxShadow: '0 2px 8px rgba(255, 235, 59, 0.3)'
-                    }}
-                  />
+            {annotatedRootSpans.length > 0 && (() => {
+              // Calculate how many spans have been annotated (have a rating)
+              const annotatedCount = annotatedRootSpans.filter(span => span.annotation?.rating).length;
+              const progressPercentage = (annotatedCount / annotatedRootSpans.length) * 100;
+              
+              return (
+                <>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121', mb: 1 }}>
+                    Grading Progress
+                  </Typography>
                   
-                  {/* Percentage Text Overlay */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      zIndex: 1
-                    }}
-                  >
-                    <Typography
-                      variant="body1"
+                  {/* Enhanced Progress Bar Container */}
+                  <Box sx={{ 
+                    position: 'relative', 
+                    width: '100%', 
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+                    border: '2px solid',
+                    borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+                    overflow: 'hidden',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    {/* Progress Fill */}
+                    <Box
                       sx={{
-                        fontWeight: 'bold',
-                        fontSize: '1rem',
-                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-                        textShadow: theme.palette.mode === 'dark' 
-                          ? '0 1px 2px rgba(0,0,0,0.8)' 
-                          : '0 1px 2px rgba(255,255,255,0.8)',
-                        letterSpacing: '0.5px'
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        height: '100%',
+                        width: `${progressPercentage}%`,
+                        background: `linear-gradient(135deg, 
+                          ${theme.palette.secondary.main} 0%, 
+                          ${theme.palette.secondary.light} 50%, 
+                          ${theme.palette.secondary.main} 100%)`,
+                        borderRadius: 'inherit',
+                        transition: 'width 0.3s ease-in-out',
+                        boxShadow: '0 2px 8px rgba(255, 235, 59, 0.3)'
+                      }}
+                    />
+                    
+                    {/* Percentage Text Overlay */}
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1
                       }}
                     >
-                      {Math.round(((currentSpanIndex + 1) / annotatedRootSpans.length) * 100)}%
-                    </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: '1rem',
+                          color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                          textShadow: theme.palette.mode === 'dark' 
+                            ? '0 1px 2px rgba(0,0,0,0.8)' 
+                            : '0 1px 2px rgba(255,255,255,0.8)',
+                          letterSpacing: '0.5px'
+                        }}
+                      >
+                        {Math.round(progressPercentage)}%
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-                
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: 'text.secondary',
-                    mt: 1,
-                    fontSize: '0.875rem',
-                    fontWeight: 'medium'
-                  }}
-                >
-                  {currentSpanIndex + 1} of {annotatedRootSpans.length} spans
-                </Typography>
-              </>
-            )}
+                  
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: 'text.secondary',
+                      mt: 1,
+                      fontSize: '0.875rem',
+                      fontWeight: 'medium'
+                    }}
+                  >
+                    {annotatedCount} of {annotatedRootSpans.length} spans annotated
+                  </Typography>
+                </>
+              );
+            })()}
           </Box>
 
           {/* Right Section - Navigation */}

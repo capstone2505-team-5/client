@@ -256,12 +256,12 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       await deleteRootSpan(batchId, rootSpanId);
       
       // Try to delete annotation (may not exist)
-      try {
-        await deleteAnnotation(rootSpanId);
-      } catch (annotationError) {
-        // Ignore if annotation doesn't exist
-        console.log("No annotation to delete for span:", rootSpanId);
-      }
+      // try {
+      //   await deleteAnnotation(rootSpanId);
+      // } catch (annotationError) {
+      //   // Ignore if annotation doesn't exist
+      //   console.log("No annotation to delete for span:", rootSpanId);
+      // }
       
       handleClose();
       
