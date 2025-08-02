@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Container, Typography, Box, Paper, Chip, Button, useTheme as muiUseTheme } from "@mui/material";
+import { Container, Typography, Box, Paper, Chip, Button, useTheme as muiUseTheme, Tooltip } from "@mui/material";
 import { useTheme } from "../contexts/ThemeContext";
 import { getPhoenixDashboardUrl } from "../services/services";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -18,6 +18,32 @@ const RootSpanDetail = () => {
   const theme = muiUseTheme();
   const { projectId, batchId, rootSpanId } = params;
   const { projectName, batchName, annotatedRootSpan } = location.state || {};
+
+  // Helper function to render keyboard keys
+  const renderKey = (key: string) => (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-block',
+        px: 0.75,
+        py: 0.25,
+        mx: 0.5,
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+        border: '1px solid',
+        borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+        borderRadius: '4px',
+        fontFamily: 'monospace',
+        fontSize: '0.75rem',
+        fontWeight: 'bold',
+        color: theme.palette.mode === 'dark' ? '#fff' : '#333',
+        boxShadow: theme.palette.mode === 'dark' 
+          ? '0 1px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+          : '0 1px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+      }}
+    >
+      {key}
+    </Box>
+  );
 
   // Fetch all root spans for the batch to enable navigation
   const { data: allRootSpans = [], isLoading: isLoadingSpans } = useRootSpansByBatch(batchId || null);
@@ -321,52 +347,60 @@ const RootSpanDetail = () => {
             Edit Grade
           </Button>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                     <Button
-             variant="outlined"
-             onClick={goToPreviousSpan}
-             disabled={currentSpanIndex <= 0}
-             size="small"
-             sx={{ 
-               px: 3, 
-               minWidth: 165,
-               borderColor: 'secondary.main',
-               color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-               fontWeight: 600,
-               '&:hover': {
-                 borderColor: 'secondary.dark',
-                 backgroundColor: 'rgba(255, 235, 59, 0.1)',
-               },
-               '&.Mui-disabled': {
-                 borderColor: 'text.disabled',
-                 color: 'text.disabled',
-               }
-             }}
-           >
-             Prev
-           </Button>
-           <Button
-             variant="outlined"
-             onClick={goToNextSpan}
-             disabled={currentSpanIndex >= allRootSpans.length - 1}
-             size="small"
-             sx={{ 
-               px: 3, 
-               minWidth: 165,
-               borderColor: 'secondary.main',
-               color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-               fontWeight: 600,
-               '&:hover': {
-                 borderColor: 'secondary.dark',
-                 backgroundColor: 'rgba(255, 235, 59, 0.1)',
-               },
-               '&.Mui-disabled': {
-                 borderColor: 'text.disabled',
-                 color: 'text.disabled',
-               }
-             }}
-           >
-             Next
-           </Button>
+            <Tooltip title={<>Previous span {renderKey('←')}{renderKey('↑')}</>} arrow>
+              <span>
+                <Button
+                  variant="outlined"
+                  onClick={goToPreviousSpan}
+                  disabled={currentSpanIndex <= 0}
+                  size="small"
+                  sx={{ 
+                    px: 3, 
+                    minWidth: 165,
+                    borderColor: 'secondary.main',
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: 'secondary.dark',
+                      backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    },
+                    '&.Mui-disabled': {
+                      borderColor: 'text.disabled',
+                      color: 'text.disabled',
+                    }
+                  }}
+                >
+                  Prev
+                </Button>
+              </span>
+            </Tooltip>
+            <Tooltip title={<>Next span {renderKey('→')}{renderKey('↓')}</>} arrow>
+              <span>
+                <Button
+                  variant="outlined"
+                  onClick={goToNextSpan}
+                  disabled={currentSpanIndex >= allRootSpans.length - 1}
+                  size="small"
+                  sx={{ 
+                    px: 3, 
+                    minWidth: 165,
+                    borderColor: 'secondary.main',
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: 'secondary.dark',
+                      backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    },
+                    '&.Mui-disabled': {
+                      borderColor: 'text.disabled',
+                      color: 'text.disabled',
+                    }
+                  }}
+                >
+                  Next
+                </Button>
+              </span>
+            </Tooltip>
           </Box>
           </Box>
         </Box>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -23,6 +23,32 @@ const Annotation = ({ onSave}: Props) => {
   const [rating, setRating] = useState<RatingType | null>(null);
   const location = useLocation();
   const { projectName, batchName } = location.state || {};
+
+  // Helper function to render keyboard keys
+  const renderKey = (key: string) => (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-block',
+        px: 0.75,
+        py: 0.25,
+        mx: 0.5,
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+        border: '1px solid',
+        borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+        borderRadius: '4px',
+        fontFamily: 'monospace',
+        fontSize: '0.75rem',
+        fontWeight: 'bold',
+        color: theme.palette.mode === 'dark' ? '#fff' : '#333',
+        boxShadow: theme.palette.mode === 'dark' 
+          ? '0 1px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+          : '0 1px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+      }}
+    >
+      {key}
+    </Box>
+  );
 
 
   const {data: annotatedRootSpans = [], isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
@@ -360,52 +386,60 @@ const Annotation = ({ onSave}: Props) => {
 
           {/* Right Section - Navigation */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-            <Button
-              variant="outlined"
-              onClick={goToPreviousSpan}
-              disabled={currentSpanIndex === 0}
-              size="small"
-              sx={{ 
-                px: 3, 
-                minWidth: 165,
-                borderColor: 'secondary.main',
-                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                fontWeight: 600,
-                '&:hover': {
-                  borderColor: 'secondary.dark',
-                  backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                },
-                '&.Mui-disabled': {
-                  borderColor: 'text.disabled',
-                  color: 'text.disabled',
-                }
-              }}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={goToNextSpan}
-              disabled={currentSpanIndex === annotatedRootSpans.length - 1}
-              size="small"
-              sx={{ 
-                px: 3, 
-                minWidth: 165,
-                borderColor: 'secondary.main',
-                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                fontWeight: 600,
-                '&:hover': {
-                  borderColor: 'secondary.dark',
-                  backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                },
-                '&.Mui-disabled': {
-                  borderColor: 'text.disabled',
-                  color: 'text.disabled',
-                }
-              }}
-            >
-              Next
-            </Button>
+            <Tooltip title={<>Previous span {renderKey('A')}</>} arrow>
+              <span>
+                <Button
+                  variant="outlined"  
+                  onClick={goToPreviousSpan}
+                  disabled={currentSpanIndex === 0}
+                  size="small"
+                  sx={{ 
+                    px: 3, 
+                    minWidth: 165,
+                    borderColor: 'secondary.main',
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: 'secondary.dark',
+                      backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    },
+                    '&.Mui-disabled': {
+                      borderColor: 'text.disabled',
+                      color: 'text.disabled',
+                    }
+                  }}
+                >
+                  Previous
+                </Button>
+              </span>
+            </Tooltip>
+            <Tooltip title={<>Next span {renderKey('D')}</>} arrow>
+              <span>
+                <Button
+                  variant="outlined"
+                  onClick={goToNextSpan}
+                  disabled={currentSpanIndex === annotatedRootSpans.length - 1}
+                  size="small"
+                  sx={{ 
+                    px: 3, 
+                    minWidth: 165,
+                    borderColor: 'secondary.main',
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: 'secondary.dark',
+                      backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    },
+                    '&.Mui-disabled': {
+                      borderColor: 'text.disabled',
+                      color: 'text.disabled',
+                    }
+                  }}
+                >
+                  Next
+                </Button>
+              </span>
+            </Tooltip>
           </Box>
         </Box>
 
@@ -616,33 +650,6 @@ const Annotation = ({ onSave}: Props) => {
           }}
         >          
           <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Rate Response */}
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Rate Response
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button
-                  variant={rating === 'good' ? 'contained' : 'outlined'}
-                  color="success"
-                  startIcon={<ThumbUpIcon />}
-                  onClick={() => setRating('good')}
-                  size="small"
-                >
-                  Good
-                </Button>
-                <Button
-                  variant={rating === 'bad' ? 'contained' : 'outlined'}
-                  color="error"
-                  startIcon={<ThumbDownIcon />}
-                  onClick={() => setRating('bad')}
-                  size="small"
-                >
-                  Bad
-                </Button>
-              </Box>
-            </Box>
-
             {/* Notes */}
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -650,7 +657,7 @@ const Annotation = ({ onSave}: Props) => {
               </Typography>
               <TextField
                 multiline
-                rows={15}
+                rows={8}
                 fullWidth
                 variant="outlined"
                 value={note}
@@ -663,6 +670,49 @@ const Annotation = ({ onSave}: Props) => {
                   }
                 }}
               />
+            </Box>
+
+            {/* Rate Response */}
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Rate Response
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Tooltip title={<>Good {renderKey('S')}</>} arrow>
+                  <Button
+                    variant={rating === 'good' ? 'contained' : 'outlined'}
+                    color="success"
+                    startIcon={<ThumbUpIcon />}
+                    onClick={() => setRating('good')}
+                    size="medium"
+                    sx={{
+                      flex: 1,
+                      py: 0.5,
+                      fontSize: '1rem',
+                      fontWeight: 600
+                    }}
+                  >
+                    Good
+                  </Button>
+                </Tooltip>
+                <Tooltip title={<>Bad {renderKey('W')}</>} arrow>
+                  <Button
+                    variant={rating === 'bad' ? 'contained' : 'outlined'}
+                    color="error"
+                    startIcon={<ThumbDownIcon />}
+                    onClick={() => setRating('bad')}
+                    size="medium"
+                    sx={{
+                      flex: 1,
+                      py: 0.5,
+                      fontSize: '1rem',
+                      fontWeight: 600
+                    }}
+                  >
+                    Bad
+                  </Button>
+                </Tooltip>
+              </Box>
             </Box>
 
             {/* Save Button */}
