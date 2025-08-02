@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, LinearProgress } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -9,6 +9,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import type { AnnotatedRootSpan, Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
+import { getPhoenixDashboardUrl } from "../services/services";
 
 interface Props {
   onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => void;
@@ -33,6 +34,16 @@ const Annotation = ({ onSave}: Props) => {
 
   const currentSpan = annotatedRootSpans[currentSpanIndex];
 
+  // Sync local state with current span's annotation data
+  useEffect(() => {
+    if (currentSpan?.annotation) {
+      setRating(currentSpan.annotation.rating || null);
+      setNote(currentSpan.annotation.note || "");
+    } else {
+      setRating(null);
+      setNote("");
+    }
+  }, [currentSpan?.id]);
   
   // Use the span from the API data if available, otherwise fall back to the passed one
   // const currentSpan = annotatedRootSpans[currentSpanIndex];
@@ -57,11 +68,11 @@ const Annotation = ({ onSave}: Props) => {
   };
 
 
-  const isSaveDisabled = rating === 'bad' && !currentSpan.annotation?.note.trim();
+  const isSaveDisabled = !rating || (rating === 'bad' && !note.trim());
   
   const handleSave = () => {
     if (currentSpan && rating) {
-      onSave(currentSpan.annotation?.id || "", currentSpan.id, currentSpan.annotation?.note || "", rating);
+      onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
     }
   };
 
@@ -257,30 +268,87 @@ const Annotation = ({ onSave}: Props) => {
           )}
           </Box>
 
-          {/* Center Section - Title */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography 
-              variant="h3" 
-              component="h1" 
-              sx={{ 
-                fontWeight: 'bold',
-                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-                textAlign: 'center'
-              }}
-            >
-              Grading RootSpan
-            </Typography>
+                    {/* Center Section - Progress */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '400px' }}>
             {annotatedRootSpans.length > 0 && (
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: 'text.secondary',
-                  mt: 0.5,
-                  fontSize: '0.875rem'
-                }}
-              >
-                {currentSpanIndex + 1} of {annotatedRootSpans.length}
-              </Typography>
+              <>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121', mb: 1 }}>
+                  Grading Progress
+                </Typography>
+                
+                {/* Enhanced Progress Bar Container */}
+                <Box sx={{ 
+                  position: 'relative', 
+                  width: '100%', 
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+                  border: '2px solid',
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+                  overflow: 'hidden',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  {/* Progress Fill */}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      height: '100%',
+                      width: `${((currentSpanIndex + 1) / annotatedRootSpans.length) * 100}%`,
+                      background: `linear-gradient(135deg, 
+                        ${theme.palette.secondary.main} 0%, 
+                        ${theme.palette.secondary.light} 50%, 
+                        ${theme.palette.secondary.main} 100%)`,
+                      borderRadius: 'inherit',
+                      transition: 'width 0.3s ease-in-out',
+                      boxShadow: '0 2px 8px rgba(255, 235, 59, 0.3)'
+                    }}
+                  />
+                  
+                  {/* Percentage Text Overlay */}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 1
+                    }}
+                  >
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                        textShadow: theme.palette.mode === 'dark' 
+                          ? '0 1px 2px rgba(0,0,0,0.8)' 
+                          : '0 1px 2px rgba(255,255,255,0.8)',
+                        letterSpacing: '0.5px'
+                      }}
+                    >
+                      {Math.round(((currentSpanIndex + 1) / annotatedRootSpans.length) * 100)}%
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: 'text.secondary',
+                    mt: 1,
+                    fontSize: '0.875rem',
+                    fontWeight: 'medium'
+                  }}
+                >
+                  {currentSpanIndex + 1} of {annotatedRootSpans.length} spans
+                </Typography>
+              </>
             )}
           </Box>
 
@@ -372,17 +440,6 @@ const Annotation = ({ onSave}: Props) => {
           </Box>
           <Box>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Current Rating
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {getRatingIcon(currentSpan.annotation?.rating || '')}
-              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                {getRatingLabel(currentSpan.annotation?.rating || '')}
-              </Typography>
-            </Box>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Categories
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -394,6 +451,35 @@ const Annotation = ({ onSave}: Props) => {
                 <Typography variant="body2" color="text.secondary">None</Typography>
               )}
             </Box>
+            
+          </Box>
+          <Box>
+
+            <Button
+              variant="text"
+              size="medium"
+              sx={{ 
+                p: 0,
+                minWidth: 'auto',
+                textTransform: 'none',
+                color: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                  textDecoration: 'underline'
+                }
+              }}
+              onClick={async () => {
+                try {
+                  const phoenixUrl = await getPhoenixDashboardUrl();
+                  // Open Phoenix dashboard in a new tab
+                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${currentSpan.traceId}`, '_blank');
+                } catch (error) {
+                  console.error('Failed to get Phoenix dashboard URL:', error);
+                }
+              }}
+            >
+              View Details in Phoenix →
+            </Button>
           </Box>
           </Box>
         </Paper>
@@ -450,11 +536,50 @@ const Annotation = ({ onSave}: Props) => {
             p: 2, 
             backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#fff3e0',
             borderBottom: '1px solid',
-            borderBottomColor: 'divider'
+            borderBottomColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Output
             </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button 
+                variant="outlined" 
+                size="small"
+                sx={{
+                  px: 3,
+                  minWidth: 100,
+                  borderColor: 'secondary.main',
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: 'secondary.dark',
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                  }
+                }}
+              >
+                Raw
+              </Button>
+              <Button 
+                variant="outlined" 
+                size="small"
+                sx={{
+                  px: 3,
+                  minWidth: 100,
+                  borderColor: 'secondary.main',
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: 'secondary.dark',
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                  }
+                }}
+              >
+                Formatted
+              </Button>
+            </Box>
           </Box>
           <Box sx={{ 
             p: 2, 
@@ -538,7 +663,7 @@ const Annotation = ({ onSave}: Props) => {
             <Button
               variant="contained"
               onClick={handleSave}
-              disabled={isSaveDisabled || !rating}
+              disabled={isSaveDisabled}
               size="large"
               sx={{ 
                 backgroundColor: 'secondary.main',

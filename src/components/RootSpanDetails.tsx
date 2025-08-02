@@ -433,7 +433,7 @@ const RootSpanDetail = () => {
                 try {
                   const phoenixUrl = await getPhoenixDashboardUrl();
                   // Open Phoenix dashboard in a new tab
-                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${currentSpan.id}`, '_blank');
+                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${currentSpan.traceId}`, '_blank');
                 } catch (error) {
                   console.error('Failed to get Phoenix dashboard URL:', error);
                 }
