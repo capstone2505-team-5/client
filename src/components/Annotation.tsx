@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
 import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
 import { getPhoenixDashboardUrl } from "../services/services";
@@ -30,6 +31,7 @@ const Annotation = ({ onSave}: Props) => {
     message: '',
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
+  const [hotkeyModalOpen, setHotkeyModalOpen] = useState(false);
 
   // Track original values to detect changes
   const [originalAnnotation, setOriginalAnnotation] = useState<{
@@ -341,13 +343,13 @@ const Annotation = ({ onSave}: Props) => {
             gridArea: 'header',
             display: 'grid',
             gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
+            alignItems: 'start',
             gap: 2,
             py: 1
           }}
         >
           {/* Left Section - Breadcrumbs */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-start' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-start', alignSelf: 'center' }}>
             {/* Project Box */}
             {projectName && (
             <>
@@ -465,7 +467,7 @@ const Annotation = ({ onSave}: Props) => {
           </Box>
 
                     {/* Center Section - Progress */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '400px' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '400px', alignSelf: 'center' }}>
             {annotatedRootSpans.length > 0 && (() => {
               // Calculate how many spans have been annotated (have a rating)
               const annotatedCount = annotatedRootSpans.filter(span => span.annotation?.rating).length;
@@ -554,9 +556,28 @@ const Annotation = ({ onSave}: Props) => {
             })()}
           </Box>
 
-          {/* Right Section - Empty for now */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-            {/* Navigation moved to annotation section */}
+          {/* Right Section - Hotkey Info */}
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, justifyContent: 'flex-end' }}>
+            <Tooltip title="View keyboard shortcuts" arrow>
+              <Button
+                variant="outlined"
+                startIcon={<KeyboardIcon />}
+                onClick={() => setHotkeyModalOpen(true)}
+                size="small"
+                sx={{ 
+                  px: 2,
+                  borderColor: 'secondary.main',
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: 'secondary.dark',
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                  }
+                }}
+              >
+                Shortcuts
+              </Button>
+            </Tooltip>
           </Box>
         </Box>
 
@@ -957,6 +978,119 @@ const Annotation = ({ onSave}: Props) => {
           </Box>
         </Paper>
       </Box>
+
+      {/* Hotkey Info Modal */}
+      <Dialog
+        open={hotkeyModalOpen}
+        onClose={() => setHotkeyModalOpen(false)}
+        aria-labelledby="hotkey-dialog-title"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle 
+          id="hotkey-dialog-title"
+          sx={{ 
+            color: 'primary.main',
+            fontWeight: 'bold',
+            pb: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            alignSelf: 'center'
+          }}
+        >
+          <KeyboardIcon />
+          Keyboard Shortcuts & Auto-Save
+        </DialogTitle>
+        <DialogContent sx={{ pb: 1 }}>
+          {/* Navigation Shortcuts */}
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'text.primary', textAlign: 'center' }}>
+            Navigation
+          </Typography>
+          <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, width: '280px' }}>
+              <Typography variant="body2">Previous span</Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {renderKey(getModifierKey())} + {renderKey('←')}
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, width: '280px' }}>
+              <Typography variant="body2">Next span</Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {renderKey(getModifierKey())} + {renderKey('→')}
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, width: '280px' }}>
+              <Typography variant="body2">Back to batch</Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {renderKey('Esc')}
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Rating Shortcuts */}
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'text.primary', textAlign: 'center' }}>
+            Rating
+          </Typography>
+          <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, width: '280px' }}>
+              <Typography variant="body2">Rate as Good</Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {renderKey(getModifierKey())} + {renderKey('↑')}
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, width: '280px' }}>
+              <Typography variant="body2">Rate as Bad</Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {renderKey(getModifierKey())} + {renderKey('↓')}
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Auto-Save Info */}
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'text.primary', textAlign: 'center' }}>
+            Auto-Save
+          </Typography>
+          <Box sx={{ 
+            p: 2, 
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 235, 59, 0.1)' 
+              : 'rgba(255, 235, 59, 0.2)',
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'secondary.main'
+          }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, textAlign: 'center' }}>
+              Your annotations are automatically saved when you:
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 0.5, textAlign: 'center' }}>
+              • Navigate to previous or next span
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 0.5, textAlign: 'center' }}>
+              • Return to batch (Esc key or breadcrumb)
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 0.5, textAlign: 'center' }}>
+              • Navigate to project (breadcrumb)
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1.5, fontStyle: 'italic', color: 'text.secondary', textAlign: 'center' }}>
+              Note: Bad ratings require a note before auto-save will proceed.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'center' }}>
+          <Button 
+            onClick={() => setHotkeyModalOpen(false)}
+            variant="contained"
+            color="primary"
+            sx={{ 
+              minWidth: '100px',
+              fontWeight: 'bold'
+            }}
+          >
+            Got it
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Toast Notification */}
       <Snackbar
