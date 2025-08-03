@@ -31,6 +31,12 @@ const Annotation = ({ onSave}: Props) => {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
 
+  // Track original values to detect changes
+  const [originalAnnotation, setOriginalAnnotation] = useState<{
+    rating: RatingType | null;
+    note: string;
+  }>({ rating: null, note: "" });
+
   // Helper function to render keyboard keys
   const renderKey = (key: string) => (
     <Box
@@ -87,11 +93,17 @@ const Annotation = ({ onSave}: Props) => {
   // Sync local state with current span's annotation data
   useEffect(() => {
     if (currentSpan?.annotation) {
-      setRating(currentSpan.annotation.rating || null);
-      setNote(currentSpan.annotation.note || "");
+      const rating = currentSpan.annotation.rating || null;
+      const note = currentSpan.annotation.note || "";
+      setRating(rating);
+      setNote(note);
+      // Track original values
+      setOriginalAnnotation({ rating, note });
     } else {
       setRating(null);
       setNote("");
+      // Track original values
+      setOriginalAnnotation({ rating: null, note: "" });
     }
     
     // Auto-focus the notes field when span changes
@@ -104,83 +116,121 @@ const Annotation = ({ onSave}: Props) => {
     
     return () => clearTimeout(timer);
   }, [currentSpan?.id]);
+
+  // Check for pending toast after navigation (similar to RootSpans)
+  useEffect(() => {
+    const pending = sessionStorage.getItem('pendingAnnotationToast');
+    if (pending) {
+      sessionStorage.removeItem('pendingAnnotationToast');
+      const toastData = JSON.parse(pending);
+      setSnackbar(toastData);
+    }
+  }, [currentSpan?.id]); // Trigger when span changes
   
   // Use the span from the API data if available, otherwise fall back to the passed one
   // const currentSpan = annotatedRootSpans[currentSpanIndex];
 
-  // Navigation functions
-  const goToPreviousSpan = () => {
-    if (currentSpanIndex > 0) {
-      const previousSpan = annotatedRootSpans[currentSpanIndex - 1];
-      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${previousSpan.id}`, {
-        state: { projectName, batchName, annotatedRootSpan: previousSpan }
-      });
-    }
+  // Check if annotation has changed
+  const hasAnnotationChanged = () => {
+    return (
+      rating !== originalAnnotation.rating ||
+      note !== originalAnnotation.note
+    );
   };
 
-  const goToNextSpan = () => {
-    if (currentSpanIndex < annotatedRootSpans.length - 1) {
-      const nextSpan = annotatedRootSpans[currentSpanIndex + 1];
-      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${nextSpan.id}`, {
-        state: { projectName, batchName, annotatedRootSpan: nextSpan }
-      });
-    }
-  };
+  // Auto-save function
+  const autoSave = async () => {
+    // Check if there are changes to save
+    if (currentSpan && rating && hasAnnotationChanged()) {
+      // Validate: bad ratings require notes
+      if (rating === 'bad' && !note.trim()) {
+        // Show immediate error toast (don't use sessionStorage since we're not navigating)
+        setSnackbar({
+          open: true,
+          message: 'Note required for bad rating. Please add a note before continuing.',
+          severity: 'error'
+        });
+        return false; // Block navigation
+      }
 
-
-  const isSaveDisabled = !rating || (rating === 'bad' && !note.trim());
-  
-  const handleSave = async () => {
-    if (currentSpan && rating) {
       try {
         setIsSaving(true);
         const result = await onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
         
-        // Show success toast based on whether annotation was created or modified
-        setSnackbar({
+        // Store success toast in sessionStorage (survives navigation)
+        sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
           open: true,
           message: result.isNew 
             ? 'Annotation created successfully!' 
             : 'Annotation updated successfully!',
           severity: 'success'
-        });
-      } catch (error: any) {
-        console.error("Failed to save annotation", error);
+        }));
         
-        // Show error toast
+        return true; // Indicate successful save
+      } catch (error: any) {
+        console.error("Failed to auto-save annotation", error);
+        
+        // Show immediate error toast (don't use sessionStorage since we're not navigating)
         setSnackbar({
           open: true,
           message: error?.response?.data?.error || error?.message || 'Failed to save annotation',
           severity: 'error'
         });
+        
+        return false; // Block navigation
       } finally {
         setIsSaving(false);
       }
     }
+    return true; // No changes or no rating, allow navigation
   };
+
+
+
+  // Navigation functions
+  const goToPreviousSpan = async () => {
+    if (currentSpanIndex > 0) {
+      const success = await autoSave();
+      if (success) {
+        const previousSpan = annotatedRootSpans[currentSpanIndex - 1];
+        navigate(`/projects/${projectId}/batches/${batchId}/annotation/${previousSpan.id}`, {
+          state: { projectName, batchName, annotatedRootSpan: previousSpan }
+        });
+      }
+    }
+  };
+
+  const goToNextSpan = async () => {
+    if (currentSpanIndex < annotatedRootSpans.length - 1) {
+      const success = await autoSave();
+      if (success) {
+        const nextSpan = annotatedRootSpans[currentSpanIndex + 1];
+        navigate(`/projects/${projectId}/batches/${batchId}/annotation/${nextSpan.id}`, {
+          state: { projectName, batchName, annotatedRootSpan: nextSpan }
+        });
+      }
+    }
+  };
+
+
+
   
   // Keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = async (event: KeyboardEvent) => {
   
       const isMac = navigator.platform.toUpperCase().includes("MAC");
       const modKey = isMac ? event.metaKey : event.ctrlKey;
-  
-      // Handle Enter key for saving (when not in textarea)
-      if (event.key === 'Enter' && event.target !== notesFieldRef.current) {
-        if (!isSaveDisabled && !isSaving) {
-          event.preventDefault();
-          handleSave();
-        }
-        return;
-      }
 
-      // Handle Escape key for going back to batch
+      // Handle Escape key for going back to batch (with auto-save)
       if (event.key === 'Escape') {
         event.preventDefault();
-        navigate(`/projects/${projectId}/batches/${batchId}`, { 
-          state: { projectName, batchName } 
-        });
+        const success = await autoSave();
+        if (success) {
+          navigate(`/projects/${projectId}/batches/${batchId}`, { 
+            state: { projectName, batchName } 
+          });
+        }
         return;
       }
 
@@ -189,20 +239,10 @@ const Annotation = ({ onSave}: Props) => {
         event.preventDefault(); // stop OS/browser handling (e.g. jump to start/end)
         switch (event.key) {
           case 'ArrowLeft':
-            if (currentSpanIndex > 0) {
-              const previousSpan = annotatedRootSpans[currentSpanIndex - 1];
-              navigate(`/projects/${projectId}/batches/${batchId}/annotation/${previousSpan.id}`, {
-                state: { projectName, batchName, annotatedRootSpan: previousSpan }
-              });
-            }
+            await goToPreviousSpan();
             break;
           case 'ArrowRight':
-            if (currentSpanIndex < annotatedRootSpans.length - 1) {
-              const nextSpan = annotatedRootSpans[currentSpanIndex + 1];
-              navigate(`/projects/${projectId}/batches/${batchId}/annotation/${nextSpan.id}`, {
-                state: { projectName, batchName, annotatedRootSpan: nextSpan }
-              });
-            }
+            await goToNextSpan();
             break;
           case 'ArrowUp':
             setRating('good');
@@ -218,7 +258,7 @@ const Annotation = ({ onSave}: Props) => {
   
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentSpanIndex, annotatedRootSpans, navigate, projectId, batchId, projectName, batchName, setRating, isSaveDisabled, isSaving, handleSave]);
+  }, [currentSpanIndex, annotatedRootSpans, navigate, projectId, batchId, projectName, batchName, setRating, autoSave, goToPreviousSpan, goToNextSpan]);
   
   const getRatingIcon = (rating: string) => {
     switch (rating) {
@@ -312,9 +352,14 @@ const Annotation = ({ onSave}: Props) => {
             {projectName && (
             <>
               <Box 
-              onClick={() => navigate(`/projects/${projectId}`, { 
-                state: { projectName, batchName } 
-              })}
+              onClick={async () => {
+                const success = await autoSave();
+                if (success) {
+                  navigate(`/projects/${projectId}`, { 
+                    state: { projectName, batchName } 
+                  });
+                }
+              }}
               sx={{
                 px: 2,
                 py: 0.75,
@@ -363,11 +408,16 @@ const Annotation = ({ onSave}: Props) => {
           {/* Batch Box */}
           {batchName && (
             <>
-              <Tooltip title={<>Back to batch {renderKey('Esc')}</>} arrow>
+              <Tooltip title={<>Back to batch {renderKey('Esc')} (auto-saves changes)</>} arrow>
                 <Box 
-                onClick={() => navigate(`/projects/${projectId}/batches/${batchId}`, { 
-                  state: { projectName, batchName } 
-                })}
+                onClick={async () => {
+                  const success = await autoSave();
+                  if (success) {
+                    navigate(`/projects/${projectId}/batches/${batchId}`, { 
+                      state: { projectName, batchName } 
+                    });
+                  }
+                }}
                 sx={{
                 px: 2,
                 py: 0.75,
@@ -504,62 +554,9 @@ const Annotation = ({ onSave}: Props) => {
             })()}
           </Box>
 
-          {/* Right Section - Navigation */}
+          {/* Right Section - Empty for now */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-            <Tooltip title={<>Previous span {renderKeyCombo(getModifierKey(), '←')}</>} arrow>
-              <span>
-                <Button
-                  variant="outlined"  
-                  onClick={goToPreviousSpan}
-                  disabled={currentSpanIndex === 0}
-                  size="small"
-                  sx={{ 
-                    px: 3, 
-                    minWidth: 165,
-                    borderColor: 'secondary.main',
-                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                    fontWeight: 600,
-                    '&:hover': {
-                      borderColor: 'secondary.dark',
-                      backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                    },
-                    '&.Mui-disabled': {
-                      borderColor: 'text.disabled',
-                      color: 'text.disabled',
-                    }
-                  }}
-                >
-                  Previous
-                </Button>
-              </span>
-            </Tooltip>
-            <Tooltip title={<>Next span {renderKeyCombo(getModifierKey(), '→')}</>} arrow>
-              <span>
-                <Button
-                  variant="outlined"
-                  onClick={goToNextSpan}
-                  disabled={currentSpanIndex === annotatedRootSpans.length - 1}
-                  size="small"
-                  sx={{ 
-                    px: 3, 
-                    minWidth: 165,
-                    borderColor: 'secondary.main',
-                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                    fontWeight: 600,
-                    '&:hover': {
-                      borderColor: 'secondary.dark',
-                      backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                    },
-                    '&.Mui-disabled': {
-                      borderColor: 'text.disabled',
-                      color: 'text.disabled',
-                    }
-                  }}
-                >
-                  Next
-                </Button>
-              </span>
-            </Tooltip>
+            {/* Navigation moved to annotation section */}
           </Box>
         </Box>
 
@@ -770,29 +767,6 @@ const Annotation = ({ onSave}: Props) => {
           }}
         >          
           <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Notes */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Notes
-              </Typography>
-              <TextField
-                multiline
-                rows={8}
-                fullWidth
-                variant="outlined"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={rating === 'bad' ? 'Note required for bad rating.' : 'Add your notes here...'}
-                inputRef={notesFieldRef}
-                sx={{ 
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: theme.palette.background.paper,
-                  }
-                }}
-              />
-            </Box>
-
             {/* Rate Response */}
             <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -836,31 +810,150 @@ const Annotation = ({ onSave}: Props) => {
               </Box>
             </Box>
 
-            {/* Save Button */}
-            <Tooltip title={<>Save annotation {renderKey('Enter')}</>} arrow>
-              <span>
-                <Button
-                  variant="contained"
-                  onClick={handleSave}
-                  disabled={isSaveDisabled || isSaving}
-                  size="large"
+            {/* Notes */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Notes
+              </Typography>
+              <TextField
+                multiline
+                rows={8}
+                fullWidth
+                variant="outlined"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={rating === 'bad' ? 'Note required for bad rating.' : 'Add your notes here...'}
+                inputRef={notesFieldRef}
+                sx={{ 
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: theme.palette.background.paper,
+                  }
+                }}
+              />
+            </Box>
+
+                        {/* Navigation */}
+            <Box>
+              {/* Span Progress Counter */}
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <Typography 
+                  variant="body2" 
                   sx={{ 
-                    backgroundColor: 'secondary.main',
-                    color: 'black',
-                    fontWeight: 600,
-                    '&:hover': {
-                      backgroundColor: 'secondary.dark',
-                    },
-                    '&.Mui-disabled': {
-                      backgroundColor: 'text.disabled',
-                      color: 'rgba(0, 0, 0, 0.26)',
-                    }
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    fontSize: '0.875rem'
                   }}
                 >
-                  {isSaving ? 'Saving...' : 'Save Annotation'}
-                </Button>
-              </span>
-            </Tooltip>
+                  Span {currentSpanIndex + 1} of {annotatedRootSpans.length}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Tooltip title={<>Previous span {renderKeyCombo(getModifierKey(), '←')} (auto-saves changes)</>} arrow>
+                  <span style={{ flex: 1 }}>
+                    <Button
+                      variant="outlined"  
+                      onClick={goToPreviousSpan}
+                      disabled={currentSpanIndex === 0 || isSaving}
+                      size="medium"
+                      fullWidth
+                      sx={{ 
+                        py: 0.5,
+                        fontSize: '1rem',
+                        borderColor: 'secondary.main',
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                        fontWeight: 600,
+                        '&:hover': {
+                          borderColor: 'secondary.dark',
+                          backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          borderColor: 'text.disabled',
+                          color: 'text.disabled',
+                        }
+                      }}
+                    >
+                      {isSaving ? 'Saving...' : 'Previous'}
+                    </Button>
+                  </span>
+                </Tooltip>
+                <Tooltip title={<>Next span {renderKeyCombo(getModifierKey(), '→')} (auto-saves changes)</>} arrow>
+                  <span style={{ flex: 1 }}>
+                    <Button
+                      variant="outlined"
+                      onClick={goToNextSpan}
+                      disabled={currentSpanIndex === annotatedRootSpans.length - 1 || isSaving}
+                      size="medium"
+                      fullWidth
+                      sx={{ 
+                        py: 0.5,
+                        fontSize: '1rem',
+                        borderColor: 'secondary.main',
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                        fontWeight: 600,
+                        '&:hover': {
+                          borderColor: 'secondary.dark',
+                          backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          borderColor: 'text.disabled',
+                          color: 'text.disabled',
+                        }
+                      }}
+                    >
+                      {isSaving ? 'Saving...' : 'Next'}
+                    </Button>
+                  </span>
+                </Tooltip>
+              </Box>
+            </Box>
+
+            {/* Auto-save status indicator */}
+            {hasAnnotationChanged() && (
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                gap: 0.5,
+                p: 2,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 235, 59, 0.1)' 
+                  : 'rgba(255, 235, 59, 0.2)',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'secondary.main'
+              }}>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                    textAlign: 'center'
+                  }}
+                >
+                  {isSaving ? 'Saving changes...' : 'Unsaved changes'}
+                </Typography>
+                {!isSaving && (
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: 'text.secondary',
+                      fontWeight: 400,
+                      fontSize: '0.75rem',
+                      textAlign: 'center'
+                    }}
+                  >
+                    Auto-saves on navigation
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Box>
         </Paper>
       </Box>

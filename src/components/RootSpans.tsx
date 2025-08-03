@@ -137,7 +137,7 @@ interface RootSpansProps {
 }
 
 const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpansProps) => {
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
   const [rootSpanToDelete, setRootSpanToDelete] = useState<string | null>(null);
