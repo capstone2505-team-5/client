@@ -353,56 +353,58 @@ const Annotation = ({ onSave}: Props) => {
             {/* Project Box */}
             {projectName && (
             <>
-              <Box 
-              onClick={async () => {
-                const success = await autoSave();
-                if (success) {
-                  navigate(`/projects/${projectId}`, { 
-                    state: { projectName, batchName } 
-                  });
-                }
-              }}
-              sx={{
-                px: 2,
-                py: 0.75,
-                backgroundColor: theme.palette.mode === 'dark' 
-                  ? 'rgba(0, 0, 0, 0.4)' 
-                  : 'rgba(255, 255, 255, 0.9)',
-                borderRadius: 2,
-                border: '2px solid',
-                borderColor: 'secondary.main',
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 2px 8px rgba(255, 235, 59, 0.2)'
-                  : '0 2px 8px rgba(255, 235, 59, 0.3)',
-                cursor: 'pointer',
-                '&:hover': {
-                  borderColor: 'secondary.dark',
-                  backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                },
-              }}>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-                    fontWeight: 'medium',
-                    fontSize: '0.875rem',
-                    letterSpacing: '0.5px'
-                  }}
-                >
-                  PROJECT
-                </Typography>
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-                    fontWeight: 'bold',
-                    fontSize: '1rem',
-                    mt: -0.5
-                  }}
-                >
-                  {projectName}
-                </Typography>
-              </Box>
+              <Tooltip title={<>Back to project {renderKey('Esc')}</>} arrow>
+                <Box 
+                onClick={async () => {
+                  const success = await autoSave();
+                  if (success) {
+                    navigate(`/projects/${projectId}`, { 
+                      state: { projectName, batchName } 
+                    });
+                  }
+                }}
+                sx={{
+                  px: 2,
+                  py: 0.75,
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(0, 0, 0, 0.4)' 
+                    : 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: 2,
+                  border: '2px solid',
+                  borderColor: 'secondary.main',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 2px 8px rgba(255, 235, 59, 0.2)'
+                    : '0 2px 8px rgba(255, 235, 59, 0.3)',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    borderColor: 'secondary.dark',
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                  },
+                }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                      fontWeight: 'medium',
+                      fontSize: '0.875rem',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    PROJECT
+                  </Typography>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                      fontWeight: 'bold',
+                      fontSize: '1rem',
+                      mt: -0.5
+                    }}
+                  >
+                    {projectName}
+                  </Typography>
+                </Box>
+              </Tooltip>
               <ChevronRightIcon sx={{ color: 'text.secondary', fontSize: '1.5rem' }} />
             </>
           )}
@@ -410,7 +412,7 @@ const Annotation = ({ onSave}: Props) => {
           {/* Batch Box */}
           {batchName && (
             <>
-              <Tooltip title={<>Back to batch {renderKey('Esc')} (auto-saves changes)</>} arrow>
+              <Tooltip title={<>Back to batch {renderKey('Esc')}</>} arrow>
                 <Box 
                 onClick={async () => {
                   const success = await autoSave();
