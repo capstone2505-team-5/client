@@ -11,6 +11,7 @@ import KeyboardIcon from '@mui/icons-material/Keyboard';
 import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
 import { getPhoenixDashboardUrl } from "../services/services";
+import ReactMarkdown from 'react-markdown';
 
 interface Props {
   onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => Promise<{ isNew: boolean }>;
@@ -32,6 +33,7 @@ const Annotation = ({ onSave}: Props) => {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
   const [hotkeyModalOpen, setHotkeyModalOpen] = useState(false);
+  const [displayFormattedSpan, setDisplayFormattedSpan] = useState(false);
 
   // Track original values to detect changes
   const [originalAnnotation, setOriginalAnnotation] = useState<{
@@ -229,8 +231,14 @@ const Annotation = ({ onSave}: Props) => {
         event.preventDefault();
         const success = await autoSave();
         if (success) {
+          // If we're on the last span, trigger auto-categorization like the "Done!" button
+          const isLastSpan = currentSpanIndex === annotatedRootSpans.length - 1;
           navigate(`/projects/${projectId}/batches/${batchId}`, { 
-            state: { projectName, batchName } 
+            state: { 
+              projectName, 
+              batchName,
+              ...(isLastSpan && { startCategorization: true })
+            } 
           });
         }
         return;
@@ -244,7 +252,21 @@ const Annotation = ({ onSave}: Props) => {
             await goToPreviousSpan();
             break;
           case 'ArrowRight':
-            await goToNextSpan();
+            // If on last span, trigger Done functionality, otherwise Next
+            if (currentSpanIndex === annotatedRootSpans.length - 1) {
+              const success = await autoSave();
+              if (success) {
+                navigate(`/projects/${projectId}/batches/${batchId}`, { 
+                  state: { 
+                    projectName, 
+                    batchName,
+                    startCategorization: true
+                  } 
+                });
+              }
+            } else {
+              await goToNextSpan();
+            }
             break;
           case 'ArrowUp':
             setRating('good');
@@ -261,29 +283,77 @@ const Annotation = ({ onSave}: Props) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentSpanIndex, annotatedRootSpans, navigate, projectId, batchId, projectName, batchName, setRating, autoSave, goToPreviousSpan, goToNextSpan]);
-  
-  const getRatingIcon = (rating: string) => {
-    switch (rating) {
-      case 'good':
-        return <CheckCircleIcon sx={{ color: 'success.main', fontSize: '1.5rem' }} />;
-      case 'bad':
-        return <CancelIcon sx={{ color: 'error.main', fontSize: '1.5rem' }} />;
-      default:
-        return <CheckCircleOutlineIcon sx={{ color: 'text.disabled', fontSize: '1.5rem' }} />;
-    }
-  };
 
-  const getRatingLabel = (rating: string) => {
-    switch (rating) {
-      case 'good':
-        return 'Good';
-      case 'bad':
-        return 'Bad';
-      default:
-        return 'Not Rated';
+    const displayPrevOrDoneButton = () => {
+      if (currentSpanIndex === annotatedRootSpans.length - 1) {
+        return (
+          <Button
+            variant="outlined"
+            onClick={async () => {
+              const success = await autoSave();
+              if (success) {
+                navigate(`/projects/${projectId}/batches/${batchId}`, { 
+                  state: { 
+                    projectName, 
+                    batchName,
+                    startCategorization: true // Flag to trigger auto-categorization
+                  } 
+                });
+              }
+            }}
+            disabled={isSaving}
+            size="medium"
+            fullWidth
+            sx={{ 
+              py: 0.5,
+              fontSize: '1rem',
+              borderColor: 'secondary.main',
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+              fontWeight: 600,
+              '&:hover': {
+                borderColor: 'secondary.dark',
+                backgroundColor: 'rgba(255, 235, 59, 0.1)',
+              },
+              '&.Mui-disabled': {
+                borderColor: 'text.disabled',
+                color: 'text.disabled',
+              }
+            }}
+          >
+            {isSaving ? 'Saving...' : 'Categorize!'}
+          </Button>
+        )
+      } else {
+        return (
+          <Button
+                      variant="outlined"
+                      onClick={goToNextSpan}
+                      disabled={currentSpanIndex === annotatedRootSpans.length - 1 || isSaving}
+                      size="medium"
+                      fullWidth
+                      sx={{ 
+                        py: 0.5,
+                        fontSize: '1rem',
+                        borderColor: 'secondary.main',
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                        fontWeight: 600,
+                        '&:hover': {
+                          borderColor: 'secondary.dark',
+                          backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          borderColor: 'text.disabled',
+                          color: 'text.disabled',
+                        }
+                      }}
+                    >
+                      {isSaving ? 'Saving...' : 'Next'}
+                    </Button>
+        )
+      }
     }
-  };
 
+  // If no current span, show a message
   if (!currentSpan) {
     return (
       <Container maxWidth="xl">
@@ -308,28 +378,28 @@ const Annotation = ({ onSave}: Props) => {
           gridTemplateRows: {
             xs: 'auto auto auto auto auto',
             md: 'auto auto auto 2fr auto',
-            lg: 'auto auto 1fr 1fr'
+            lg: 'auto 1fr 1fr auto'
           },
           gridTemplateAreas: {
             xs: `
               "header"
-              "controls"
               "input"
+              "controls"
               "output"
               "annotation"
             `,
             md: `
               "header header"
-              "controls controls"
               "input input"
+              "controls controls"
               "output output"
               "annotation annotation"
             `,
             lg: `
               "header header header"
+              "input output annotation"
+              "input output annotation"
               "controls output annotation"
-              "input output annotation"
-              "input output annotation"
             `
           },
           gap: 3,
@@ -353,7 +423,7 @@ const Annotation = ({ onSave}: Props) => {
             {/* Project Box */}
             {projectName && (
             <>
-              <Tooltip title={<>Back to project {renderKey('Esc')}</>} arrow>
+              <Tooltip title={<>Back to project</>} arrow>
                 <Box 
                 onClick={async () => {
                   const success = await autoSave();
@@ -739,6 +809,7 @@ const Annotation = ({ onSave}: Props) => {
                     backgroundColor: 'rgba(255, 235, 59, 0.1)',
                   }
                 }}
+                onClick={() => setDisplayFormattedSpan(false)}
               >
                 Raw
               </Button>
@@ -756,6 +827,7 @@ const Annotation = ({ onSave}: Props) => {
                     backgroundColor: 'rgba(255, 235, 59, 0.1)',
                   }
                 }}
+                onClick={() => setDisplayFormattedSpan(true)}
               >
                 Formatted
               </Button>
@@ -767,15 +839,19 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            <pre style={{ 
-              whiteSpace: 'pre-wrap', 
-              margin: 0,
-              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-              fontSize: '0.9rem',
-              lineHeight: 1.5
-            }}>
-              {currentSpan.output}
-            </pre>
+            {displayFormattedSpan ? (
+              <ReactMarkdown>{currentSpan.formatted_output || ''}</ReactMarkdown>
+            ) : (
+              <pre style={{ 
+                whiteSpace: 'pre-wrap', 
+                margin: 0,
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontSize: '0.9rem',
+                lineHeight: 1.5
+              }}>
+                {currentSpan.output}
+              </pre>
+            )}
           </Box>
         </Paper>
 
@@ -905,32 +981,13 @@ const Annotation = ({ onSave}: Props) => {
                     </Button>
                   </span>
                 </Tooltip>
-                <Tooltip title={<>Next span {renderKeyCombo(getModifierKey(), '→')} (auto-saves changes)</>} arrow>
+                <Tooltip title={
+                  currentSpanIndex === annotatedRootSpans.length - 1 
+                    ? <>Save & Categorize {renderKeyCombo(getModifierKey(), '→')} (auto-saves and categorizes)</>
+                    : <>Next span {renderKeyCombo(getModifierKey(), '→')} (auto-saves changes)</>
+                } arrow>
                   <span style={{ flex: 1 }}>
-                    <Button
-                      variant="outlined"
-                      onClick={goToNextSpan}
-                      disabled={currentSpanIndex === annotatedRootSpans.length - 1 || isSaving}
-                      size="medium"
-                      fullWidth
-                      sx={{ 
-                        py: 0.5,
-                        fontSize: '1rem',
-                        borderColor: 'secondary.main',
-                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                        fontWeight: 600,
-                        '&:hover': {
-                          borderColor: 'secondary.dark',
-                          backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                        },
-                        '&.Mui-disabled': {
-                          borderColor: 'text.disabled',
-                          color: 'text.disabled',
-                        }
-                      }}
-                    >
-                      {isSaving ? 'Saving...' : 'Next'}
-                    </Button>
+                    {displayPrevOrDoneButton()}
                   </span>
                 </Tooltip>
               </Box>

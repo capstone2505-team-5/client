@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useState, useMemo, useEffect, Fragment } from "react";
+import { useState, useMemo, useEffect, Fragment, useRef } from "react";
 import {
   Container,
   Typography,
@@ -146,10 +146,11 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   const navigate = useNavigate();
   const { projectId, batchId } = useParams<{ projectId: string, batchId: string }>();
   const location = useLocation();
-  const { projectName, batchName } = location.state || {};
+  const { projectName, batchName, startCategorization } = location.state || {};
   const theme = muiUseTheme();
   const queryClient = useQueryClient();
   const [isCategorizing, setIsCategorizing] = useState(false);
+  const hasAutoStartedRef = useRef(false); // Track if we've already auto-started categorization
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -161,6 +162,21 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       onLoadRootSpans(batchId);
     }
   }, [batchId, onLoadRootSpans]);
+
+  // Auto-start categorization when navigated from "Done" button
+  useEffect(() => {
+    if (startCategorization && batchId && annotatedRootSpans.length > 0 && !hasAutoStartedRef.current) {
+      // Check if there are bad annotations to categorize
+      const hasBadAnnotations = annotatedRootSpans.some(span => 
+        span.annotation?.rating === 'bad'
+      );
+      
+      if (hasBadAnnotations) {
+        hasAutoStartedRef.current = true; // Mark as started to prevent loops
+        handleCategorize();
+      }
+    }
+  }, [startCategorization]);
 
 
 
@@ -195,7 +211,25 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       setCategorizeResults(modalData.results);
       setCategorizeModalOpen(true);
     }
-  }, [annotatedRootSpans]); // Trigger when data changes
+  }, []); // Only run on mount to avoid loops
+
+  // Separate effect to check sessionStorage when categorization finishes
+  useEffect(() => {
+    if (!isCategorizing) {
+      // Small delay to let the API complete and sessionStorage update
+      const timer = setTimeout(() => {
+        const pendingCategorize = sessionStorage.getItem('pendingCategorizeModal');
+        if (pendingCategorize) {
+          sessionStorage.removeItem('pendingCategorizeModal');
+          const modalData = JSON.parse(pendingCategorize);
+          setCategorizeResults(modalData.results);
+          setCategorizeModalOpen(true);
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isCategorizing]); // Trigger when categorization state changes
 
   const handleConfirmDelete = async () => {
     if (rootSpanToDelete) {

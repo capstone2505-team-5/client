@@ -92,13 +92,11 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
     []
   );
 
-  const handleSubmit = useCallback(async () => {
+  const handleCreateBatch = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
     
     try {
-      console.log("Creating batch", name, projectId, selectedRootSpanIds);
       const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
-      console.log("Batch created with ID:", batchId);
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 
       });
@@ -184,7 +182,7 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
         <Button
           variant="contained"
           disabled={!name || selectedRootSpanIds.length === 0}
-          onClick={handleSubmit}
+          onClick={handleCreateBatch}
         >
           Create Batch
         </Button>
