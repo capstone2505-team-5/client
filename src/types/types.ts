@@ -42,7 +42,7 @@ export interface Batch {
   projectId: string;
   name: string;
   createdAt: string;
-  spanCount: number;
+  validRootSpanCount: number;
   percentAnnotated: number;
   percentGood: number;
   categories: Record<string, number>;

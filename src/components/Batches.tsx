@@ -114,7 +114,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       ),
     },
     {
-      field: 'spanCount',
+      field: 'validRootSpanCount',
       headerName: 'Spans',
       flex: 0.5,
       minWidth: 80,
@@ -184,7 +184,6 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
         return (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 1 }}>
             {sortedCategories.length > 0 ? sortedCategories.map(([category, count], index) => (
-              console.log(category, count, index),
               <Chip
                 key={index}
                 label={`${category} (${count})`}

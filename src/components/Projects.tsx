@@ -102,7 +102,7 @@ const Projects = () => {
       ),
     },
     {
-      field: 'updatedAt',
+      field: 'updated_at',
       headerName: 'Last Updated At',
       flex: 1.5,
       minWidth: 150,
