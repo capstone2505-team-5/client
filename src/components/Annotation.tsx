@@ -231,7 +231,6 @@ const Annotation = ({ onSave}: Props) => {
         event.preventDefault();
         const success = await autoSave();
         if (success) {
-          // If we're on the last span, trigger auto-categorization like the "Done!" button
           const isLastSpan = currentSpanIndex === annotatedRootSpans.length - 1;
           navigate(`/projects/${projectId}/batches/${batchId}`, { 
             state: { 
@@ -252,18 +251,9 @@ const Annotation = ({ onSave}: Props) => {
             await goToPreviousSpan();
             break;
           case 'ArrowRight':
-            // If on last span, trigger Done functionality, otherwise Next
+            // If on last span, show confirmation dialog like the button does
             if (currentSpanIndex === annotatedRootSpans.length - 1) {
-              const success = await autoSave();
-              if (success) {
-                navigate(`/projects/${projectId}/batches/${batchId}`, { 
-                  state: { 
-                    projectName, 
-                    batchName,
-                    startCategorization: true
-                  } 
-                });
-              }
+              setDisplayConfirmCategorize(true);
             } else {
               await goToNextSpan();
             }
@@ -283,6 +273,8 @@ const Annotation = ({ onSave}: Props) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentSpanIndex, annotatedRootSpans, navigate, projectId, batchId, projectName, batchName, setRating, autoSave, goToPreviousSpan, goToNextSpan]);
+
+
 
   // Monitor footer visibility from localStorage
   useEffect(() => {
