@@ -184,6 +184,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
         return (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 1 }}>
             {sortedCategories.length > 0 ? sortedCategories.map(([category, count], index) => (
+              console.log(category, count, index),
               <Chip
                 key={index}
                 label={`${category} (${count})`}
