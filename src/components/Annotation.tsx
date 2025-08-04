@@ -33,6 +33,7 @@ const Annotation = ({ onSave}: Props) => {
   const [displayFormattedInput, setDisplayFormattedInput] = useState(false);
   const [displayFormattedOutput, setDisplayFormattedOutput] = useState(false);
   const [displayConfirmCategorize, setDisplayConfirmCategorize] = useState(false);
+  const [isFooterHidden, setIsFooterHidden] = useState(false);
 
   // Track original values to detect changes
   const [originalAnnotation, setOriginalAnnotation] = useState<{
@@ -283,6 +284,29 @@ const Annotation = ({ onSave}: Props) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentSpanIndex, annotatedRootSpans, navigate, projectId, batchId, projectName, batchName, setRating, autoSave, goToPreviousSpan, goToNextSpan]);
 
+  // Monitor footer visibility from localStorage
+  useEffect(() => {
+    const checkFooterVisibility = () => {
+      const savedFooterState = localStorage.getItem('llmonade-footer-hidden');
+      const footerHidden = savedFooterState ? JSON.parse(savedFooterState) : false;
+      setIsFooterHidden(footerHidden);
+    };
+
+    // Check initially
+    checkFooterVisibility();
+
+    // Listen for storage changes (in case footer is toggled in another tab/component)
+    window.addEventListener('storage', checkFooterVisibility);
+    
+    // Also listen for custom events from the footer component
+    window.addEventListener('footerVisibilityChanged', checkFooterVisibility);
+
+    return () => {
+      window.removeEventListener('storage', checkFooterVisibility);
+      window.removeEventListener('footerVisibilityChanged', checkFooterVisibility);
+    };
+  }, []);
+
     const displayPrevOrDoneButton = () => {
       if (currentSpanIndex === annotatedRootSpans.length - 1) {
         return (
@@ -391,7 +415,7 @@ const Annotation = ({ onSave}: Props) => {
             `
           },
           gap: 3,
-          height: 'calc(100vh - 200px)',
+          height: isFooterHidden ? 'calc(100vh - 120px)' : 'calc(100vh - 200px)',
           minHeight: '600px'
         }}
       >
@@ -736,7 +760,10 @@ const Annotation = ({ onSave}: Props) => {
             p: 2, 
             backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e8f5e8',
             borderBottom: '1px solid',
-            borderBottomColor: 'divider'
+            borderBottomColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Input
@@ -747,7 +774,7 @@ const Annotation = ({ onSave}: Props) => {
                 size="small"
                 sx={{
                   px: 3,
-                  minWidth: 100,
+                  minWidth: 50,
                   borderColor: 'secondary.main',
                   color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
                   fontWeight: 600,
@@ -766,7 +793,7 @@ const Annotation = ({ onSave}: Props) => {
                 disabled={!currentSpan.formatted_output}
                 sx={{
                   px: 3,
-                  minWidth: 100,
+                  minWidth: 75,
                   borderColor: 'secondary.main',
                   color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
                   fontWeight: 600,
