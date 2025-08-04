@@ -30,7 +30,8 @@ const Annotation = ({ onSave}: Props) => {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
   const [hotkeyModalOpen, setHotkeyModalOpen] = useState(false);
-  const [displayFormattedSpan, setDisplayFormattedSpan] = useState(false);
+  const [displayFormattedInput, setDisplayFormattedInput] = useState(false);
+  const [displayFormattedOutput, setDisplayFormattedOutput] = useState(false);
   const [displayConfirmCategorize, setDisplayConfirmCategorize] = useState(false);
 
   // Track original values to detect changes
@@ -740,6 +741,45 @@ const Annotation = ({ onSave}: Props) => {
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Input
             </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button 
+                variant="outlined" 
+                size="small"
+                sx={{
+                  px: 3,
+                  minWidth: 100,
+                  borderColor: 'secondary.main',
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: 'secondary.dark',
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                  }
+                }}
+                onClick={() => setDisplayFormattedInput(false)}
+              >
+                Raw
+              </Button>
+              <Button 
+                variant="outlined" 
+                size="small"
+                disabled={!currentSpan.formatted_output}
+                sx={{
+                  px: 3,
+                  minWidth: 100,
+                  borderColor: 'secondary.main',
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: 'secondary.dark',
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                  }
+                }}
+                onClick={() => setDisplayFormattedInput(true)}
+              >
+                Formatted
+              </Button>
+            </Box>
           </Box>
           <Box sx={{ 
             p: 2, 
@@ -754,7 +794,7 @@ const Annotation = ({ onSave}: Props) => {
               fontSize: '0.9rem',
               lineHeight: 1.5
             }}>
-              {currentSpan.input}
+              {displayFormattedInput ? <ReactMarkdown>{currentSpan.formatted_input || ''}</ReactMarkdown> : currentSpan.input}
             </pre>
           </Box>
         </Paper>
@@ -796,7 +836,7 @@ const Annotation = ({ onSave}: Props) => {
                     backgroundColor: 'rgba(255, 235, 59, 0.1)',
                   }
                 }}
-                onClick={() => setDisplayFormattedSpan(false)}
+                onClick={() => setDisplayFormattedOutput(false)}
               >
                 Raw
               </Button>
@@ -815,7 +855,7 @@ const Annotation = ({ onSave}: Props) => {
                     backgroundColor: 'rgba(255, 235, 59, 0.1)',
                   }
                 }}
-                onClick={() => setDisplayFormattedSpan(true)}
+                onClick={() => setDisplayFormattedOutput(true)}
               >
                 Formatted
               </Button>
@@ -827,7 +867,7 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            {displayFormattedSpan ? (
+            {displayFormattedOutput ? (
               <ReactMarkdown>{currentSpan.formatted_output || ''}</ReactMarkdown>
             ) : (
               <pre style={{ 
