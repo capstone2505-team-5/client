@@ -242,7 +242,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   };
 
   const handleView = (annotatedRootSpan: AnnotatedRootSpan) => {
-    navigate(`rootSpans/${annotatedRootSpan.traceId}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
+    navigate(`annotation/${annotatedRootSpan.id}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
   };
 
   const handleCategorize = async () => {
