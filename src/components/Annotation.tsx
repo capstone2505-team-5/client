@@ -803,6 +803,7 @@ const Annotation = ({ onSave}: Props) => {
               <Button 
                 variant="outlined" 
                 size="small"
+                disabled={!currentSpan.formatted_output}
                 sx={{
                   px: 3,
                   minWidth: 100,

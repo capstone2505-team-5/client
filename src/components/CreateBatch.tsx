@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material";
 import type { AnnotatedRootSpan, Project } from "../types/types";
+import { useRootSpanMutations } from "../hooks/useRootSpans";
 
 interface CreateBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
@@ -34,8 +35,11 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
   const location = useLocation();
-  const { projectName } = location.state || {};
+  const { projectName, batchId } = location.state || {};
   const { projectId } = useParams<{ projectId: string }>();
+  
+  // Get the invalidation functions from the mutations hook
+  const { invalidateBatch, invalidateProject } = useRootSpanMutations();
   
   useEffect(() => {
     if (projectId) {
@@ -92,11 +96,43 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
     []
   );
 
+  const updateBatchSpans = (batchId: string, status: string) => {
+    if (status === 'completed') {
+      // Invalidate both the batch and project queries to refresh data
+      invalidateBatch(batchId);
+      if (projectId) {
+        invalidateProject(projectId);
+      }
+    }
+  }
+
+  const startListeningForSSE = useCallback((batchId: string) => {
+    const eventSource = new EventSource(`/api/batches/${batchId}/events`);
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log('SSE Event received:', data);
+      
+      // Handle different event types from the server
+      if (data.status === 'completed') {
+        updateBatchSpans(batchId, data.status);
+        eventSource.close(); // Close connection when processing is complete
+      }
+    };
+    eventSource.onerror = (event) => {
+      console.error('SSE connection error:', event);
+      eventSource.close();
+    };
+    
+    // Cleanup function to close connection if component unmounts
+    return () => eventSource.close();
+  }, [invalidateBatch, invalidateProject, projectId]);
+
   const handleCreateBatch = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
     
     try {
       const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
+      startListeningForSSE(batchId);
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 
       });

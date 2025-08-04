@@ -36,8 +36,8 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   const [open, setOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const location = useLocation();
-  const { projectName } = location.state || {};
-  const { projectId } = useParams();
+  const { projectName, batchName } = location.state || {};
+  const { projectId, batchId } = useParams();
   const theme = useTheme();
 
   const handleClose = () => {
@@ -371,7 +371,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
           variant="contained"
           startIcon={<AddIcon sx={{ color: 'black !important' }} />}
           onClick={() => navigate(`/projects/${projectId}/batches/create`, { 
-            state: { projectName: projectName, projectId: projectId } 
+            state: { projectName, projectId, batchId, batchName } 
           })}
           sx={{
             backgroundColor: 'secondary.main',

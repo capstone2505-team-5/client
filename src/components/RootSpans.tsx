@@ -187,7 +187,10 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
 
   const handleCategorizeModalClose = () => {
     setCategorizeModalOpen(false);
-    setCategorizeResults(null);
+    // Delay clearing results until after dialog close animation completes
+    setTimeout(() => {
+      setCategorizeResults(null);
+    }, 300); // MUI dialog close animation is typically ~225ms
   };
 
   const handleSnackbarClose = () => {
