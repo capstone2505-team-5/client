@@ -13,6 +13,18 @@ const NavBar = () => {
   const isHomePage = location.pathname === "/";
   const isProjectsPage = location.pathname === "/projects";
   const showLimitedNav = isHomePage || isProjectsPage;
+  
+  // Extract projectId from the current pathname
+  const getProjectIdFromPath = () => {
+    const pathSegments = location.pathname.split('/');
+    const projectIndex = pathSegments.findIndex(segment => segment === 'projects');
+    if (projectIndex !== -1 && pathSegments[projectIndex + 1]) {
+      return pathSegments[projectIndex + 1];
+    }
+    return null;
+  };
+  
+  const projectId = getProjectIdFromPath();
   return (
     <AppBar position="static">
       <Toolbar>
@@ -37,7 +49,9 @@ const NavBar = () => {
           <>
             <Button color="inherit" onClick={() => navigate("/")}>Getting Started</Button>
             <Button color="inherit" onClick={() => navigate("/projects")}>Projects</Button>
-            <Button color="inherit" onClick={() => navigate("/queues")}>Queues</Button>
+            {projectId && (
+              <Button color="inherit" onClick={() => navigate(`/projects/${projectId}`)}>Batches</Button>
+            )}
           </>
         )}
         <IconButton 

@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -17,20 +17,31 @@ import {
   MenuItem,
   FormControlLabel,
 } from "@mui/material";
-import type { AnnotatedRootSpan } from "../types/types";
+import type { SelectChangeEvent } from "@mui/material";
+import type { AnnotatedRootSpan, Project } from "../types/types";
 
-interface CreateQueueProps {
+interface CreateBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
-  onCreateQueue: (name: string, rootSpanIds: string[]) => void;
+  onLoadRootSpans: (projectId: string) => void;
+  onCreateBatch: (name: string, projectId: string, rootSpanIds: string[]) => Promise<string>;
+  isLoading: boolean;
 }
 
-const CreateQueue = ({ annotatedRootSpans: rootSpans, onCreateQueue }: CreateQueueProps) => {
+const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoading }: CreateBatchProps) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
-  const [projectFilter, setProjectFilter] = useState<string>("all");
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
+  const location = useLocation();
+  const { projectName } = location.state || {};
+  const { projectId } = useParams<{ projectId: string }>();
+  
+  useEffect(() => {
+    if (projectId) {
+      onLoadRootSpans(projectId);
+    }
+  }, [projectId, onLoadRootSpans]);
 
   const now = useMemo(() => new Date(), []);
   const displayedSpans = useMemo(() => {
@@ -42,25 +53,23 @@ const CreateQueue = ({ annotatedRootSpans: rootSpans, onCreateQueue }: CreateQue
       return t - 604_800_000; // 7d
     })();
 
-    return rootSpans
+    return annotatedRootSpans
+      .filter(span => span.startTime !== null) // Filter out spans with null startTime
       .filter(span =>
-        (projectFilter === 'all' || span.projectName === projectFilter) &&
-        (threshold === 0 || span.tsStart >= threshold)
+        (threshold === 0 || new Date(span.startTime!).getTime() >= threshold)
       )
-      .sort((a, b) => b.tsStart - a.tsStart);
-  }, [rootSpans, projectFilter, timeInterval, now]);
+      .sort((a, b) => new Date(b.startTime!).getTime() - new Date(a.startTime!).getTime());
+  }, [annotatedRootSpans, timeInterval, now]);
 
-  // unique projects
-  const projects = useMemo(
-    () => Array.from(new Set(rootSpans.map((s) => s.projectName))),
-    [rootSpans]
+
+
+  const allSelected = useMemo(() =>
+    displayedSpans.length > 0 &&
+    displayedSpans.every(s => selectedSet.has(s.id)),
+    [displayedSpans, selectedSet]
   );
 
-  const allSelected =
-    displayedSpans.length > 0 &&
-    displayedSpans.every(s => selectedSet.has(s.id));
-
-  const handleSelectAll = () =>
+  const handleSelectAll = useCallback(() =>
     setSelectedSet(prev => {
       const next = new Set(prev);
 
@@ -70,56 +79,66 @@ const CreateQueue = ({ annotatedRootSpans: rootSpans, onCreateQueue }: CreateQue
         displayedSpans.forEach(s => next.add(s.id));
       }
       return next;
-  });
+    }),
+    [allSelected, displayedSpans]
+  );
 
-  const toggle = (id: string) =>
+  const toggle = useCallback((id: string) =>
     setSelectedSet(prev => {
       const s = new Set(prev);
       s.has(id) ? s.delete(id) : s.add(id);
       return s;
-  });
+    }),
+    []
+  );
 
-  const handleSubmit = async () => {
-    if (!name || selectedRootSpanIds.length === 0) return;
-    onCreateQueue(name, selectedRootSpanIds);
-    navigate("/queues");
-  };
+  const handleSubmit = useCallback(async () => {
+    if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
+    
+    try {
+      console.log("Creating batch", name, projectId, selectedRootSpanIds);
+      const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
+      console.log("Batch created with ID:", batchId);
+      navigate(`/projects/${projectId}/batches/${batchId}`, { 
+        state: { projectName: projectName, projectId: projectId, batchName: name } 
+      });
+    } catch (error) {
+      console.error("Failed to create batch:", error);
+    }
+  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName]);
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+  }, []);
+
+
+  const handleTimeIntervalChange = useCallback((e: SelectChangeEvent) => {
+    setTimeInterval(e.target.value as 'all' | '1h' | '24h' | '7d');
+  }, []);
 
   return (
     <Container maxWidth="md" sx={{ py: 2 }}>
       <Typography variant="h4" mb={2}>
-        Create New Queue
+        Create New Batch
       </Typography>
       <Box mb={3}>
         <TextField
           fullWidth
-          label="Queue Name"
+          label="Batch Name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={handleNameChange}
         />
       </Box>
 
       {/* Project & Time Interval Filters */}
       <Box mb={3} display="flex" gap={2}>
-        <FormControl sx={{ minWidth: 180 }}>
-          <InputLabel>Project</InputLabel>
-          <Select
-            value={projectFilter}
-            label="Project"
-            onChange={(e) => setProjectFilter(e.target.value)}
-          >
-            <MenuItem value="all">All Projects</MenuItem>
-            {projects.map((proj) => (
-              <MenuItem key={proj} value={proj}>{proj}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+
         <FormControl sx={{ minWidth: 180 }}>
           <InputLabel>Time Interval</InputLabel>
           <Select
             value={timeInterval}
             label="Time Interval"
-            onChange={(e) => setTimeInterval(e.target.value as any)}
+            onChange={handleTimeIntervalChange}
           >
             <MenuItem value="all">All Time</MenuItem>
             <MenuItem value="1h">Last Hour</MenuItem>
@@ -149,25 +168,29 @@ const CreateQueue = ({ annotatedRootSpans: rootSpans, onCreateQueue }: CreateQue
         {displayedSpans.map((rootSpan) => (
           <ListItem key={rootSpan.id} disablePadding>
             <ListItemButton onClick={() => toggle(rootSpan.id)} sx={{ py: 1, px: 2 }}>
-              <Checkbox checked={selectedSet.has(rootSpan.id)} />
-              <ListItemText primary={`${rootSpan.id} — ${rootSpan.spanName}`} />
+              <Checkbox 
+                checked={selectedSet.has(rootSpan.id)} 
+              />
+              <ListItemText primary={`${rootSpan.traceId} — ${rootSpan.spanName}`} />
             </ListItemButton>
           </ListItem>
         ))}
       </List>
 
       <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
-        <Button onClick={() => navigate("/queues")}>Cancel</Button>
+        <Button onClick={() => navigate(`/projects/${projectId}`, { 
+          state: { projectName, projectId} 
+        })}>Cancel</Button>
         <Button
           variant="contained"
           disabled={!name || selectedRootSpanIds.length === 0}
           onClick={handleSubmit}
         >
-          Create Queue
+          Create Batch
         </Button>
       </Box>
     </Container>
   );
 };
 
-export default CreateQueue;
+export default CreateBatch; 

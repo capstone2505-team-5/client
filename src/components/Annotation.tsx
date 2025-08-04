@@ -1,58 +1,81 @@
-import { useNavigate, useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { Container, Typography, Button, Box, TextField, Chip } from '@mui/material';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Container, Typography, Box, Button, TextField, Chip } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import type { AnnotatedRootSpan, Rating } from "../types/types";
+import type { AnnotatedRootSpan, Rating as RatingType } from "../types/types";
 
-
-
-interface RootSpanProps {
+interface Props {
   annotatedRootSpans: AnnotatedRootSpan[];
-  onSave: (
-    annotationId: string,
-    rootSpanId: string,
-    note: string,
-    rating: Rating
-  ) => Promise<void>;
+  onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => void;
 }
 
-const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
-  const { id: queueId } = useParams<{ id: string }>();
+const Annotation = ({ annotatedRootSpans, onSave}: Props) => {
+  const { projectId, batchId } = useParams<{ projectId: string, batchId: string }>();
   const navigate = useNavigate();
-  const [currentRootSpanIndex, setCurrentRootSpanIndex] = useState<number>(0);
-  const [note, setNote] = useState<string>('');
-  const [rating, setRating] = useState<'good' | 'bad' | null>(null);
-  const annotatedRootSpan = annotatedRootSpans[currentRootSpanIndex] ?? {
-    annotationId: '',
-    traceId: '',
-    input: '',
-    output: '',
-    note: '',
-    rating: '',
-    categories: [],
-  };
+  const [note, setNote] = useState("");
+  const [rating, setRating] = useState<RatingType | null>(null);
+  
+  // Create a unique key for this batch to store the current index
+  const storageKey = `annotation-index-${projectId}-${batchId}`;
+  
+  // Initialize currentIndex from sessionStorage or default to 0
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const savedIndex = sessionStorage.getItem(storageKey);
+    const parsedIndex = savedIndex ? parseInt(savedIndex, 10) : 0;
+    // Ensure the saved index is valid for the current spans array
+    return parsedIndex < annotatedRootSpans.length ? parsedIndex : 0;
+  });
+  
+  const location = useLocation();
+  const { projectName, batchName } = location.state || {};
+  const currentSpan = annotatedRootSpans[currentIndex];
+
+  // Save currentIndex to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem(storageKey, currentIndex.toString());
+  }, [currentIndex, storageKey]);
+
+  // Clean up sessionStorage when component unmounts
+  useEffect(() => {
+    return () => {
+      // Optional: clean up when navigating away from the batch
+      if (currentIndex >= annotatedRootSpans.length - 1) {
+        sessionStorage.removeItem(storageKey);
+      }
+    };
+  }, [storageKey, currentIndex, annotatedRootSpans.length]);
 
   useEffect(() => {
-    if (annotatedRootSpan) {
-      setNote(annotatedRootSpan.note || '');
-      setRating(annotatedRootSpan.rating === 'good' || annotatedRootSpan.rating === 'bad' ? annotatedRootSpan.rating : null);
+    if (currentSpan) {
+      setNote(currentSpan.annotation?.note || '');
+      setRating(currentSpan.annotation?.rating === 'good' || currentSpan.annotation?.rating === 'bad' ? currentSpan.annotation.rating : null);
     }
-  }, [annotatedRootSpan]);
+  }, [currentSpan]);
 
-  const isSaveDisabled = rating === null || (rating === 'bad' && !note.trim());
-  const handlePrev = (): void => setCurrentRootSpanIndex((i) => Math.max(0, i - 1));
-  const handleNext = (): void => setCurrentRootSpanIndex((i) => Math.min(annotatedRootSpans.length - 1, i + 1));
-  const handleSaveAnnotation = async (): Promise<void> => {
-    onSave(
-      annotatedRootSpan.annotationId,
-      annotatedRootSpan.id,
-      note,
-      rating || 'none'
-    );
+  const isSaveDisabled = rating === 'bad' && !note.trim();
+  
+  const handleSave = () => {
+    if (currentSpan && rating) {
+      onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
+    }
   };
 
+  const handleNext = () => {
+    if (currentIndex < annotatedRootSpans.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
 
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  if (!currentSpan) {
+    return <div>No spans available</div>;
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -63,8 +86,10 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
           <Typography variant="h3" component="h1" gutterBottom>
             Annotation Queue
           </Typography>
-          <Button variant="contained" onClick={() => navigate(`/queues/${queueId}`)}>
-            Back to Root Spans
+          <Button variant="contained" onClick={() => navigate(`/projects/${projectId}/batches/${batchId}`, {
+            state: { projectName, batchName }
+          })}>
+            Back to Batch
           </Button>
         </Box>
 
@@ -77,7 +102,7 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
               borderRadius: 2,
               border: '2px solid',
               borderColor: 'primary.light',
-              height: '110vh',
+              height: '70vh',
               p: 2,
               overflow: 'auto',
             }}
@@ -85,7 +110,7 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
             <Typography variant="h4" component="h2" gutterBottom>
               Input
             </Typography>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{annotatedRootSpan.input}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{currentSpan.input}</pre>
           </Box>
 
           {/* Output */}
@@ -95,7 +120,7 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
               borderRadius: 2,
               border: '2px solid',
               borderColor: 'primary.light',
-              height: '110vh',
+              height: '70vh',
               p: 2,
               overflow: 'auto',
             }}
@@ -103,7 +128,7 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
             <Typography variant="h4" component="h2" gutterBottom>
               Output
             </Typography>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{annotatedRootSpan.output}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{currentSpan.output}</pre>
           </Box>
 
           {/* Annotation + Rate Responses + Notes + Save + Navigation */}
@@ -115,8 +140,8 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
             <Box sx={{ textAlign: 'left', mb: 2 }}>
               <Typography variant="h5" component="h3" gutterBottom>Categories</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {annotatedRootSpan.categories.length > 0 ? (
-                  annotatedRootSpan.categories.map(category => (
+                {currentSpan.annotation?.categories && currentSpan.annotation.categories.length > 0 ? (
+                  currentSpan.annotation.categories.map(category => (
                     <Chip key={category} label={category} variant="outlined" />
                   ))
                 ) : (
@@ -127,7 +152,7 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
 
             {/* Rate Responses */}
             <Box sx={{ textAlign: 'left', mb: 2 }}>
-              <Typography variant="h5" component="h3" gutterBottom>Rate Response (Required)</Typography>
+              <Typography variant="h5" component="h3" gutterBottom>Rate Response</Typography>
               <Box sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
                 <Button
                   variant={rating === 'good' ? 'contained' : 'outlined'}
@@ -152,17 +177,17 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
               fullWidth
               variant="outlined"
               value={note}
-              onChange={e => setNote(e.target.value)}
+              onChange={(e) => setNote(e.target.value)}
               placeholder={rating === 'bad' ? 'Note required for bad rating.' : ''}
             />
 
             {/* Save */}
             <Button
               variant="contained"
-              onClick={handleSaveAnnotation}
+              onClick={handleSave}
               sx={{ mt: 2, alignSelf: 'flex-end' }}
-              disabled={isSaveDisabled}
-              >
+              disabled={isSaveDisabled || !rating}
+            >
               Save Annotation
             </Button>
 
@@ -170,18 +195,18 @@ const Annotation = ({ annotatedRootSpans, onSave }: RootSpanProps) => {
             <Box sx={{ display: 'flex', justifyContent: 'left', alignItems: 'center', gap: 2, mt: 2 }}>
               <Button
                 variant="outlined"
-                onClick={handlePrev}
-                disabled={currentRootSpanIndex === 0}
+                onClick={handlePrevious}
+                disabled={currentIndex === 0}
               >
                 Previous
               </Button>
               <Typography>
-                {currentRootSpanIndex + 1} of {annotatedRootSpans.length}
+                {currentIndex + 1} of {annotatedRootSpans.length}
               </Typography>
               <Button
                 variant="outlined"
                 onClick={handleNext}
-                disabled={currentRootSpanIndex === annotatedRootSpans.length - 1}
+                disabled={currentIndex === annotatedRootSpans.length - 1}
               >
                 Next
               </Button>
