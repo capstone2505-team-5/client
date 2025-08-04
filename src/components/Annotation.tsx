@@ -4,9 +4,6 @@ import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
@@ -34,6 +31,7 @@ const Annotation = ({ onSave}: Props) => {
   });
   const [hotkeyModalOpen, setHotkeyModalOpen] = useState(false);
   const [displayFormattedSpan, setDisplayFormattedSpan] = useState(false);
+  const [displayConfirmCategorize, setDisplayConfirmCategorize] = useState(false);
 
   // Track original values to detect changes
   const [originalAnnotation, setOriginalAnnotation] = useState<{
@@ -289,18 +287,7 @@ const Annotation = ({ onSave}: Props) => {
         return (
           <Button
             variant="outlined"
-            onClick={async () => {
-              const success = await autoSave();
-              if (success) {
-                navigate(`/projects/${projectId}/batches/${batchId}`, { 
-                  state: { 
-                    projectName, 
-                    batchName,
-                    startCategorization: true // Flag to trigger auto-categorization
-                  } 
-                });
-              }
-            }}
+            onClick={() => setDisplayConfirmCategorize(true)}
             disabled={isSaving}
             size="medium"
             fullWidth
@@ -326,29 +313,29 @@ const Annotation = ({ onSave}: Props) => {
       } else {
         return (
           <Button
-                      variant="outlined"
-                      onClick={goToNextSpan}
-                      disabled={currentSpanIndex === annotatedRootSpans.length - 1 || isSaving}
-                      size="medium"
-                      fullWidth
-                      sx={{ 
-                        py: 0.5,
-                        fontSize: '1rem',
-                        borderColor: 'secondary.main',
-                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                        fontWeight: 600,
-                        '&:hover': {
-                          borderColor: 'secondary.dark',
-                          backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                        },
-                        '&.Mui-disabled': {
-                          borderColor: 'text.disabled',
-                          color: 'text.disabled',
-                        }
-                      }}
-                    >
-                      {isSaving ? 'Saving...' : 'Next'}
-                    </Button>
+            variant="outlined"
+            onClick={goToNextSpan}
+            disabled={currentSpanIndex === annotatedRootSpans.length - 1 || isSaving}
+            size="medium"
+            fullWidth
+            sx={{ 
+              py: 0.5,
+              fontSize: '1rem',
+              borderColor: 'secondary.main',
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+              fontWeight: 600,
+              '&:hover': {
+                borderColor: 'secondary.dark',
+                backgroundColor: 'rgba(255, 235, 59, 0.1)',
+              },
+              '&.Mui-disabled': {
+                borderColor: 'text.disabled',
+                color: 'text.disabled',
+              }
+            }}
+          >
+            {isSaving ? 'Saving...' : 'Next'}
+          </Button>
         )
       }
     }
@@ -1037,6 +1024,83 @@ const Annotation = ({ onSave}: Props) => {
           </Box>
         </Paper>
       </Box>
+
+             {/* Confirm Categorize Modal */}
+       <Dialog
+         open={displayConfirmCategorize}
+         onClose={() => setDisplayConfirmCategorize(false)}
+         aria-labelledby="confirm-categorize-dialog-title"
+         maxWidth="sm"
+         fullWidth
+         PaperProps={{
+           sx: {
+             borderRadius: 3,
+             boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+           }
+         }}
+       >
+         <DialogTitle 
+           id="confirm-categorize-dialog-title"
+           sx={{ 
+             color: 'primary.main',
+             fontWeight: 'bold',
+             pb: 1,
+             textAlign: 'center'
+           }}
+         >
+           Confirm Categorize
+         </DialogTitle>
+         <DialogContent sx={{ pt: 2, pb: 3, textAlign: 'center' }}>
+          {(() => {
+            const annotatedCount = annotatedRootSpans.filter(span => span.annotation?.rating).length;
+            return annotatedCount === annotatedRootSpans.length ? (
+              <Typography variant="body1" sx={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
+                You finished grading this batch!! Do you want to categorize now?
+              </Typography>
+            ) : (
+              <Typography variant="body1" sx={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
+                You haven't graded all the spans in this batch. Are you sure you want to categorize?
+              </Typography>
+            );
+          })()}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 2, justifyContent: 'center' }}>
+          <Button 
+            onClick={() => setDisplayConfirmCategorize(false)}
+            variant="outlined"
+            sx={{ 
+              minWidth: '100px',
+              borderColor: 'grey.400',
+              color: 'text.secondary'
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={async () => {
+              const success = await autoSave();
+              if (success) {
+                navigate(`/projects/${projectId}/batches/${batchId}`, { 
+                  state: { 
+                    projectName, 
+                    batchName,
+                    startCategorization: true
+                  } 
+                });
+              }
+              setDisplayConfirmCategorize(false);
+            }}
+            variant="contained"
+            color="primary"
+            sx={{ 
+              minWidth: '100px',
+              fontWeight: 'bold'
+            }}
+          >
+            Categorize
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Hotkey Info Modal */}
       <Dialog
