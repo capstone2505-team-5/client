@@ -55,8 +55,7 @@ const AppWithQuery = () => {
   }, []);
 
   const loadRootSpansByProject = useCallback((projectId: string) => {
-    // Always set context to project when this function is called from CreateBatch
-    // But avoid unnecessary updates if we're already in the right state
+    // Used by EditBatch component - keeping for backwards compatibility
     if (currentContext?.type !== 'project' || currentContext?.id !== projectId) {
       setCurrentContext({ type: 'project', id: projectId });
     }
@@ -171,10 +170,7 @@ const AppWithQuery = () => {
             path="/projects/:projectId/batches/create"
             element={
               <CreateBatch
-                annotatedRootSpans={annotatedRootSpans}
-                onLoadRootSpans={loadRootSpansByProject}
                 onCreateBatch={handleCreateBatch}
-                isLoading={isLoading}
               />
             }
           />

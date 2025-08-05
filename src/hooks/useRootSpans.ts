@@ -26,10 +26,43 @@ export const useRootSpansByBatch = (batchId: string | null) => {
 export const useRootSpansByProject = (projectId: string | null) => {
   return useQuery({
     queryKey: projectId ? rootSpanKeys.project(projectId) : ['rootSpans', 'project', 'null'],
-    queryFn: () => projectId ? fetchRootSpansByProject(projectId) : Promise.resolve([]),
+    queryFn: async () => {
+      if (!projectId) return [];
+      const result = await fetchRootSpansByProject(projectId);
+      // Handle both old and new response formats
+      return Array.isArray(result) ? result : result.rootSpans;
+    },
     enabled: !!projectId, // Only run query if projectId exists
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+  });
+};
+
+// Hook for fetching root spans by project with pagination (for CreateBatch)
+export const useRootSpansByProjectPaginated = (
+  projectId: string | null,
+  page: number = 0,
+  pageSize: number = 50
+) => {
+  console.log('🎯 useRootSpansByProjectPaginated called:', { projectId, page, pageSize });
+  
+  return useQuery({
+    queryKey: ['rootSpans', 'project', projectId, 'paginated', page, pageSize],
+    queryFn: async () => {
+      console.log('🚀 Query function executing for:', { projectId, page, pageSize });
+      if (!projectId) return { rootSpans: [], totalCount: 0 };
+      const result = await fetchRootSpansByProject(projectId, page, pageSize);
+      console.log('✅ Query function result:', {
+        rootSpansCount: result.rootSpans.length,
+        totalCount: result.totalCount,
+        firstSpanId: result.rootSpans[0]?.id || 'none'
+      });
+      return result;
+    },
+    enabled: !!projectId,
+    staleTime: 0, // No stale time - always refetch when params change
+    gcTime: 1000 * 60 * 2, // Keep in cache for 2 minutes
+    refetchOnWindowFocus: false // Don't refetch on window focus
   });
 };
 
