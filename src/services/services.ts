@@ -98,7 +98,7 @@ export const fetchRootSpansByProject = async (
     params: { 
       projectId,
       pageNumber: page + 1,  // Convert 0-based to 1-based indexing
-      numberPerPage: pageSize  // Fix parameter name
+      numPerPage: pageSize  // Fixed: backend expects 'numPerPage', not 'numberPerPage'
     }
   };
   

@@ -54,6 +54,25 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   // Server handles filtering and pagination, so we use the data directly
   const displayedSpans = annotatedRootSpans;
   
+  // Calculate which items on the current page should be selected (for DataGrid)
+  const currentPageSelectionModel = useMemo(() => {
+    const currentPageIds = displayedSpans.map(span => span.id);
+    const selectedOnCurrentPage = currentPageIds.filter(id => selectedSet.has(id));
+    
+    console.log('📋 Current page selection model:', {
+      currentPageIds: currentPageIds.length,
+      selectedOnCurrentPage: selectedOnCurrentPage.length,
+      totalSelected: selectedSet.size,
+      selectedIds: selectedOnCurrentPage
+    });
+    
+    // Return in the format MUI DataGrid expects
+    return {
+      type: 'include' as const,
+      ids: new Set(selectedOnCurrentPage)
+    };
+  }, [displayedSpans, selectedSet]);
+  
   // Debug logging
   useEffect(() => {
     const startItem = paginationModel.page * paginationModel.pageSize + 1;
@@ -135,6 +154,8 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
     console.log('📄 Page changing:', {
       from: paginationModel.page,
       to: newPage,
+      selectedSpansCount: selectedSet.size,
+      selectedSpanIds: Array.from(selectedSet).slice(0, 5), // Show first 5 for debugging
       timestamp: new Date().toISOString()
     });
     
@@ -144,7 +165,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
     }
     
     setPaginationModel(prev => ({ ...prev, page: newPage }));
-  }, [paginationModel.page]);
+  }, [paginationModel.page, selectedSet]);
 
   const handlePageSizeChange = useCallback((newPageSize: number) => {
     console.log('📄 Page size changing:', {
@@ -157,18 +178,44 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   }, [paginationModel.pageSize]);
 
   const handleSelectionModelChange = useCallback((newSelectionModel: any) => {
-    // DataGrid returns {type: 'include', ids: Set} object
-    let selectionArray: string[] = [];
+    // DataGrid returns {type: 'include', ids: Set} object representing current page selections
+    let currentPageSelections: string[] = [];
     
     if (newSelectionModel && newSelectionModel.ids instanceof Set) {
-      selectionArray = Array.from(newSelectionModel.ids).map(id => String(id));
+      currentPageSelections = Array.from(newSelectionModel.ids).map(id => String(id));
     } else if (Array.isArray(newSelectionModel)) {
       // Fallback for other DataGrid versions that might return arrays
-      selectionArray = newSelectionModel.map(id => String(id));
+      currentPageSelections = newSelectionModel.map(id => String(id));
     }
     
-    setSelectedSet(new Set(selectionArray));
-  }, []);
+    // Get all IDs from the current page
+    const currentPageIds = new Set(displayedSpans.map(span => span.id));
+    
+    setSelectedSet(prevSelected => {
+      // Start with previous selections
+      const newSelected = new Set(prevSelected);
+      
+      // Remove any previous selections from current page
+      currentPageIds.forEach(id => {
+        newSelected.delete(id);
+      });
+      
+      // Add current page selections
+      currentPageSelections.forEach(id => {
+        newSelected.add(id);
+      });
+      
+      console.log('🔄 Selection updated:', {
+        previousTotal: prevSelected.size,
+        currentPageSelections: currentPageSelections.length,
+        newTotal: newSelected.size,
+        currentPageIds: Array.from(currentPageIds),
+        selectedFromCurrentPage: currentPageSelections
+      });
+      
+      return newSelected;
+    });
+  }, [displayedSpans]);
 
   // Truncate text for display in columns
   const truncateText = (text: string, maxLength: number = 100) => {
@@ -509,6 +556,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             hideFooter
             checkboxSelection
             getRowHeight={() => 56}
+            rowSelectionModel={currentPageSelectionModel}
             onRowSelectionModelChange={handleSelectionModelChange}
             loading={stableLoading}
             slots={{
@@ -544,10 +592,10 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           />
         </Box>
 
-        {/* Custom Pagination Controls */}
+                {/* Custom Pagination Controls */}
         <Box sx={{ 
           display: 'flex', 
-          justifyContent: 'space-between', 
+          justifyContent: 'flex-end', 
           alignItems: 'center', 
           mt: 0, 
           px: 2,
@@ -558,19 +606,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           borderRadius: '0 0 12px 12px',
           minHeight: '56px'
         }}>
-          <Typography variant="body1" sx={{ 
-            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
-            fontWeight: 'medium'
-          }}>
-            {displayedSpans.length > 0 && totalCount > 0
-              ? `${paginationModel.page * paginationModel.pageSize + 1}-${Math.min((paginationModel.page + 1) * paginationModel.pageSize, totalCount)} of ${totalCount}`
-              : totalCount > 0 
-                ? `0 of ${totalCount}`
-                : 'No data'
-            }
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <FormControl size="small" sx={{ minWidth: 80 }}>
               <Select
                 value={paginationModel.pageSize}
@@ -582,6 +618,37 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                 <MenuItem value={100}>100</MenuItem>
               </Select>
             </FormControl>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="body1" sx={{ 
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                fontWeight: 'medium'
+              }}>
+                {displayedSpans.length > 0 && totalCount > 0
+                  ? `${paginationModel.page * paginationModel.pageSize + 1}-${Math.min((paginationModel.page + 1) * paginationModel.pageSize, totalCount)} of ${totalCount}`
+                  : totalCount > 0 
+                    ? `0 of ${totalCount}`
+                    : 'No data'
+                }
+              </Typography>
+              
+              {selectedSet.size > 0 && (
+                <Typography variant="body2" sx={{ 
+                  color: 'secondary.main',
+                  fontWeight: 'bold',
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 235, 59, 0.1)' 
+                    : 'rgba(255, 235, 59, 0.2)',
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'secondary.main'
+                }}>
+                  {selectedSet.size} selected
+                </Typography>
+              )}
+            </Box>
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Button
