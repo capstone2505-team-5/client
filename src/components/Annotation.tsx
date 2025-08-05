@@ -813,15 +813,53 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            <pre style={{ 
-              whiteSpace: 'pre-wrap', 
-              margin: 0, 
-              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-              fontSize: '0.9rem',
-              lineHeight: 1.5
-            }}>
-              {displayFormattedInput ? <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown> : currentSpan.input}
-            </pre>
+            {displayFormattedInput ? (
+              <Box sx={{
+                '& p': {
+                  margin: '0.5em 0',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word'
+                },
+                '& code': {
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  padding: '2px 4px',
+                  borderRadius: '3px',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '0.9em',
+                  whiteSpace: 'pre-wrap'
+                },
+                '& pre': {
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  overflow: 'auto',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre',
+                  wordBreak: 'normal',
+                  overflowWrap: 'normal'
+                },
+                '& pre code': {
+                  backgroundColor: 'transparent',
+                  padding: 0,
+                  whiteSpace: 'pre'
+                }
+              }}>
+                <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown>
+              </Box>
+            ) : (
+              <pre style={{ 
+                whiteSpace: 'pre-wrap', 
+                margin: 0, 
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontSize: '0.9rem',
+                lineHeight: 1.5
+              }}>
+                {currentSpan.input}
+              </pre>
+            )}
           </Box>
         </Paper>
 
