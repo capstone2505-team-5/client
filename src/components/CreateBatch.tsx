@@ -329,7 +329,9 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       headerAlign: 'left',
       align: 'left',
       renderCell: (params) => (
-        <Typography variant="body1" sx={{ color: 'white' }}>
+        <Typography variant="body1" sx={{ 
+          color: theme.palette.mode === 'dark' ? 'white' : 'black' 
+        }}>
           {params.value}
         </Typography>
       ),
@@ -347,7 +349,9 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
         ['is', 'after', 'onOrAfter', 'before', 'onOrBefore'].includes(operator.value)
       ),
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'white' }}>
+        <Typography variant="body2" sx={{ 
+          color: theme.palette.mode === 'dark' ? 'white' : 'black' 
+        }}>
           {formatDateTime(params.value)}
         </Typography>
       ),
@@ -364,7 +368,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
         <Typography 
           variant="body2" 
           sx={{ 
-            color: 'white',
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -386,7 +390,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
         <Typography 
           variant="body2" 
           sx={{ 
-            color: 'white',
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -699,11 +703,13 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                     size="small"
                     startIcon={<FilterListIcon />}
                     sx={{
-                      borderColor: 'secondary.main',
-                      color: 'secondary.main',
+                      borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
+                      color: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
                       '&:hover': {
-                        borderColor: 'secondary.dark',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        borderColor: theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark',
+                        backgroundColor: theme.palette.mode === 'dark' 
+                          ? 'rgba(255, 235, 59, 0.1)' 
+                          : 'rgba(25, 118, 210, 0.1)',
                       },
                     }}
                   >
@@ -717,11 +723,13 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                     onClick={handleRandomSpans}
                     disabled={annotatedRootSpans.length === 0 || annotatedRootSpans.length < 50}
                     sx={{
-                      borderColor: 'secondary.main',
-                      color: 'secondary.main',
+                      borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
+                      color: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
                       '&:hover': {
-                        borderColor: 'secondary.dark',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        borderColor: theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark',
+                        backgroundColor: theme.palette.mode === 'dark' 
+                          ? 'rgba(255, 235, 59, 0.1)' 
+                          : 'rgba(25, 118, 210, 0.1)',
                       },
                     }}
                   >
