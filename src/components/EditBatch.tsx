@@ -608,6 +608,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                   px: 3, 
                   minWidth: 200,
                   maxHeight: 40,
+                  mt: 3,
                   backgroundColor: 'secondary.main',
                   color: 'black',
                   fontWeight: 600,
@@ -833,26 +834,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                     }}
                   >
                     Apply Filters
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    size="small"
-                    startIcon={<ShuffleIcon />}
-                    onClick={handleRandomSpans}
-                    disabled={annotatedRootSpans.length === 0 || annotatedRootSpans.length < 50}
-                    sx={{
-                      borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
-                      color: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
-                      '&:hover': {
-                        borderColor: theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark',
-                        backgroundColor: theme.palette.mode === 'dark' 
-                          ? 'rgba(255, 235, 59, 0.1)' 
-                          : 'rgba(25, 118, 210, 0.1)',
-                      },
-                    }}
-                  >
-                    Random 50
                   </Button>
                   <Button
                     type="button"
