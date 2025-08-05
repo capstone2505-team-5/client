@@ -4,9 +4,9 @@ import {
   fetchRootSpansByProject,
   fetchUniqueSpanNames,
   fetchRandomSpans,
-  fetchRootSpansByProjectFiltered
+  fetchRootSpansByProjectFiltered,
+  fetchEditBatchSpans
 } from '../services/services';
-import type { AnnotatedRootSpan } from '../types/types';
 
 // Query keys for different contexts
 export const rootSpanKeys = {
@@ -18,7 +18,7 @@ export const rootSpanKeys = {
 export const useRootSpansByBatch = (batchId: string | null) => {
   return useQuery({
     queryKey: batchId ? rootSpanKeys.batch(batchId) : ['rootSpans', 'batch', 'null'],
-    queryFn: () => batchId ? fetchRootSpansByBatch(batchId) : Promise.resolve([]),
+    queryFn: () => batchId ? fetchRootSpansByBatch(batchId) : Promise.resolve({ rootSpans: [], batchSummary: null, totalCount: 0 }),
     enabled: !!batchId, // Only run query if batchId exists
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
@@ -84,9 +84,15 @@ export const useRootSpansContext = (context: {
   // This is what becomes your `annotatedRootSpans` data
   switch (context.type) {
     case 'batch':
-      return batchQuery;     // ← Data from fetchRootSpansByBatch(context.id)
+      return {
+        ...batchQuery,
+        data: batchQuery.data ? batchQuery.data.rootSpans : []
+      };     // ← Data from fetchRootSpansByBatch(context.id)
     case 'project':
-      return projectQuery;   // ← Data from fetchRootSpansByProject(context.id)
+      return {
+        ...projectQuery,
+        data: projectQuery.data || []
+      };   // ← Data from fetchRootSpansByProject(context.id) - already converted to array
     default:
       // This should never happen now
       throw new Error(`Unsupported context type: ${(context as any).type}`);
@@ -176,6 +182,46 @@ export const useRootSpansByProjectFiltered = (
       return await fetchRootSpansByProjectFiltered(projectId, page, pageSize, filters);
     },
     enabled: !!projectId,
+    staleTime: 1000 * 30, // Consider data fresh for 30 seconds
+    gcTime: 1000 * 60 * 2, // Keep in cache for 2 minutes
+    refetchOnWindowFocus: false
+  });
+};
+
+
+
+// Hook for fetching edit batch spans with filtering
+export const useEditBatchSpans = (
+  batchId: string | null,
+  page: number = 0,
+  pageSize: number = 50,
+  filters?: {
+    searchText?: string;
+    spanName?: string;
+    dateFilter?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+) => {
+  return useQuery({
+    queryKey: [
+      'rootSpans', 
+      'editBatch', 
+      batchId, 
+      'filtered', 
+      page, 
+      pageSize, 
+      filters?.searchText,
+      filters?.spanName,
+      filters?.dateFilter,
+      filters?.startDate,
+      filters?.endDate
+    ],
+    queryFn: async () => {
+      if (!batchId) return { rootSpans: [], totalCount: 0 };
+      return await fetchEditBatchSpans(batchId, page, pageSize, filters);
+    },
+    enabled: !!batchId,
     staleTime: 1000 * 30, // Consider data fresh for 30 seconds
     gcTime: 1000 * 60 * 2, // Keep in cache for 2 minutes
     refetchOnWindowFocus: false

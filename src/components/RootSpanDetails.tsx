@@ -46,7 +46,8 @@ const RootSpanDetail = () => {
   );
 
   // Fetch all root spans for the batch to enable navigation
-  const { data: allRootSpans = [], isLoading: isLoadingSpans } = useRootSpansByBatch(batchId || null);
+  const { data: batchData, isLoading: isLoadingSpans } = useRootSpansByBatch(batchId || null);
+  const allRootSpans = batchData?.rootSpans || [];
 
   // Find current span and its index
   const currentSpanIndex = allRootSpans.findIndex(span => 

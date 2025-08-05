@@ -85,7 +85,8 @@ const Annotation = ({ onSave}: Props) => {
   };
 
 
-  const {data: annotatedRootSpans = [], isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
+  const {data: batchData, isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
+  const annotatedRootSpans = batchData?.rootSpans || [];
 
   // Find current span and its index
   const currentSpanIndex = annotatedRootSpans.findIndex(span => 

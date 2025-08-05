@@ -77,19 +77,19 @@ const Batches = () => {
   const handleAnnotate = async (batchId: string, batchName: string) => {
     try {
       // Fetch the root spans for this batch to get the first one's ID
-      const rootSpans = await queryClient.fetchQuery({
+      const batchData = await queryClient.fetchQuery({
         queryKey: ['rootSpans', 'batch', batchId],
         queryFn: () => fetchRootSpansByBatch(batchId),
         staleTime: 1000 * 60 * 5, // 5 minutes
       });
 
-      if (rootSpans.length === 0) {
+      if (!batchData.rootSpans || batchData.rootSpans.length === 0) {
         console.warn(`No root spans found in batch ${batchId}`);
         return;
       }
 
       // Navigate to the annotation page with the first root span's ID
-      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${rootSpans[0].id}`, {
+      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${batchData.rootSpans[0].id}`, {
         state: { projectName, batchName: batchName, projectId }
       });
     } catch (error) {
@@ -238,7 +238,9 @@ const Batches = () => {
               color="primary"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/projects/${projectId}/batches/${params.row.id}/edit`);
+                navigate(`/projects/${projectId}/batches/${params.row.id}/edit`, {
+                  state: { projectName, projectId, batchName: params.row.name }
+                });
               }}
               sx={{ 
                 border: '1px solid',

@@ -322,6 +322,26 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       ),
     },
     {
+      field: 'id',
+      headerName: 'Span ID',
+      flex: 0.8,
+      minWidth: 120,
+      headerAlign: 'left',
+      align: 'left',
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)',
+            fontFamily: 'monospace',
+            fontSize: '0.85rem'
+          }}
+        >
+          {params.value.substring(0, 12)}...
+        </Typography>
+      ),
+    },
+    {
       field: 'spanName',
       headerName: 'Name',
       flex: 1,
@@ -596,7 +616,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                   <TextField
                     {...field}
                     size="small"
-                    placeholder="Search spans by input or output text..."
+                    placeholder="Search spans by input, output, or span ID..."
                     fullWidth
                     InputProps={{
                       startAdornment: (

@@ -175,10 +175,7 @@ const AppWithQuery = () => {
             path="/projects/:projectId/batches/:batchId/edit"
             element={
               <EditBatch
-                annotatedRootSpans={annotatedRootSpans}
-                onLoadRootSpans={loadRootSpansByProject}
                 onUpdateBatch={handleUpdateBatch}
-                isLoading={isLoading}
               />
             }
           />
