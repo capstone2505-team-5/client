@@ -401,6 +401,9 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           right: 0,
           top: '50%',
           transform: 'translateY(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
         }}>
           <Button
             variant="contained"
@@ -424,6 +427,30 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             }}
           >
             Create Batch ({selectedRootSpanIds.length})
+          </Button>
+          
+          <Button
+            variant="outlined"
+            onClick={() => navigate(`/projects/${projectId}`, { 
+              state: { projectName: projectName, projectId: projectId } 
+            })}
+            size="large"
+            sx={{ 
+              px: 3, 
+              minWidth: 200,
+              maxHeight: 40,
+              borderColor: 'grey.400',
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+              fontWeight: 600,
+              '&:hover': {
+                borderColor: 'grey.600',
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.08)' 
+                  : 'rgba(0, 0, 0, 0.04)',
+              }
+            }}
+          >
+            Cancel
           </Button>
         </Box>
       </Box>
