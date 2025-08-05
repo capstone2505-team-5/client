@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   fetchRootSpansByBatch, 
-  fetchRootSpansByProject 
+  fetchRootSpansByProject
 } from '../services/services';
 import type { AnnotatedRootSpan } from '../types/types';
 
@@ -28,12 +28,12 @@ export const useRootSpansByProject = (projectId: string | null) => {
     queryKey: projectId ? rootSpanKeys.project(projectId) : ['rootSpans', 'project', 'null'],
     queryFn: () => projectId ? fetchRootSpansByProject(projectId) : Promise.resolve([]),
     enabled: !!projectId, // Only run query if projectId exists
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
   });
 };
 
-// Unified hook that handles project and batch contexts only
+// Unified context hook that routes to the appropriate query based on context
 export const useRootSpansContext = (context: {
   type: 'batch' | 'project';
   id?: string;
@@ -60,7 +60,7 @@ export const useRootSpansContext = (context: {
       return projectQuery;   // ← Data from fetchRootSpansByProject(context.id)
     default:
       // This should never happen now
-      throw new Error(`Unsupported context type: ${context.type}`);
+      throw new Error(`Unsupported context type: ${(context as any).type}`);
   }
 };
 
@@ -80,27 +80,9 @@ export const useRootSpanMutations = () => {
     queryClient.invalidateQueries({ queryKey: rootSpanKeys.project(projectId) });
   };
 
-  // Update cached data optimistically without refetching
-  const updateRootSpanInCache = (
-    rootSpanId: string, 
-    updater: (span: AnnotatedRootSpan) => AnnotatedRootSpan
-  ) => {
-    // Update in all relevant caches
-    queryClient.setQueriesData(
-      { queryKey: ['rootSpans'] },
-      (oldData: AnnotatedRootSpan[] | undefined) => {
-        if (!oldData) return oldData;
-        return oldData.map(span => 
-          span.id === rootSpanId ? updater(span) : span
-        );
-      }
-    );
-  };
-
   return {
     invalidateAll,
     invalidateBatch,
     invalidateProject,
-    updateRootSpanInCache,
   };
 }; 

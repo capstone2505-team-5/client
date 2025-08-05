@@ -96,14 +96,3 @@ export const fetchRootSpansByProject = async (projectId: string): Promise<Annota
   });
   return response.data.rootSpans;
 }
-
-// Fetch unbatched spans for a project (useful for CreateBatch)
-export const fetchBatchlessSpansByProject = async (projectId: string): Promise<AnnotatedRootSpan[]> => {
-  const response = await axios.get('/api/batches/unbatched', {
-    params: { 
-      projectId,
-      numPerPage: 100
-    }
-  });
-  return response.data.batchlessRootSpans;
-}

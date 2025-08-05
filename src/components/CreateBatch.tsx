@@ -104,7 +104,7 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
     }
   }, [invalidateBatch, invalidateProject, projectId]);
 
-  const startListeningForSSE = useCallback((batchId: string) => {
+  const startListeningForSSE = (batchId: string) => {
     const eventSource = new EventSource(`/api/batches/${batchId}/events`);
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -113,8 +113,6 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
       // Handle different event types from the server
       if (data.status === 'completed') {
         updateBatchSpans(batchId);
-        // Close connection after completion
-        eventSource.close();
       }
     };
     eventSource.onerror = (event) => {
@@ -130,18 +128,21 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
       }
     }, 120000); // 2 minutes timeout
     
-  }, [updateBatchSpans]);
+  }
 
   const handleCreateBatch = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
     
     try {
       const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
-      // Start SSE connection that will persist even after navigation
+      // Start SSE connection
       startListeningForSSE(batchId);
+      
+      // Navigate to the newly created batch (good UX)
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 
       });
+      
     } catch (error) {
       console.error("Failed to create batch:", error);
     }

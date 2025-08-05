@@ -64,12 +64,11 @@ const Batches = () => {
   const handleDelete = async (batchId: string) => {
     try {
       await deleteBatch(batchId);
-      // Remove the deleted batch's query from cache (don't invalidate - it would try to refetch)
-      queryClient.removeQueries({ queryKey: ['rootSpans', 'batch', batchId] });
-      // Invalidate batches list to refresh the UI
+      // Invalidate batches query to refetch data
       queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
-      // Invalidate project-level rootSpans queries in case they're cached
+      // Invalidate project queries since deleted batch spans are now available for new batches
       queryClient.invalidateQueries({ queryKey: ['rootSpans', 'project', projectId] });
+      // Note: Don't invalidate the deleted batch's query - it would cause 404 errors
     } catch (error) {
       console.error("Failed to delete batch", error);
     }
