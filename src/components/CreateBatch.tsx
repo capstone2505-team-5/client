@@ -14,10 +14,8 @@ import {
   Checkbox,
   useTheme as muiUseTheme,
 } from "@mui/material";
-import type { SelectChangeEvent } from "@mui/material";
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
-import type { AnnotatedRootSpan, Project } from "../types/types";
 import { useRootSpanMutations, useRootSpansByProjectPaginated } from "../hooks/useRootSpans";
 
 interface CreateBatchProps {
@@ -433,7 +431,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       {/* Batch Name Control */}
       <Box sx={{ mb: 3, display: 'flex', gap: 3, alignItems: 'flex-end' }}>
         <TextField
-          label="Batch Name"
+          label="New Batch Name"
           value={name}
           onChange={handleNameChange}
           sx={{ minWidth: 300 }}
@@ -556,7 +554,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           },
         }}
       >
-        <Box sx={{ height: 600 }}>
+        <Box sx={{ height: 'calc(100vh - 450px)' }}>
           <DataGrid
             rows={annotatedRootSpans}
             columns={columns}
