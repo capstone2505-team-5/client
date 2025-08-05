@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useForm, Controller } from "react-hook-form";
 import {
   Container,
   Typography,
@@ -13,10 +14,28 @@ import {
   MenuItem,
   Checkbox,
   useTheme as muiUseTheme,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
+
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ShuffleIcon from '@mui/icons-material/Shuffle';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
-import { useRootSpanMutations, useRootSpansByProjectPaginated } from "../hooks/useRootSpans";
+import { useRootSpanMutations, useRootSpansByProjectFiltered, useUniqueSpanNames, useRandomSpans } from "../hooks/useRootSpans";
+
+interface FilterFormData {
+  searchText: string;
+  spanName: string;
+  dateFilter: 'all' | '12h' | '24h' | '1w' | 'custom';
+  startDate: Date | null;
+  endDate: Date | null;
+}
 
 interface CreateBatchProps {
   onCreateBatch: (name: string, projectId: string, rootSpanIds: string[]) => Promise<string>;
@@ -29,27 +48,64 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 50 });
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
   const location = useLocation();
-  const { projectName, batchId } = location.state || {};
+  const { projectName } = location.state || {};
   const { projectId } = useParams<{ projectId: string }>();
   const theme = muiUseTheme();
+  
+  // Filter form setup
+  const { control, handleSubmit, watch, reset, setValue } = useForm<FilterFormData>({
+    defaultValues: {
+      searchText: '',
+      spanName: '',
+      dateFilter: 'all',
+      startDate: null,
+      endDate: null,
+    }
+  });
+
+  const watchedDateFilter = watch('dateFilter');
+  const [isRandomMode, setIsRandomMode] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<FilterFormData>({
+    searchText: '',
+    spanName: '',
+    dateFilter: 'all',
+    startDate: null,
+    endDate: null,
+  });
   
   // Get the invalidation functions from the mutations hook
   const { invalidateBatch, invalidateProject } = useRootSpanMutations();
 
-  // Use the pagination hook directly for server-side pagination
-  const { data: paginatedData, isLoading, error, isFetching } = useRootSpansByProjectPaginated(
+  // Fetch unique span names for the dropdown
+  const { data: spanNames = [] } = useUniqueSpanNames(projectId || null);
+
+  // Use filtered data fetching instead of the basic pagination hook
+  const { data: paginatedData, isLoading } = useRootSpansByProjectFiltered(
     projectId || null,
     paginationModel.page,
-    paginationModel.pageSize
+    paginationModel.pageSize,
+    isRandomMode ? undefined : {
+      searchText: appliedFilters.searchText || undefined,
+      spanName: appliedFilters.spanName || undefined,
+      dateFilter: appliedFilters.dateFilter !== 'all' ? appliedFilters.dateFilter : undefined,
+      startDate: appliedFilters.startDate?.toISOString() || undefined,
+      endDate: appliedFilters.endDate?.toISOString() || undefined,
+    }
   );
 
-  // Stabilize data - don't show empty data during loading if we're just fetching a new page
-  const annotatedRootSpans = paginatedData?.rootSpans || [];
-  const totalCount = paginatedData?.totalCount || 0;
+  // Fetch random spans when in random mode
+  const { data: randomData, isLoading: isRandomLoading } = useRandomSpans(
+    projectId || null,
+    isRandomMode
+  );
+
+  // Choose data source based on mode
+  const currentData = isRandomMode ? randomData : paginatedData;
+  const annotatedRootSpans = currentData?.rootSpans || [];
+  const totalCount = currentData?.totalCount || 0;
   
   // Use the loading state to prevent DataGrid resets, but don't show completely empty data
-  const stableLoading = isLoading && !paginatedData; // Only show loading if we have no data at all
-  
+  const stableLoading = (isRandomMode ? isRandomLoading : isLoading) && !currentData;
 
   const updateBatchSpans = useCallback((batchId: string) => {
     // Invalidate both the batch and project queries to refresh data
@@ -58,6 +114,41 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       invalidateProject(projectId);
     }
   }, [invalidateBatch, invalidateProject, projectId]);
+
+  // Filter form handlers
+  const onFilterSubmit = useCallback((data: FilterFormData) => {
+    console.log('Filter submitted:', data);
+    setIsRandomMode(false);
+    setAppliedFilters(data); // Update applied filters state
+    setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
+  }, [paginationModel.pageSize]);
+
+  const handleRandomSpans = useCallback(() => {
+    console.log('Random spans requested');
+    setIsRandomMode(true);
+    // Clear applied filters when switching to random mode
+    setAppliedFilters({
+      searchText: '',
+      spanName: '',
+      dateFilter: 'all',
+      startDate: null,
+      endDate: null,
+    });
+    setPaginationModel({ page: 0, pageSize: 50 });
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    reset();
+    setIsRandomMode(false);
+    setAppliedFilters({
+      searchText: '',
+      spanName: '',
+      dateFilter: 'all',
+      startDate: null,
+      endDate: null,
+    }); // Reset applied filters when clearing
+    setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
+  }, [reset, paginationModel.pageSize]);
 
   const startListeningForSSE = (batchId: string) => {
     const eventSource = new EventSource(`/api/batches/${batchId}/events`);
@@ -439,6 +530,241 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
         />
       </Box>
 
+      {/* Filter Form */}
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <Paper 
+          elevation={0}
+          sx={{ 
+            mb: 2,
+            p: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.02)'
+              : 'rgba(0, 0, 0, 0.02)',
+          }}
+        >
+          <form onSubmit={handleSubmit(onFilterSubmit)}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Search Text Input - Full Width */}
+              <Controller
+                name="searchText"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    size="small"
+                    placeholder="Search spans by input or output text..."
+                    fullWidth
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon color="action" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: field.value && (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setValue('searchText', '')}
+                            edge="end"
+                          >
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                )}
+              />
+
+              {/* Row 2: Filters and Actions */}
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <Controller
+                  name="spanName"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                      <InputLabel>Span Name</InputLabel>
+                      <Select {...field} label="Span Name">
+                        <MenuItem value="">All Spans</MenuItem>
+                        {spanNames.map((name) => (
+                          <MenuItem key={name} value={name}>
+                            {name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+
+                <Controller
+                  name="dateFilter"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                      <InputLabel>Time Period</InputLabel>
+                      <Select {...field} label="Time Period">
+                        <MenuItem value="all">All Time</MenuItem>
+                        <MenuItem value="12h">Last 12 Hours</MenuItem>
+                        <MenuItem value="24h">Last 24 Hours</MenuItem>
+                        <MenuItem value="1w">Last Week</MenuItem>
+                        <MenuItem value="custom">Custom Range</MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+
+                {/* Custom Date Range - Show only when custom is selected */}
+                {watchedDateFilter === 'custom' && (
+                  <>
+                    <Controller
+                      name="startDate"
+                      control={control}
+                      render={({ field }) => (
+                        <DatePicker
+                          {...field}
+                          label="Start Date"
+                          slotProps={{
+                            textField: {
+                              size: 'small',
+                              sx: { minWidth: 140 },
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                    <Controller
+                      name="endDate"
+                      control={control}
+                      render={({ field }) => (
+                        <DatePicker
+                          {...field}
+                          label="End Date"
+                          slotProps={{
+                            textField: {
+                              size: 'small',
+                              sx: { minWidth: 140 },
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  </>
+                )}
+
+                {/* Action Buttons */}
+                <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
+                  <Button
+                    type="submit"
+                    variant="outlined"
+                    size="small"
+                    startIcon={<FilterListIcon />}
+                    sx={{
+                      borderColor: 'secondary.main',
+                      color: 'secondary.main',
+                      '&:hover': {
+                        borderColor: 'secondary.dark',
+                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                      },
+                    }}
+                  >
+                    Apply Filters
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ShuffleIcon />}
+                    onClick={handleRandomSpans}
+                    disabled={annotatedRootSpans.length === 0 || annotatedRootSpans.length < 50}
+                    sx={{
+                      borderColor: 'secondary.main',
+                      color: 'secondary.main',
+                      '&:hover': {
+                        borderColor: 'secondary.dark',
+                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                      },
+                    }}
+                  >
+                    Random 50
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="text"
+                    size="small"
+                    onClick={handleClearFilters}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    Clear
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
+          </form>
+
+          {/* Filter Status Indicator */}
+          {(isRandomMode || Object.values(appliedFilters).some(value => 
+            value && value !== '' && value !== 'all'
+          )) && (
+            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              {isRandomMode ? (
+                <>
+                  <ShuffleIcon color="secondary" fontSize="small" />
+                  <Typography variant="body2" color="secondary.main" sx={{ fontWeight: 'medium' }}>
+                    Showing 50 random spans from recent data
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <FilterListIcon color="primary" fontSize="small" />
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                    Filters applied:
+                  </Typography>
+                  {appliedFilters.searchText && (
+                    <Typography variant="body2" color="primary.main" sx={{ 
+                      backgroundColor: 'rgba(25, 118, 210, 0.1)', 
+                      px: 1, 
+                      py: 0.25, 
+                      borderRadius: 1,
+                      fontSize: '0.75rem'
+                    }}>
+                      Text: "{appliedFilters.searchText}"
+                    </Typography>
+                  )}
+                  {appliedFilters.spanName && (
+                    <Typography variant="body2" color="primary.main" sx={{ 
+                      backgroundColor: 'rgba(25, 118, 210, 0.1)', 
+                      px: 1, 
+                      py: 0.25, 
+                      borderRadius: 1,
+                      fontSize: '0.75rem'
+                    }}>
+                      Span: {appliedFilters.spanName}
+                    </Typography>
+                  )}
+                  {appliedFilters.dateFilter && appliedFilters.dateFilter !== 'all' && (
+                    <Typography variant="body2" color="primary.main" sx={{ 
+                      backgroundColor: 'rgba(25, 118, 210, 0.1)', 
+                      px: 1, 
+                      py: 0.25, 
+                      borderRadius: 1,
+                      fontSize: '0.75rem'
+                    }}>
+                      Time: {appliedFilters.dateFilter === 'custom' 
+                        ? `${appliedFilters.startDate?.toLocaleDateString()} - ${appliedFilters.endDate?.toLocaleDateString()}`
+                        : appliedFilters.dateFilter
+                      }
+                    </Typography>
+                  )}
+                </>
+              )}
+            </Box>
+          )}
+        </Paper>
+      </LocalizationProvider>
+
       <Paper 
         elevation={0}
         sx={{ 
@@ -554,7 +880,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           },
         }}
       >
-        <Box sx={{ height: 'calc(100vh - 450px)' }}>
+        <Box sx={{ height: 'calc(100vh - 600px)' }}>
           <DataGrid
             rows={annotatedRootSpans}
             columns={columns}

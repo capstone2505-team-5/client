@@ -14,6 +14,7 @@ import RootSpanDetails from "./components/RootSpanDetails";
 import Footer from "./components/Footer";
 import RootSpans from "./components/RootSpans";
 import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
+import type { Rating } from "./types/types";
 import EditBatch from "./components/EditBatch";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useRootSpansContext, useRootSpanMutations } from "./hooks/useRootSpans";

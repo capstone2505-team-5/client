@@ -110,3 +110,54 @@ export const fetchRootSpansByProject = async (
     totalCount: response.data.totalCount || 0
   };
 }
+
+export const fetchUniqueSpanNames = async (projectId: string): Promise<string[]> => {
+  const response = await axios.get(`/api/projects/${projectId}/spanNames`);
+  return response.data.spanNames;
+};
+
+export const fetchRandomSpans = async (
+  projectId: string
+): Promise<{ rootSpans: AnnotatedRootSpan[]; totalCount: number }> => {
+  const response = await axios.get(`/api/projects/${projectId}/randomSpans`);
+  
+  return {
+    rootSpans: response.data.rootSpans || [],
+    totalCount: response.data.totalCount || 0
+  };
+};
+
+export const fetchRootSpansByProjectFiltered = async (
+  projectId: string, 
+  page: number = 0, 
+  pageSize: number = 100,
+  filters?: {
+    searchText?: string;
+    spanName?: string;
+    dateFilter?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<{ rootSpans: AnnotatedRootSpan[]; totalCount: number }> => {
+  const params: any = { 
+    projectId,
+    pageNumber: page + 1,  // Convert 0-based to 1-based indexing
+    numPerPage: pageSize
+  };
+  
+  // Add filter parameters
+  if (filters?.searchText) params.searchText = filters.searchText;
+  if (filters?.spanName) params.spanName = filters.spanName;
+  if (filters?.dateFilter) params.dateFilter = filters.dateFilter;
+  if (filters?.startDate) params.startDate = filters.startDate;
+  if (filters?.endDate) params.endDate = filters.endDate;
+  
+  const response = await axios.get('/api/rootSpans', { params });
+  
+  const spans = response.data.rootSpans || response.data.annotatedspans || [];
+  
+  return {
+    rootSpans: spans,
+    totalCount: response.data.totalCount || 0
+  };
+};

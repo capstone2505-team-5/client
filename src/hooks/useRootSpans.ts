@@ -1,7 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   fetchRootSpansByBatch, 
-  fetchRootSpansByProject
+  fetchRootSpansByProject,
+  fetchUniqueSpanNames,
+  fetchRandomSpans,
+  fetchRootSpansByProjectFiltered
 } from '../services/services';
 import type { AnnotatedRootSpan } from '../types/types';
 
@@ -111,4 +114,70 @@ export const useRootSpanMutations = () => {
     invalidateBatch,
     invalidateProject,
   };
+};
+
+// Hook for fetching unique span names for a project
+export const useUniqueSpanNames = (projectId: string | null) => {
+  return useQuery({
+    queryKey: ['spanNames', projectId],
+    queryFn: () => projectId ? fetchUniqueSpanNames(projectId) : Promise.resolve([]),
+    enabled: !!projectId,
+    staleTime: 1000 * 60 * 10, // Consider data fresh for 10 minutes
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+  });
+};
+
+// Hook for fetching random spans
+export const useRandomSpans = (
+  projectId: string | null,
+  enabled: boolean = true
+) => {
+  return useQuery({
+    queryKey: ['randomSpans', projectId],
+    queryFn: () => 
+      projectId 
+        ? fetchRandomSpans(projectId)
+        : Promise.resolve({ rootSpans: [], totalCount: 0 }),
+    enabled: !!projectId && enabled,
+    staleTime: 0, // Always fresh - random should be different each time
+    gcTime: 1000 * 60 * 1, // Keep in cache for 1 minute only
+  });
+};
+
+// Hook for fetching filtered root spans with pagination
+export const useRootSpansByProjectFiltered = (
+  projectId: string | null,
+  page: number = 0,
+  pageSize: number = 50,
+  filters?: {
+    searchText?: string;
+    spanName?: string;
+    dateFilter?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+) => {
+  return useQuery({
+    queryKey: [
+      'rootSpans', 
+      'project', 
+      projectId, 
+      'filtered', 
+      page, 
+      pageSize, 
+      filters?.searchText,
+      filters?.spanName,
+      filters?.dateFilter,
+      filters?.startDate,
+      filters?.endDate
+    ],
+    queryFn: async () => {
+      if (!projectId) return { rootSpans: [], totalCount: 0 };
+      return await fetchRootSpansByProjectFiltered(projectId, page, pageSize, filters);
+    },
+    enabled: !!projectId,
+    staleTime: 1000 * 30, // Consider data fresh for 30 seconds
+    gcTime: 1000 * 60 * 2, // Keep in cache for 2 minutes
+    refetchOnWindowFocus: false
+  });
 }; 
