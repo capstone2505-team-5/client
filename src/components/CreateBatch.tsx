@@ -18,6 +18,7 @@ import {
   IconButton,
   Modal,
   Backdrop,
+  Tooltip,
 } from "@mui/material";
 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -479,29 +480,45 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           flexDirection: 'column',
           gap: 1,
         }}>
-          <Button
-            variant="contained"
-            onClick={handleCreateBatch}
-            disabled={!name || selectedRootSpanIds.length === 0}
-            size="large"
-            sx={{ 
-              px: 3, 
-              minWidth: 200,
-              maxHeight: 40,
-              backgroundColor: 'secondary.main',
-              color: 'black',
-              fontWeight: 600,
-              '&:hover': {
-                backgroundColor: 'secondary.dark',
-              },
-              '&.Mui-disabled': {
-                backgroundColor: 'grey.400',
-                color: 'grey.600',
-              }
-            }}
+          <Tooltip
+            title={
+              !name && selectedRootSpanIds.length === 0 
+                ? "Enter a batch name and select spans to create a batch"
+                : !name 
+                  ? "Enter a batch name to create the batch"
+                  : selectedRootSpanIds.length === 0
+                    ? "Select at least one span to create a batch"
+                    : "Create batch with selected spans"
+            }
+            arrow
+            placement="left"
           >
-            Create Batch ({selectedRootSpanIds.length})
-          </Button>
+            <span>
+              <Button
+                variant="contained"
+                onClick={handleCreateBatch}
+                disabled={!name || selectedRootSpanIds.length === 0}
+                size="large"
+                sx={{ 
+                  px: 3, 
+                  minWidth: 200,
+                  maxHeight: 40,
+                  backgroundColor: 'secondary.main',
+                  color: 'black',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'secondary.dark',
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: 'grey.400',
+                    color: 'grey.600',
+                  }
+                }}
+              >
+                Create Batch ({selectedRootSpanIds.length})
+              </Button>
+            </span>
+          </Tooltip>
           
           <Button
             variant="outlined"
@@ -537,6 +554,8 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           onChange={handleNameChange}
           sx={{ minWidth: 300 }}
           size="medium"
+          required
+          error={!name && name !== ""}
         />
       </Box>
 
