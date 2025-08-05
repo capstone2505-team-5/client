@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState,useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import {
@@ -103,6 +103,14 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
     projectId || null,
     isRandomMode
   );
+
+  useEffect(() => {
+    if (isRandomMode && randomData && !isRandomLoading) {
+      // Auto-select all random spans once they're loaded
+      const randomSpanIds = randomData.rootSpans.map(span => span.id);
+      setSelectedSet(new Set(randomSpanIds));
+    }
+  }, [isRandomMode, randomData, isRandomLoading]);
 
   // Choose data source based on mode
   const currentData = isRandomMode ? randomData : paginatedData;
