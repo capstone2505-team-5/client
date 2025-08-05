@@ -11,6 +11,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Checkbox,
   useTheme as muiUseTheme,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material";
@@ -54,24 +55,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   // Server handles filtering and pagination, so we use the data directly
   const displayedSpans = annotatedRootSpans;
   
-  // Calculate which items on the current page should be selected (for DataGrid)
-  const currentPageSelectionModel = useMemo(() => {
-    const currentPageIds = displayedSpans.map(span => span.id);
-    const selectedOnCurrentPage = currentPageIds.filter(id => selectedSet.has(id));
-    
-    console.log('📋 Current page selection model:', {
-      currentPageIds: currentPageIds.length,
-      selectedOnCurrentPage: selectedOnCurrentPage.length,
-      totalSelected: selectedSet.size,
-      selectedIds: selectedOnCurrentPage
-    });
-    
-    // Return in the format MUI DataGrid expects
-    return {
-      type: 'include' as const,
-      ids: new Set(selectedOnCurrentPage)
-    };
-  }, [displayedSpans, selectedSet]);
+
   
   // Debug logging
   useEffect(() => {
@@ -93,6 +77,8 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       paginatedDataExists: !!paginatedData
     });
   }, [annotatedRootSpans, totalCount, paginationModel, displayedSpans, isLoading, isFetching, stableLoading, paginatedData]);
+
+
 
   const updateBatchSpans = useCallback((batchId: string) => {
     // Invalidate both the batch and project queries to refresh data
@@ -177,45 +163,58 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
     setPaginationModel({ page: 0, pageSize: newPageSize });
   }, [paginationModel.pageSize]);
 
-  const handleSelectionModelChange = useCallback((newSelectionModel: any) => {
-    // DataGrid returns {type: 'include', ids: Set} object representing current page selections
-    let currentPageSelections: string[] = [];
-    
-    if (newSelectionModel && newSelectionModel.ids instanceof Set) {
-      currentPageSelections = Array.from(newSelectionModel.ids).map(id => String(id));
-    } else if (Array.isArray(newSelectionModel)) {
-      // Fallback for other DataGrid versions that might return arrays
-      currentPageSelections = newSelectionModel.map(id => String(id));
-    }
-    
-    // Get all IDs from the current page
-    const currentPageIds = new Set(displayedSpans.map(span => span.id));
-    
+  // Handle individual row selection (from checkbox clicks)
+  const handleRowSelectionChange = useCallback((spanId: string, isSelected: boolean) => {
     setSelectedSet(prevSelected => {
-      // Start with previous selections
       const newSelected = new Set(prevSelected);
+      if (isSelected) {
+        newSelected.add(spanId);
+      } else {
+        newSelected.delete(spanId);
+      }
       
-      // Remove any previous selections from current page
-      currentPageIds.forEach(id => {
-        newSelected.delete(id);
-      });
-      
-      // Add current page selections
-      currentPageSelections.forEach(id => {
-        newSelected.add(id);
-      });
-      
-      console.log('🔄 Selection updated:', {
-        previousTotal: prevSelected.size,
-        currentPageSelections: currentPageSelections.length,
-        newTotal: newSelected.size,
-        currentPageIds: Array.from(currentPageIds),
-        selectedFromCurrentPage: currentPageSelections
+      console.log('🔄 Individual selection changed:', {
+        spanId,
+        isSelected,
+        newTotal: newSelected.size
       });
       
       return newSelected;
     });
-  }, [displayedSpans]);
+  }, []);
+
+  // Handle select all for current page
+  const handleSelectAllCurrentPage = useCallback(() => {
+    const currentPageIds = displayedSpans.map(span => span.id);
+    const currentPageIdsSet = new Set(currentPageIds);
+    const selectedOnCurrentPage = currentPageIds.filter(id => selectedSet.has(id));
+    const shouldSelectAll = selectedOnCurrentPage.length < currentPageIds.length;
+    
+    setSelectedSet(prevSelected => {
+      const newSelected = new Set(prevSelected);
+      
+      if (shouldSelectAll) {
+        // Select all on current page
+        currentPageIds.forEach(id => newSelected.add(id));
+        console.log('📋 Select All current page triggered');
+      } else {
+        // Deselect all on current page
+        currentPageIds.forEach(id => newSelected.delete(id));
+        console.log('📋 Deselect All current page triggered');
+      }
+      
+      console.log('🔄 Select All updated:', {
+        currentPageIds: currentPageIds.length,
+        shouldSelectAll,
+        previousTotal: prevSelected.size,
+        newTotal: newSelected.size
+      });
+      
+      return newSelected;
+    });
+  }, [displayedSpans, selectedSet]);
+
+
 
   // Truncate text for display in columns
   const truncateText = (text: string, maxLength: number = 100) => {
@@ -237,7 +236,38 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
     });
   };
 
+  // Calculate select all checkbox state
+  const currentPageIds = displayedSpans.map(span => span.id);
+  const selectedOnCurrentPage = currentPageIds.filter(id => selectedSet.has(id));
+  const isAllCurrentPageSelected = selectedOnCurrentPage.length === currentPageIds.length && currentPageIds.length > 0;
+  const isSomeCurrentPageSelected = selectedOnCurrentPage.length > 0 && selectedOnCurrentPage.length < currentPageIds.length;
+
   const columns: GridColDef[] = [
+    {
+      field: '__checkbox__',
+      headerName: '',
+      width: 50,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderHeader: () => (
+        <Checkbox
+          checked={isAllCurrentPageSelected}
+          indeterminate={isSomeCurrentPageSelected}
+          onChange={handleSelectAllCurrentPage}
+          onClick={(e) => e.stopPropagation()} // Prevent any header click issues
+          sx={{ p: 0 }}
+        />
+      ),
+      renderCell: (params) => (
+        <Checkbox
+          checked={selectedSet.has(params.row.id)}
+          onChange={(e) => handleRowSelectionChange(params.row.id, e.target.checked)}
+          onClick={(e) => e.stopPropagation()} // Prevent row click when checkbox is clicked
+          sx={{ p: 0 }}
+        />
+      ),
+    },
     {
       field: 'spanName',
       headerName: 'Name',
@@ -501,6 +531,11 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
               transform: 'scale(1.001)',
               transition: 'all 0.2s ease-in-out',
             },
+            '&.Mui-selected': {
+              backgroundColor: theme.palette.mode === 'dark'
+                ? `${theme.palette.primary.main}14`
+                : `${theme.palette.primary.main}1F`,
+            },
           },
           '& .MuiDataGrid-cell': {
             display: 'flex',
@@ -581,10 +616,15 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             rows={displayedSpans}
             columns={columns}
             hideFooter
-            checkboxSelection
             getRowHeight={() => 56}
-            rowSelectionModel={currentPageSelectionModel}
-            onRowSelectionModelChange={handleSelectionModelChange}
+            getRowClassName={(params) => 
+              selectedSet.has(params.row.id) ? 'Mui-selected' : ''
+            }
+            onRowClick={(params) => {
+              // Toggle selection when row is clicked
+              const isCurrentlySelected = selectedSet.has(params.row.id);
+              handleRowSelectionChange(params.row.id, !isCurrentlySelected);
+            }}
             loading={stableLoading}
             slots={{
               noRowsOverlay: () => (
@@ -672,7 +712,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                   border: '1px solid',
                   borderColor: 'secondary.main'
                 }}>
-                  {selectedSet.size} selected
+                  {selectedSet.size} selected across pages
                 </Typography>
               )}
             </Box>
