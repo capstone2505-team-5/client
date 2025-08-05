@@ -92,8 +92,6 @@ export const fetchRootSpansByProject = async (
   page: number = 0, 
   pageSize: number = 100
 ): Promise<{ rootSpans: AnnotatedRootSpan[]; totalCount: number }> => {
-  console.log('🔄 Service API call:', { projectId, frontendPage: page, backendPageNumber: page + 1, pageSize });
-  
   const config = {
     params: { 
       projectId,
@@ -102,23 +100,7 @@ export const fetchRootSpansByProject = async (
     }
   };
   
-  // Log the actual URL that will be called
-  const url = new URL('/api/rootSpans', window.location.origin);
-  Object.entries(config.params).forEach(([key, value]) => {
-    url.searchParams.set(key, String(value));
-  });
-  console.log('🌐 Actual URL being called:', url.toString());
-  
   const response = await axios.get('/api/rootSpans', config);
-  
-  console.log('📥 Service API response structure:', {
-    hasRootSpans: !!response.data.rootSpans,
-    hasAnnotatedSpans: !!response.data.annotatedspans,
-    rootSpansCount: response.data.rootSpans?.length || 0,
-    annotatedSpansCount: response.data.annotatedspans?.length || 0,
-    totalCount: response.data.totalCount,
-    firstSpanId: response.data.annotatedspans?.[0]?.id || response.data.rootSpans?.[0]?.id || 'none'
-  });
   
   // Your backend returns rootSpans in this case
   const spans = response.data.rootSpans || response.data.annotatedspans || [];

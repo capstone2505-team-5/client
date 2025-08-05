@@ -51,34 +51,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   
   // Use the loading state to prevent DataGrid resets, but don't show completely empty data
   const stableLoading = isLoading && !paginatedData; // Only show loading if we have no data at all
-
-  // Server handles filtering and pagination, so we use the data directly
-  const displayedSpans = annotatedRootSpans;
   
-
-  
-  // Debug logging
-  useEffect(() => {
-    const startItem = paginationModel.page * paginationModel.pageSize + 1;
-    const endItem = Math.min((paginationModel.page + 1) * paginationModel.pageSize, totalCount);
-    const pageInfo = `${startItem}-${endItem} of ${totalCount}`;
-    
-    console.log('📊 CreateBatch data updated:', {
-      annotatedRootSpansCount: annotatedRootSpans.length,
-      totalCount,
-      paginationModel,
-      displayedSpansCount: displayedSpans.length,
-      pageInfo,
-      isLoading,
-      isFetching,
-      stableLoading,
-      firstSpanId: annotatedRootSpans[0]?.id || 'none',
-      lastSpanId: annotatedRootSpans[annotatedRootSpans.length - 1]?.id || 'none',
-      paginatedDataExists: !!paginatedData
-    });
-  }, [annotatedRootSpans, totalCount, paginationModel, displayedSpans, isLoading, isFetching, stableLoading, paginatedData]);
-
-
 
   const updateBatchSpans = useCallback((batchId: string) => {
     // Invalidate both the batch and project queries to refresh data
@@ -137,14 +110,6 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   }, []);
 
   const handlePageChange = useCallback((newPage: number) => {
-    console.log('📄 Page changing:', {
-      from: paginationModel.page,
-      to: newPage,
-      selectedSpansCount: selectedSet.size,
-      selectedSpanIds: Array.from(selectedSet).slice(0, 5), // Show first 5 for debugging
-      timestamp: new Date().toISOString()
-    });
-    
     if (newPage < 0) {
       console.warn('⚠️ Prevented negative page:', newPage);
       return;
@@ -154,12 +119,6 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   }, [paginationModel.page, selectedSet]);
 
   const handlePageSizeChange = useCallback((newPageSize: number) => {
-    console.log('📄 Page size changing:', {
-      from: paginationModel.pageSize,
-      to: newPageSize,
-      resetToPage: 0
-    });
-    
     setPaginationModel({ page: 0, pageSize: newPageSize });
   }, [paginationModel.pageSize]);
 
@@ -173,20 +132,13 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
         newSelected.delete(spanId);
       }
       
-      console.log('🔄 Individual selection changed:', {
-        spanId,
-        isSelected,
-        newTotal: newSelected.size
-      });
-      
       return newSelected;
     });
   }, []);
 
   // Handle select all for current page
   const handleSelectAllCurrentPage = useCallback(() => {
-    const currentPageIds = displayedSpans.map(span => span.id);
-    const currentPageIdsSet = new Set(currentPageIds);
+    const currentPageIds = annotatedRootSpans.map(span => span.id);
     const selectedOnCurrentPage = currentPageIds.filter(id => selectedSet.has(id));
     const shouldSelectAll = selectedOnCurrentPage.length < currentPageIds.length;
     
@@ -196,23 +148,16 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       if (shouldSelectAll) {
         // Select all on current page
         currentPageIds.forEach(id => newSelected.add(id));
-        console.log('📋 Select All current page triggered');
       } else {
         // Deselect all on current page
         currentPageIds.forEach(id => newSelected.delete(id));
-        console.log('📋 Deselect All current page triggered');
       }
       
-      console.log('🔄 Select All updated:', {
-        currentPageIds: currentPageIds.length,
-        shouldSelectAll,
-        previousTotal: prevSelected.size,
-        newTotal: newSelected.size
-      });
+
       
       return newSelected;
     });
-  }, [displayedSpans, selectedSet]);
+  }, [annotatedRootSpans, selectedSet]);
 
 
 
@@ -237,7 +182,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   };
 
   // Calculate select all checkbox state
-  const currentPageIds = displayedSpans.map(span => span.id);
+  const currentPageIds = annotatedRootSpans.map(span => span.id);
   const selectedOnCurrentPage = currentPageIds.filter(id => selectedSet.has(id));
   const isAllCurrentPageSelected = selectedOnCurrentPage.length === currentPageIds.length && currentPageIds.length > 0;
   const isSomeCurrentPageSelected = selectedOnCurrentPage.length > 0 && selectedOnCurrentPage.length < currentPageIds.length;
@@ -613,7 +558,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       >
         <Box sx={{ height: 600 }}>
           <DataGrid
-            rows={displayedSpans}
+            rows={annotatedRootSpans}
             columns={columns}
             hideFooter
             getRowHeight={() => 56}
@@ -691,7 +636,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                 color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
                 fontWeight: 'medium'
               }}>
-                {displayedSpans.length > 0 && totalCount > 0
+                {annotatedRootSpans.length > 0 && totalCount > 0
                   ? `${paginationModel.page * paginationModel.pageSize + 1}-${Math.min((paginationModel.page + 1) * paginationModel.pageSize, totalCount)} of ${totalCount}`
                   : totalCount > 0 
                     ? `0 of ${totalCount}`

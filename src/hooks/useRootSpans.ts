@@ -44,19 +44,12 @@ export const useRootSpansByProjectPaginated = (
   page: number = 0,
   pageSize: number = 50
 ) => {
-  console.log('🎯 useRootSpansByProjectPaginated called:', { projectId, page, pageSize });
   
   return useQuery({
     queryKey: ['rootSpans', 'project', projectId, 'paginated', page, pageSize],
     queryFn: async () => {
-      console.log('🚀 Query function executing for:', { projectId, page, pageSize });
       if (!projectId) return { rootSpans: [], totalCount: 0 };
       const result = await fetchRootSpansByProject(projectId, page, pageSize);
-      console.log('✅ Query function result:', {
-        rootSpansCount: result.rootSpans.length,
-        totalCount: result.totalCount,
-        firstSpanId: result.rootSpans[0]?.id || 'none'
-      });
       return result;
     },
     enabled: !!projectId,

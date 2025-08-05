@@ -12,11 +12,7 @@ import NavBar from "./components/NavBar";
 import CreateBatch from "./components/CreateBatch";
 import RootSpanDetails from "./components/RootSpanDetails";
 import Footer from "./components/Footer";
-import type { AnnotatedRootSpan, Rating } from "./types/types";
 import RootSpans from "./components/RootSpans";
-import {
-  categorizeAnnotations,
-} from "./services/services";
 import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
 import EditBatch from "./components/EditBatch";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
