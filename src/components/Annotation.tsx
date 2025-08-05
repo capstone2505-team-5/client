@@ -779,25 +779,32 @@ const Annotation = ({ onSave}: Props) => {
               >
                 Raw
               </Button>
-              <Button 
-                variant="outlined" 
-                size="small"
-                disabled={!currentSpan.formatted_output}
-                sx={{
-                  px: 3,
-                  minWidth: 75,
-                  borderColor: 'secondary.main',
-                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: 'secondary.dark',
-                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                  }
-                }}
-                onClick={() => setDisplayFormattedInput(true)}
+              <Tooltip 
+                title={!currentSpan.formattedInput ? "Formatting in process..." : "View formatted input"}
+                arrow
               >
-                Formatted
-              </Button>
+                <span>
+                  <Button 
+                    variant="outlined" 
+                    size="small"
+                    disabled={!currentSpan.formattedInput}
+                    sx={{
+                      px: 3,
+                      minWidth: 75,
+                      borderColor: 'secondary.main',
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderColor: 'secondary.dark',
+                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                      }
+                    }}
+                    onClick={() => setDisplayFormattedInput(true)}
+                  >
+                    Formatted
+                  </Button>
+                </span>
+              </Tooltip>
             </Box>
           </Box>
           <Box sx={{ 
@@ -813,7 +820,7 @@ const Annotation = ({ onSave}: Props) => {
               fontSize: '0.9rem',
               lineHeight: 1.5
             }}>
-              {displayFormattedInput ? <ReactMarkdown>{currentSpan.formatted_input || ''}</ReactMarkdown> : currentSpan.input}
+              {displayFormattedInput ? <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown> : currentSpan.input}
             </pre>
           </Box>
         </Paper>
@@ -859,25 +866,32 @@ const Annotation = ({ onSave}: Props) => {
               >
                 Raw
               </Button>
-              <Button 
-                variant="outlined" 
-                size="small"
-                disabled={!currentSpan.formatted_output}
-                sx={{
-                  px: 3,
-                  minWidth: 100,
-                  borderColor: 'secondary.main',
-                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: 'secondary.dark',
-                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                  }
-                }}
-                onClick={() => setDisplayFormattedOutput(true)}
+              <Tooltip 
+                title={!currentSpan.formattedOutput ? "Formatting in process..." : "View formatted output"}
+                arrow
               >
-                Formatted
-              </Button>
+                <span>
+                  <Button 
+                    variant="outlined" 
+                    size="small"
+                    disabled={!currentSpan.formattedOutput}
+                    sx={{
+                      px: 3,
+                      minWidth: 100,
+                      borderColor: 'secondary.main',
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderColor: 'secondary.dark',
+                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                      }
+                    }}
+                    onClick={() => setDisplayFormattedOutput(true)}
+                  >
+                    Formatted
+                  </Button>
+                </span>
+              </Tooltip>
             </Box>
           </Box>
           <Box sx={{ 
@@ -887,7 +901,7 @@ const Annotation = ({ onSave}: Props) => {
             backgroundColor: theme.palette.background.paper
           }}>
             {displayFormattedOutput ? (
-              <ReactMarkdown>{currentSpan.formatted_output || ''}</ReactMarkdown>
+              <ReactMarkdown>{currentSpan.formattedOutput || ''}</ReactMarkdown>
             ) : (
               <pre style={{ 
                 whiteSpace: 'pre-wrap', 
