@@ -96,15 +96,13 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
     []
   );
 
-  const updateBatchSpans = (batchId: string, status: string) => {
-    if (status === 'completed') {
-      // Invalidate both the batch and project queries to refresh data
-      invalidateBatch(batchId);
-      if (projectId) {
-        invalidateProject(projectId);
-      }
+  const updateBatchSpans = useCallback((batchId: string) => {
+    // Invalidate both the batch and project queries to refresh data
+    invalidateBatch(batchId);
+    if (projectId) {
+      invalidateProject(projectId);
     }
-  }
+  }, [invalidateBatch, invalidateProject, projectId]);
 
   const startListeningForSSE = useCallback((batchId: string) => {
     const eventSource = new EventSource(`/api/batches/${batchId}/events`);
@@ -114,24 +112,32 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
       
       // Handle different event types from the server
       if (data.status === 'completed') {
-        updateBatchSpans(batchId, data.status);
-        eventSource.close(); // Close connection when processing is complete
+        updateBatchSpans(batchId);
+        // Close connection after completion
+        eventSource.close();
       }
     };
     eventSource.onerror = (event) => {
       console.error('SSE connection error:', event);
       eventSource.close();
     };
+
+    // Set a timeout to close connection after 2 minutes
+    setTimeout(() => {
+      if (eventSource.readyState === EventSource.OPEN) {
+        eventSource.close();
+        console.log(`SSE timeout for batch ${batchId}`);
+      }
+    }, 120000); // 2 minutes timeout
     
-    // Cleanup function to close connection if component unmounts
-    return () => eventSource.close();
-  }, [invalidateBatch, invalidateProject, projectId]);
+  }, [updateBatchSpans]);
 
   const handleCreateBatch = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
     
     try {
       const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
+      // Start SSE connection that will persist even after navigation
       startListeningForSSE(batchId);
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 
@@ -139,7 +145,7 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
     } catch (error) {
       console.error("Failed to create batch:", error);
     }
-  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName]);
+  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName, startListeningForSSE]);
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);

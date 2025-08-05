@@ -26,11 +26,7 @@ import { fetchBatches, deleteBatch, fetchRootSpansByBatch } from "../services/se
 import type { Batch } from "../types/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-interface BatchProps {
-  onDeleteBatch: (batchId: string) => void;
-}
-
-const Batches = ({ onDeleteBatch }: BatchProps) => {
+const Batches = () => {
   const navigate = useNavigate();
   // const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState(false);
@@ -68,9 +64,12 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
   const handleDelete = async (batchId: string) => {
     try {
       await deleteBatch(batchId);
-      // Invalidate batches query to refetch data
+      // Remove the deleted batch's query from cache (don't invalidate - it would try to refetch)
+      queryClient.removeQueries({ queryKey: ['rootSpans', 'batch', batchId] });
+      // Invalidate batches list to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
-      onDeleteBatch(batchId);
+      // Invalidate project-level rootSpans queries in case they're cached
+      queryClient.invalidateQueries({ queryKey: ['rootSpans', 'project', projectId] });
     } catch (error) {
       console.error("Failed to delete batch", error);
     }

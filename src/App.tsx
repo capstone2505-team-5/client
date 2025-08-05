@@ -34,7 +34,7 @@ const AppWithQuery = () => {
   // Use TanStack Query instead of manual state management
   // Always call the hook - handle null context inside the hook
   const { data: annotatedRootSpans = [], isLoading, error } = useRootSpansContext(currentContext);
-  const { updateRootSpanInCache, invalidateAll, invalidateBatch, invalidateProject } = useRootSpanMutations();
+  const { updateRootSpanInCache, invalidateBatch, invalidateProject } = useRootSpanMutations();
   
   // Add the queryClient hook
   const queryClient = useQueryClient();
@@ -162,21 +162,7 @@ const AppWithQuery = () => {
     }
   };
 
-  const handleSpansOnDeleteBatch = async (batchId: string) => {
-    try {
-      // Update spans to remove batch association
-      annotatedRootSpans.forEach(span => {
-        if (span.batchId === batchId) {
-          updateRootSpanInCache(span.id, s => ({ ...s, batchId: null }));
-        }
-      });
-
-      // Invalidate queries
-      invalidateAll();
-    } catch (error) {
-      console.error("Failed to delete batch", error);
-    }
-  };
+  // handleSpansOnDeleteBatch function removed - database handles cleanup automatically
 
   const AppContent = () => {
     const { isDarkMode } = useTheme();
@@ -191,7 +177,7 @@ const AppWithQuery = () => {
             <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:projectId" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
+          <Route path="/projects/:projectId" element={<Batches />} />
           <Route
             path="/projects/:projectId/batches/:batchId"
             element={
