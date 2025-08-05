@@ -16,6 +16,8 @@ import {
   useTheme as muiUseTheme,
   InputAdornment,
   IconButton,
+  Modal,
+  Backdrop,
 } from "@mui/material";
 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -26,7 +28,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
-import type { GridColDef } from "@mui/x-data-grid";
+import type { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import { useRootSpanMutations, useRootSpansByProjectFiltered, useUniqueSpanNames, useRandomSpans } from "../hooks/useRootSpans";
 
 interface FilterFormData {
@@ -51,6 +53,8 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   const { projectName } = location.state || {};
   const { projectId } = useParams<{ projectId: string }>();
   const theme = muiUseTheme();
+  const [displaySpanDetails, setDisplaySpanDetails] = useState(false);
+  const [selectedSpanForModal, setSelectedSpanForModal] = useState<any>(null);
   
   // Filter form setup
   const { control, handleSubmit, watch, reset, setValue } = useForm<FilterFormData>({
@@ -242,13 +246,9 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
         currentPageIds.forEach(id => newSelected.delete(id));
       }
       
-
-      
       return newSelected;
     });
   }, [annotatedRootSpans, selectedSet]);
-
-
 
   // Truncate text for display in columns
   const truncateText = (text: string, maxLength: number = 100) => {
@@ -275,6 +275,16 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   const selectedOnCurrentPage = currentPageIds.filter(id => selectedSet.has(id));
   const isAllCurrentPageSelected = selectedOnCurrentPage.length === currentPageIds.length && currentPageIds.length > 0;
   const isSomeCurrentPageSelected = selectedOnCurrentPage.length > 0 && selectedOnCurrentPage.length < currentPageIds.length;
+
+  const handleRowClick = (params: GridRowParams) => {
+    setSelectedSpanForModal(params.row);
+    setDisplaySpanDetails(true);
+  };
+
+  const handleCloseModal = () => {
+    setDisplaySpanDetails(false);
+    setSelectedSpanForModal(null);
+  };
 
   const columns: GridColDef[] = [
     {
@@ -889,11 +899,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             getRowClassName={(params) => 
               selectedSet.has(params.row.id) ? 'Mui-selected' : ''
             }
-            onRowClick={(params) => {
-              // Toggle selection when row is clicked
-              const isCurrentlySelected = selectedSet.has(params.row.id);
-              handleRowSelectionChange(params.row.id, !isCurrentlySelected);
-            }}
+            onRowClick={handleRowClick}
             loading={stableLoading}
             slots={{
               noRowsOverlay: () => (
@@ -1026,6 +1032,116 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           </Box>
         </Box>
       </Paper>
+
+      {/* Span Details Modal */}
+      <Modal
+        open={displaySpanDetails}
+        onClose={handleCloseModal}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{
+          timeout: 500,
+        }}
+      >
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '80%',
+          maxWidth: 800,
+          maxHeight: '80vh',
+          bgcolor: 'background.paper',
+          border: '2px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          boxShadow: 24,
+          p: 4,
+          overflow: 'auto',
+        }}>
+          {selectedSpanForModal && (
+            <>
+              <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 'bold' }}>
+                Span Details
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                    Span Name
+                  </Typography>
+                  <Typography variant="body1" sx={{ 
+                    p: 2, 
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    borderRadius: 1 
+                  }}>
+                    {selectedSpanForModal.spanName}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                    Date
+                  </Typography>
+                  <Typography variant="body1" sx={{ 
+                    p: 2, 
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    borderRadius: 1 
+                  }}>
+                    {formatDateTime(selectedSpanForModal.startTime)}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                    Input
+                  </Typography>
+                  <Typography variant="body1" sx={{ 
+                    p: 2, 
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    borderRadius: 1,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word'
+                  }}>
+                    {selectedSpanForModal.input || 'No input data'}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                    Output
+                  </Typography>
+                  <Typography variant="body1" sx={{ 
+                    p: 2, 
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    borderRadius: 1,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word'
+                  }}>
+                    {selectedSpanForModal.output || 'No output data'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                <Button 
+                  onClick={handleCloseModal}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: 'secondary.main',
+                    color: 'black',
+                    '&:hover': {
+                      backgroundColor: 'secondary.dark',
+                    }
+                  }}
+                >
+                  Close
+                </Button>
+              </Box>
+            </>
+          )}
+        </Box>
+      </Modal>
     </Container>
   );
 };
