@@ -658,7 +658,26 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           label="Batch Name"
           value={name}
           onChange={handleNameChange}
-          sx={{ minWidth: 300 }}
+          sx={{ 
+            minWidth: 300,
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: 'secondary.main',
+                borderWidth: '2px',
+              },
+              '&:hover fieldset': {
+                borderColor: 'secondary.dark',
+                borderWidth: '2px',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'secondary.main',
+                borderWidth: '3px',
+              },
+            },
+            '& .MuiInputLabel-root.Mui-focused': {
+              color: 'secondary.main',
+            },
+          }}
           size="medium"
           required
           error={!name && name !== ""}
