@@ -159,15 +159,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
 
   useEffect(() => {
     if (batchId) {
-      // Clear the auto-start flag when we navigate to a different batch
-      // This ensures each batch gets its own categorization opportunity
-      const currentBatch = sessionStorage.getItem('currentBatchForCategorization');
-      if (currentBatch !== batchId) {
-        console.log('New batch detected, clearing hasAutoStartedCategorization flag');
-        sessionStorage.removeItem('hasAutoStartedCategorization');
-        sessionStorage.setItem('currentBatchForCategorization', batchId);
-      }
-      
       onLoadRootSpans(batchId);
     }
   }, [batchId, onLoadRootSpans]);
@@ -178,16 +169,29 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       startCategorization,
       batchId,
       annotatedRootSpansLength: annotatedRootSpans.length,
-      hasAutoStarted: sessionStorage.getItem('hasAutoStartedCategorization'),
       categorizationInProgress: categorizationInProgressRef.current,
       timestamp: new Date().toISOString()
     });
     
+    const autoStartKey = `hasAutoStarted_${batchId}`;
+    const hasAutoStarted = sessionStorage.getItem(autoStartKey);
+    
     if (startCategorization && 
         batchId && 
         annotatedRootSpans.length > 0 && 
-        !sessionStorage.getItem('hasAutoStartedCategorization') &&
-        !categorizationInProgressRef.current) {
+        !hasAutoStarted &&
+        !categorizationInProgressRef.current &&
+        !categorizeModalOpen) { // Don't auto-start if modal is currently open
+      
+      console.log('All auto-start conditions passed:', {
+        startCategorization,
+        batchId,
+        annotatedRootSpansLength: annotatedRootSpans.length,
+        hasAutoStarted,
+        categorizationInProgress: categorizationInProgressRef.current,
+        categorizeModalOpen
+      });
+      
       // Check if there are bad annotations to categorize
       const hasBadAnnotations = annotatedRootSpans.some(span => 
         span.annotation?.rating === 'bad'
@@ -199,11 +203,11 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       });
       
       if (hasBadAnnotations) {
-        console.log('About to set hasAutoStartedCategorization to true');
-        sessionStorage.setItem('hasAutoStartedCategorization', 'true'); // Mark as started to prevent loops
+        console.log('About to mark batch as auto-started:', batchId);
+        sessionStorage.setItem(autoStartKey, 'true'); // Mark this batch as auto-started
         categorizationInProgressRef.current = true; // Also set ref to prevent immediate re-runs
-        console.log('Set hasAutoStartedCategorization, current value:', sessionStorage.getItem('hasAutoStartedCategorization'));
-        console.log('Setting hasAutoStartedRef to true and starting categorization');
+        console.log('Marked batch as auto-started, starting categorization');
+        
         // Use setTimeout to avoid calling handleCategorize directly in useEffect
         setTimeout(() => {
           handleCategorize();
@@ -226,9 +230,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           const modalData = JSON.parse(pendingCategorize);
           setCategorizeResults(modalData.results);
           setCategorizeModalOpen(true);
-          // Clear the auto-start flag when modal opens successfully so user can categorize again later
-          sessionStorage.removeItem('hasAutoStartedCategorization');
-          // Also clear the ref after a delay to allow future categorization
+          // Clear the categorization progress ref after a delay to allow future categorization
           setTimeout(() => {
             categorizationInProgressRef.current = false;
           }, 1000); // Clear after 1 second to prevent immediate re-runs but allow future categorization
@@ -253,11 +255,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   const handleCategorizeModalClose = () => {
     console.log('handleCategorizeModalClose called - modal being closed');
     setCategorizeModalOpen(false);
-    // Clear the auto-start flag when modal closes so it can work again for new sessions
-    console.log('Modal closing, clearing hasAutoStartedCategorization flag');
-    sessionStorage.removeItem('hasAutoStartedCategorization');
-    categorizationInProgressRef.current = false; // Also reset the ref
-    console.log('Cleared flag, current value:', sessionStorage.getItem('hasAutoStartedCategorization'));
+    categorizationInProgressRef.current = false; // Reset the categorization progress ref
     
     // Invalidate cache now that modal is closed to refresh the data
     if (batchId) {
@@ -307,10 +305,25 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   };
 
   const handleCategorize = async () => {
+    // Prevent multiple simultaneous categorization calls
+    if (isCategorizing) {
+      console.log('Categorization already in progress, ignoring additional call');
+      return;
+    }
+    
     console.log('handleCategorize started, setting isCategorizing to true');
     try {
       if (batchId) {  
         setIsCategorizing(true);
+        
+        // Debug: Show current categories before categorization
+        const currentBadSpans = annotatedRootSpans.filter(span => span.annotation?.rating === 'bad');
+        console.log('Current bad spans before categorization:', currentBadSpans.map(span => ({
+          id: span.id,
+          note: span.annotation?.note,
+          categories: span.annotation?.categories || []
+        })));
+        
         console.log('Calling categorizeAnnotations API for batchId:', batchId);
         const result = await categorizeAnnotations(batchId);
         console.log('categorizeAnnotations API completed, result:', result);
