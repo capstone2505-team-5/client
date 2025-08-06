@@ -306,15 +306,15 @@ const Projects = () => {
           />
           
           <Button
-            variant="contained"
-            startIcon={<AddIcon sx={{ color: 'black !important' }} />}
+            variant="outlined"
+            startIcon={<AddIcon sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)' }} />}
             size="small"
             onClick={handleClickOpen}
             sx={{
               whiteSpace: 'nowrap',
               ml: 2,
-              backgroundColor: 'secondary.main',
-              color: 'black',
+              borderColor: 'secondary.main',
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
               fontWeight: 600,
               '&:hover': {
                 backgroundColor: 'secondary.dark',
