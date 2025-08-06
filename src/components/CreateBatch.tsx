@@ -116,6 +116,8 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   const currentData = isRandomMode ? randomData : paginatedData;
   const annotatedRootSpans = currentData?.rootSpans || [];
   const totalCount = currentData?.totalCount || 0;
+  // Determine if random span selection should be disabled based on available spans
+  const isRandomDisabled = annotatedRootSpans.length < 50;
   
   // Use the loading state to prevent DataGrid resets, but don't show completely empty data
   const stableLoading = (isRandomMode ? isRandomLoading : isLoading) && !currentData;
@@ -754,26 +756,34 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                   >
                     Apply Filters
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    size="small"
-                    startIcon={<ShuffleIcon />}
-                    onClick={handleRandomSpans}
-                    disabled={annotatedRootSpans.length === 0 || annotatedRootSpans.length < 50}
-                    sx={{
-                      borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
-                      color: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
-                      '&:hover': {
-                        borderColor: theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark',
-                        backgroundColor: theme.palette.mode === 'dark' 
-                          ? 'rgba(255, 235, 59, 0.1)' 
-                          : 'rgba(25, 118, 210, 0.1)',
-                      },
-                    }}
+                  <Tooltip
+                    title={isRandomDisabled ? "Not enough spans available for random selection" : "Select 50 random spans"}
+                    arrow
+                    placement="bottom"
                   >
-                    Random 50
-                  </Button>
+                    <span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        size="small"
+                        startIcon={<ShuffleIcon />}
+                        onClick={handleRandomSpans}
+                        disabled={isRandomDisabled}
+                        sx={{
+                          borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
+                          color: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
+                          '&:hover': {
+                            borderColor: theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark',
+                            backgroundColor: theme.palette.mode === 'dark' 
+                              ? 'rgba(255, 235, 59, 0.1)' 
+                              : 'rgba(25, 118, 210, 0.1)',
+                          },
+                        }}
+                      >
+                        Random 50
+                      </Button>
+                    </span>
+                  </Tooltip>
                   <Button
                     type="button"
                     variant="text"
