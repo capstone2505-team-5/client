@@ -226,8 +226,13 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           const modalData = JSON.parse(pendingCategorize);
           setCategorizeResults(modalData.results);
           setCategorizeModalOpen(true);
+          // Clear the auto-start flag when modal opens successfully so user can categorize again later
+          sessionStorage.removeItem('hasAutoStartedCategorization');
+          // Also clear the ref after a delay to allow future categorization
+          setTimeout(() => {
+            categorizationInProgressRef.current = false;
+          }, 1000); // Clear after 1 second to prevent immediate re-runs but allow future categorization
           console.log('Set categorize results and opened modal:', modalData.results);
-          console.log('Modal should now be open, categorizeModalOpen set to true');
         }
       }, 100);
       
@@ -235,18 +240,32 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     }
   }, [isCategorizing]); // Trigger when categorization state changes
 
+  // Debug effect to monitor modal state changes
+  useEffect(() => {
+    console.log('Modal state changed - categorizeModalOpen:', categorizeModalOpen, 'categorizeResults:', categorizeResults);
+  }, [categorizeModalOpen, categorizeResults]);
+
   const handleClose = () => {
     setOpen(false);
     setRootSpanToDelete(null);
   };
 
   const handleCategorizeModalClose = () => {
+    console.log('handleCategorizeModalClose called - modal being closed');
     setCategorizeModalOpen(false);
     // Clear the auto-start flag when modal closes so it can work again for new sessions
     console.log('Modal closing, clearing hasAutoStartedCategorization flag');
     sessionStorage.removeItem('hasAutoStartedCategorization');
     categorizationInProgressRef.current = false; // Also reset the ref
     console.log('Cleared flag, current value:', sessionStorage.getItem('hasAutoStartedCategorization'));
+    
+    // Invalidate cache now that modal is closed to refresh the data
+    if (batchId) {
+      queryClient.invalidateQueries({ queryKey: ['rootSpans', 'batch', batchId] });
+      queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
+      console.log('Cache invalidated after modal closed');
+    }
+    
     // Delay clearing results until after dialog close animation completes
     setTimeout(() => {
       setCategorizeResults(null);
@@ -303,13 +322,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         }));
         console.log('Stored pendingCategorizeModal in sessionStorage:', resultsToStore);
         
-        // Reload the root spans data to reflect updated annotations
-        queryClient.invalidateQueries({ queryKey: ['rootSpans', 'batch', batchId] });
-        // Also reload batches data to update category counts
-        queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
-        
-        // Cache invalidation should trigger refetch automatically, no need for manual reload
-        console.log('Cache invalidated, data should refresh automatically');
+        // Don't invalidate cache here - wait until modal closes to avoid disrupting the modal
       }
     } catch (error: any) {
       console.error("Failed to categorize annotations", error);
