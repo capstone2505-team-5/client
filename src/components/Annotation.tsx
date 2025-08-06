@@ -11,7 +11,7 @@ import { getPhoenixDashboardUrl } from "../services/services";
 import ReactMarkdown from 'react-markdown';
 
 interface Props {
-  onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => Promise<{ isNew: boolean }>;
+  onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null, batchId: string) => Promise<{ isNew: boolean }>;
 }
 
 const Annotation = ({ onSave}: Props) => {
@@ -175,7 +175,7 @@ const Annotation = ({ onSave}: Props) => {
   // Auto-save function
   const autoSave = async (shouldStoreSuccessToast: boolean = true) => {
     // Check if there are changes to save
-    if (currentSpan && rating && hasAnnotationChanged()) {
+    if (currentSpan && rating && hasAnnotationChanged() && batchId) {
       // Validate: bad ratings require notes
       if (rating === 'bad' && !note.trim()) {
         // Show immediate error toast (don't use sessionStorage since we're not navigating)
@@ -197,7 +197,7 @@ const Annotation = ({ onSave}: Props) => {
           batchId
         });
         
-        const result = await onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
+        const result = await onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating, batchId);
         
         console.log('Annotation save result:', result);
         

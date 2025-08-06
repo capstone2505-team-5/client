@@ -65,7 +65,8 @@ const AppWithQuery = () => {
     annotationId: string,
     rootSpanId: string,
     note: string,
-    rating: Rating | null
+    rating: Rating | null,
+    batchId: string,
   ): Promise<{ isNew: boolean }> => {
     let res: any = null;
     const isNew = annotationId === "";
@@ -82,31 +83,7 @@ const AppWithQuery = () => {
       }
 
       // Always invalidate batch cache when saving annotations
-      // We need to get the batchId from the current URL since currentContext might not be set
-      const currentPath = window.location.pathname;
-      const batchIdMatch = currentPath.match(/\/batches\/([^\/]+)/);
-      const projectIdMatch = currentPath.match(/\/projects\/([^\/]+)/);
-      
-      if (batchIdMatch) {
-        const batchId = batchIdMatch[1];
-        console.log('Invalidating batch cache for batchId:', batchId);
-        invalidateBatch(batchId);
-      }
-      
-      if (projectIdMatch) {
-        const projectId = projectIdMatch[1];
-        console.log('Invalidating project cache for projectId:', projectId);
-        invalidateProject(projectId);
-      }
-
-      // Also invalidate based on currentContext as fallback
-      if (currentContext?.type === 'batch' && currentContext.id) {
-        console.log('Invalidating batch cache via currentContext:', currentContext.id);
-        invalidateBatch(currentContext.id);
-      } else if (currentContext?.type === 'project' && currentContext.id) {
-        console.log('Invalidating project cache via currentContext:', currentContext.id);
-        invalidateProject(currentContext.id);
-      }
+      invalidateBatch(batchId);
 
       if (res) {
         console.log(
