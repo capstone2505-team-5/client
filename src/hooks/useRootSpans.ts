@@ -20,7 +20,7 @@ export const useRootSpansByBatch = (batchId: string | null) => {
     queryKey: batchId ? rootSpanKeys.batch(batchId) : ['rootSpans', 'batch', 'null'],
     queryFn: () => batchId ? fetchRootSpansByBatch(batchId) : Promise.resolve({ rootSpans: [], batchSummary: null, totalCount: 0 }),
     enabled: !!batchId, // Only run query if batchId exists
-    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    staleTime: 1000 * 30, // Consider data fresh for 30 seconds (reduced from 5 minutes for annotation updates)
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
   });
 };
@@ -108,6 +108,7 @@ export const useRootSpanMutations = () => {
   };
 
   const invalidateBatch = (batchId: string) => {
+    console.log('Invalidating batch cache for batchId:', batchId, 'with queryKey:', rootSpanKeys.batch(batchId));
     queryClient.invalidateQueries({ queryKey: rootSpanKeys.batch(batchId) });
   };
 

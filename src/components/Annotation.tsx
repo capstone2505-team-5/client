@@ -88,6 +88,18 @@ const Annotation = ({ onSave}: Props) => {
   const {data: batchData, isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
   const annotatedRootSpans = batchData?.rootSpans || [];
 
+  // Debug effect to track when batch data changes
+  useEffect(() => {
+    if (batchData) {
+      console.log('Batch data updated:', {
+        batchId,
+        totalSpans: batchData.rootSpans.length,
+        annotatedSpans: batchData.rootSpans.filter(span => span.annotation?.rating).length,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [batchData, batchId]);
+
   // Find current span and its index
   const currentSpanIndex = annotatedRootSpans.findIndex(span => 
     span.id === rootSpanId
@@ -124,13 +136,19 @@ const Annotation = ({ onSave}: Props) => {
 
   // Check for pending toast after navigation (similar to RootSpans)
   useEffect(() => {
-    const pending = sessionStorage.getItem('pendingAnnotationToast');
-    if (pending) {
-      sessionStorage.removeItem('pendingAnnotationToast');
-      const toastData = JSON.parse(pending);
-      setSnackbar(toastData);
-    }
+    const timer = setTimeout(() => {
+      const pending = sessionStorage.getItem('pendingAnnotationToast');
+      if (pending) {
+        sessionStorage.removeItem('pendingAnnotationToast');
+        const toastData = JSON.parse(pending);
+        setSnackbar(toastData);
+      } 
+    }, 200); // delay in ms (adjust as needed)
+    return () => clearTimeout(timer); // cleanup if span changes quickly
   }, [currentSpan?.id]); // Trigger when span changes
+  
+  
+  
   
   // Use the span from the API data if available, otherwise fall back to the passed one
   // const currentSpan = annotatedRootSpans[currentSpanIndex];
@@ -160,7 +178,17 @@ const Annotation = ({ onSave}: Props) => {
 
       try {
         setIsSaving(true);
+        console.log('Auto-saving annotation:', {
+          annotationId: currentSpan.annotation?.id || "",
+          rootSpanId: currentSpan.id,
+          note,
+          rating,
+          batchId
+        });
+        
         const result = await onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
+        
+        console.log('Annotation save result:', result);
         
         // Store success toast in sessionStorage (survives navigation)
         sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
