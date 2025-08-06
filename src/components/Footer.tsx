@@ -1,6 +1,8 @@
 import { Box, Container, Typography, IconButton, Tooltip, useTheme } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchBatches } from "../services/services";
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -12,6 +14,33 @@ const Footer = () => {
   const [maxStepReached, setMaxStepReached] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  // Extract projectId and batchId from current route
+  const getRouteIds = () => {
+    const pathParts = location.pathname.split('/');
+    const projectsIndex = pathParts.indexOf('projects');
+    const batchesIndex = pathParts.indexOf('batches');
+    
+    const projectId = (projectsIndex !== -1 && pathParts[projectsIndex + 1]) ? pathParts[projectsIndex + 1] : null;
+    const batchId = (batchesIndex !== -1 && pathParts[batchesIndex + 1] && !pathParts[batchesIndex + 1].includes('create')) ? pathParts[batchesIndex + 1] : null;
+    
+    return { projectId, batchId };
+  };
+
+  const { projectId, batchId } = getRouteIds();
+
+  // Fetch batches data when on a batch page to check categorization status
+  const { data: batches } = useQuery({
+    queryKey: ['batches', projectId],
+    queryFn: () => fetchBatches(projectId!),
+    enabled: !!projectId && !!batchId && !location.pathname.includes('/create') && !location.pathname.includes('/edit') && !location.pathname.includes('/annotation'),
+    staleTime: 1000 * 30, // 30 seconds
+  });
+
+  // Find current batch and check its status
+  const currentBatch = batches?.find(batch => batch.id === batchId);
+  const batchHasCategories = currentBatch?.categories && Object.keys(currentBatch.categories).length > 0;
+  const batchIsFullyAnnotated = currentBatch?.percentAnnotated === 100;
 
   const steps = [
     { title: 'Select a project', routes: ['/projects'] },
@@ -28,8 +57,14 @@ const Footer = () => {
     if (path === '/projects') return 0;
     if (path.includes('/batches/create') || path.includes('/batches/') && path.includes('/edit')) return 1;
     if (path.includes('/annotation')) return 2;
-    if (path.includes('/batches/') && !path.includes('/annotation') && !path.includes('/create') && !path.includes('/edit')) return 3;
-    if (path.includes('/batches/') && path.includes('results')) return 4; // for future results page
+    if (path.includes('/batches/') && !path.includes('/annotation') && !path.includes('/create') && !path.includes('/edit')) {
+      // If batch has categories (categorization complete), show step 4 (Inspect Results)
+      if (batchHasCategories) return 4;
+      // If batch is 100% annotated but not categorized, show step 3 (Categorize Batch)
+      if (batchIsFullyAnnotated) return 3;
+      // Otherwise, batch is not ready for categorization - don't highlight any step
+      return -1;
+    }
     
     return -1; // No active step (home page, etc.)
   };
