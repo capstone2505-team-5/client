@@ -150,7 +150,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   const theme = muiUseTheme();
   const queryClient = useQueryClient();
   const [isCategorizing, setIsCategorizing] = useState(false);
-  const hasAutoStartedRef = useRef(false); // Track if we've already auto-started categorization
+  const categorizationInProgressRef = useRef(false); // Track if categorization is currently in progress
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -159,26 +159,81 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
 
   useEffect(() => {
     if (batchId) {
+      // Clear the auto-start flag when we navigate to a different batch
+      // This ensures each batch gets its own categorization opportunity
+      const currentBatch = sessionStorage.getItem('currentBatchForCategorization');
+      if (currentBatch !== batchId) {
+        console.log('New batch detected, clearing hasAutoStartedCategorization flag');
+        sessionStorage.removeItem('hasAutoStartedCategorization');
+        sessionStorage.setItem('currentBatchForCategorization', batchId);
+      }
+      
       onLoadRootSpans(batchId);
     }
   }, [batchId, onLoadRootSpans]);
 
   // Auto-start categorization when navigated from "Done" button
   useEffect(() => {
-    if (startCategorization && batchId && annotatedRootSpans.length > 0 && !hasAutoStartedRef.current) {
+    console.log('Auto-start categorization effect triggered:', {
+      startCategorization,
+      batchId,
+      annotatedRootSpansLength: annotatedRootSpans.length,
+      hasAutoStarted: sessionStorage.getItem('hasAutoStartedCategorization'),
+      categorizationInProgress: categorizationInProgressRef.current,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (startCategorization && 
+        batchId && 
+        annotatedRootSpans.length > 0 && 
+        !sessionStorage.getItem('hasAutoStartedCategorization') &&
+        !categorizationInProgressRef.current) {
       // Check if there are bad annotations to categorize
       const hasBadAnnotations = annotatedRootSpans.some(span => 
         span.annotation?.rating === 'bad'
       );
       
+      console.log('Auto-start categorization conditions met:', {
+        hasBadAnnotations,
+        badAnnotationsCount: annotatedRootSpans.filter(span => span.annotation?.rating === 'bad').length
+      });
+      
       if (hasBadAnnotations) {
-        hasAutoStartedRef.current = true; // Mark as started to prevent loops
-        handleCategorize();
+        console.log('About to set hasAutoStartedCategorization to true');
+        sessionStorage.setItem('hasAutoStartedCategorization', 'true'); // Mark as started to prevent loops
+        categorizationInProgressRef.current = true; // Also set ref to prevent immediate re-runs
+        console.log('Set hasAutoStartedCategorization, current value:', sessionStorage.getItem('hasAutoStartedCategorization'));
+        console.log('Setting hasAutoStartedRef to true and starting categorization');
+        // Use setTimeout to avoid calling handleCategorize directly in useEffect
+        setTimeout(() => {
+          handleCategorize();
+        }, 0);
       }
     }
-  }, [startCategorization]);
+  }, [startCategorization]); // Only depend on startCategorization to prevent loops
 
-
+  // Separate effect to check sessionStorage when categorization finishes
+  useEffect(() => {
+    console.log('SessionStorage check effect triggered, isCategorizing:', isCategorizing);
+    if (!isCategorizing) {
+      // Small delay to let the API complete and sessionStorage update
+      const timer = setTimeout(() => {
+        const pendingCategorize = sessionStorage.getItem('pendingCategorizeModal');
+        console.log('Checking sessionStorage for pendingCategorizeModal:', pendingCategorize);
+        if (pendingCategorize) {
+          sessionStorage.removeItem('pendingCategorizeModal');
+          console.log('Removed pendingCategorizeModal from sessionStorage');
+          const modalData = JSON.parse(pendingCategorize);
+          setCategorizeResults(modalData.results);
+          setCategorizeModalOpen(true);
+          console.log('Set categorize results and opened modal:', modalData.results);
+          console.log('Modal should now be open, categorizeModalOpen set to true');
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isCategorizing]); // Trigger when categorization state changes
 
   const handleClose = () => {
     setOpen(false);
@@ -187,6 +242,11 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
 
   const handleCategorizeModalClose = () => {
     setCategorizeModalOpen(false);
+    // Clear the auto-start flag when modal closes so it can work again for new sessions
+    console.log('Modal closing, clearing hasAutoStartedCategorization flag');
+    sessionStorage.removeItem('hasAutoStartedCategorization');
+    categorizationInProgressRef.current = false; // Also reset the ref
+    console.log('Cleared flag, current value:', sessionStorage.getItem('hasAutoStartedCategorization'));
     // Delay clearing results until after dialog close animation completes
     setTimeout(() => {
       setCategorizeResults(null);
@@ -216,24 +276,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     }
   }, []); // Only run on mount to avoid loops
 
-  // Separate effect to check sessionStorage when categorization finishes
-  useEffect(() => {
-    if (!isCategorizing) {
-      // Small delay to let the API complete and sessionStorage update
-      const timer = setTimeout(() => {
-        const pendingCategorize = sessionStorage.getItem('pendingCategorizeModal');
-        if (pendingCategorize) {
-          sessionStorage.removeItem('pendingCategorizeModal');
-          const modalData = JSON.parse(pendingCategorize);
-          setCategorizeResults(modalData.results);
-          setCategorizeModalOpen(true);
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isCategorizing]); // Trigger when categorization state changes
-
   const handleConfirmDelete = async () => {
     if (rootSpanToDelete) {
       await handleDelete(rootSpanToDelete);
@@ -246,26 +288,28 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   };
 
   const handleCategorize = async () => {
+    console.log('handleCategorize started, setting isCategorizing to true');
     try {
       if (batchId) {  
         setIsCategorizing(true);
+        console.log('Calling categorizeAnnotations API for batchId:', batchId);
         const result = await categorizeAnnotations(batchId);
+        console.log('categorizeAnnotations API completed, result:', result);
         
         // Store categorization results in sessionStorage (survives re-renders)
         const resultsToStore = (!result || Object.keys(result).length === 0) ? {} : result;
         sessionStorage.setItem('pendingCategorizeModal', JSON.stringify({
           results: resultsToStore
         }));
+        console.log('Stored pendingCategorizeModal in sessionStorage:', resultsToStore);
         
         // Reload the root spans data to reflect updated annotations
         queryClient.invalidateQueries({ queryKey: ['rootSpans', 'batch', batchId] });
         // Also reload batches data to update category counts
         queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
         
-        // Reload the current data
-        if (batchId) {
-          onLoadRootSpans(batchId);
-        }
+        // Cache invalidation should trigger refetch automatically, no need for manual reload
+        console.log('Cache invalidated, data should refresh automatically');
       }
     } catch (error: any) {
       console.error("Failed to categorize annotations", error);
@@ -276,12 +320,12 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         results: { __error: errorMessage }
       }));
       
-      // Trigger re-render to show the modal
-      if (batchId) {
-        onLoadRootSpans(batchId);
-      }
+      // Cache invalidation should handle data refresh
+      console.log('Error occurred, sessionStorage updated with error message');
     } finally {
+      console.log('handleCategorize finished, setting isCategorizing to false');
       setIsCategorizing(false);
+      categorizationInProgressRef.current = false; // Reset ref after completion
     }
   };
 

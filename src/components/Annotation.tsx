@@ -148,8 +148,6 @@ const Annotation = ({ onSave}: Props) => {
   }, [currentSpan?.id]); // Trigger when span changes
   
   
-  
-  
   // Use the span from the API data if available, otherwise fall back to the passed one
   // const currentSpan = annotatedRootSpans[currentSpanIndex];
 
@@ -162,7 +160,7 @@ const Annotation = ({ onSave}: Props) => {
   };
 
   // Auto-save function
-  const autoSave = async () => {
+  const autoSave = async (shouldStoreSuccessToast: boolean = true) => {
     // Check if there are changes to save
     if (currentSpan && rating && hasAnnotationChanged()) {
       // Validate: bad ratings require notes
@@ -190,14 +188,16 @@ const Annotation = ({ onSave}: Props) => {
         
         console.log('Annotation save result:', result);
         
-        // Store success toast in sessionStorage (survives navigation)
-        sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
-          open: true,
-          message: result.isNew 
-            ? 'Annotation created successfully!' 
-            : 'Annotation updated successfully!',
-          severity: 'success'
-        }));
+        // Only store success toast in sessionStorage if requested (survives navigation)
+        if (shouldStoreSuccessToast) {
+          sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
+            open: true,
+            message: result.isNew 
+              ? 'Annotation created successfully!' 
+              : 'Annotation updated successfully!',
+            severity: 'success'
+          }));
+        }
         
         return true; // Indicate successful save
       } catch (error: any) {
@@ -1219,7 +1219,7 @@ const Annotation = ({ onSave}: Props) => {
           </Button>
           <Button 
             onClick={async () => {
-              const success = await autoSave();
+              const success = await autoSave(false); // Pass false for categorize flow
               if (success) {
                 navigate(`/projects/${projectId}/batches/${batchId}`, { 
                   state: { 
