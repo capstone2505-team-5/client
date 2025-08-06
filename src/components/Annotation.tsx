@@ -280,7 +280,7 @@ const Annotation = ({ onSave}: Props) => {
             await goToPreviousSpan();
             break;
           case 'ArrowRight':
-            // If on last span, show confirmation dialog like the button does
+            // If on last span, show confirmation dialog
             if (currentSpanIndex === annotatedRootSpans.length - 1) {
               setDisplayConfirmCategorize(true);
             } else {
@@ -1194,7 +1194,11 @@ const Annotation = ({ onSave}: Props) => {
          <DialogContent sx={{ pt: 2, pb: 3, textAlign: 'center' }}>
           {(() => {
             const annotatedCount = annotatedRootSpans.filter(span => span.annotation?.rating).length;
-            return annotatedCount === annotatedRootSpans.length ? (
+            // Check if current annotation has changed and has a rating - if so, this would complete the batch
+            const willCompleteAfterSave = hasAnnotationChanged() && rating && 
+              (annotatedCount + 1) === annotatedRootSpans.length;
+            
+            return (annotatedCount === annotatedRootSpans.length || willCompleteAfterSave) ? (
               <Typography variant="body1" sx={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
                 You finished grading this batch!! Do you want to categorize now?
               </Typography>
@@ -1219,7 +1223,8 @@ const Annotation = ({ onSave}: Props) => {
           </Button>
           <Button 
             onClick={async () => {
-              const success = await autoSave(false); // Pass false for categorize flow
+              // Save annotation if it has changed, then navigate
+              const success = await autoSave(false); // Pass false for categorize flow (no toast)
               if (success) {
                 navigate(`/projects/${projectId}/batches/${batchId}`, { 
                   state: { 
