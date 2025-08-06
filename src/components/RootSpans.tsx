@@ -785,7 +785,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           </Button>
           <Tooltip 
             title={!hasBadAnnotations && !isCategorizing ? "No bad annotations to categorize" : ""}
-            placement="top"
+            placement="bottom"
             arrow
           >
             <span>
