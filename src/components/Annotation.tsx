@@ -123,6 +123,19 @@ const Annotation = ({ onSave}: Props) => {
       setOriginalAnnotation({ rating: null, note: "" });
     }
     
+    // Auto-select formatted when available
+    if (currentSpan?.formattedInput) {
+      setDisplayFormattedInput(true);
+    } else {
+      setDisplayFormattedInput(false);
+    }
+    
+    if (currentSpan?.formattedOutput) {
+      setDisplayFormattedOutput(true);
+    } else {
+      setDisplayFormattedOutput(false);
+    }
+    
     // Auto-focus the notes field when span changes
     // Use a small delay to ensure the component has rendered
     const timer = setTimeout(() => {
@@ -791,17 +804,24 @@ const Annotation = ({ onSave}: Props) => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button 
-                variant="outlined" 
+                variant={!displayFormattedInput ? "contained" : "outlined"}
                 size="small"
                 sx={{
                   px: 3,
                   minWidth: 50,
                   borderColor: 'secondary.main',
-                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  color: !displayFormattedInput 
+                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                  backgroundColor: !displayFormattedInput 
+                    ? 'secondary.main'
+                    : 'transparent',
                   fontWeight: 600,
                   '&:hover': {
                     borderColor: 'secondary.dark',
-                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    backgroundColor: !displayFormattedInput 
+                      ? 'secondary.dark'
+                      : 'rgba(255, 235, 59, 0.1)',
                   }
                 }}
                 onClick={() => setDisplayFormattedInput(false)}
@@ -814,18 +834,30 @@ const Annotation = ({ onSave}: Props) => {
               >
                 <span>
                   <Button 
-                    variant="outlined" 
+                    variant={displayFormattedInput ? "contained" : "outlined"}
                     size="small"
                     disabled={!currentSpan.formattedInput}
                     sx={{
                       px: 3,
                       minWidth: 75,
                       borderColor: 'secondary.main',
-                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                      color: displayFormattedInput 
+                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                      backgroundColor: displayFormattedInput 
+                        ? 'secondary.main'
+                        : 'transparent',
                       fontWeight: 600,
                       '&:hover': {
                         borderColor: 'secondary.dark',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        backgroundColor: displayFormattedInput 
+                          ? 'secondary.dark'
+                          : 'rgba(255, 235, 59, 0.1)',
+                      },
+                      '&.Mui-disabled': {
+                        borderColor: 'text.disabled',
+                        color: 'text.disabled',
+                        backgroundColor: 'transparent'
                       }
                     }}
                     onClick={() => setDisplayFormattedInput(true)}
@@ -916,17 +948,24 @@ const Annotation = ({ onSave}: Props) => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button 
-                variant="outlined" 
+                variant={!displayFormattedOutput ? "contained" : "outlined"}
                 size="small"
                 sx={{
                   px: 3,
                   minWidth: 100,
                   borderColor: 'secondary.main',
-                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  color: !displayFormattedOutput 
+                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                  backgroundColor: !displayFormattedOutput 
+                    ? 'secondary.main'
+                    : 'transparent',
                   fontWeight: 600,
                   '&:hover': {
                     borderColor: 'secondary.dark',
-                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    backgroundColor: !displayFormattedOutput 
+                      ? 'secondary.dark'
+                      : 'rgba(255, 235, 59, 0.1)',
                   }
                 }}
                 onClick={() => setDisplayFormattedOutput(false)}
@@ -939,18 +978,30 @@ const Annotation = ({ onSave}: Props) => {
               >
                 <span>
                   <Button 
-                    variant="outlined" 
+                    variant={displayFormattedOutput ? "contained" : "outlined"}
                     size="small"
                     disabled={!currentSpan.formattedOutput}
                     sx={{
                       px: 3,
                       minWidth: 100,
                       borderColor: 'secondary.main',
-                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                      color: displayFormattedOutput 
+                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                      backgroundColor: displayFormattedOutput 
+                        ? 'secondary.main'
+                        : 'transparent',
                       fontWeight: 600,
                       '&:hover': {
                         borderColor: 'secondary.dark',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        backgroundColor: displayFormattedOutput 
+                          ? 'secondary.dark'
+                          : 'rgba(255, 235, 59, 0.1)',
+                      },
+                      '&.Mui-disabled': {
+                        borderColor: 'text.disabled',
+                        color: 'text.disabled',
+                        backgroundColor: 'transparent'
                       }
                     }}
                     onClick={() => setDisplayFormattedOutput(true)}
