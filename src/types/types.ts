@@ -33,6 +33,7 @@ export interface AnnotatedRootSpan {
   output: string;
   formattedInput?: string;
   formattedOutput?: string;
+  formattedAt?: string | null;
   projectId?: string;
   projectName?: string;
   spanName: string | null;

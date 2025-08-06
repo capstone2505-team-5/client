@@ -304,6 +304,13 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     navigate(`annotation/${annotatedRootSpan.id}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
   };
 
+  const allSpansFormatted = useMemo(() => {
+    if (annotatedRootSpans.length === 0) return false;
+    return annotatedRootSpans.every(
+      span => span.formattedInput && span.formattedOutput
+    );
+  }, [annotatedRootSpans]);
+
   const handleCategorize = async () => {
     // Prevent multiple simultaneous categorization calls
     if (isCategorizing) {
@@ -762,27 +769,39 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           alignItems: 'flex-end',
           gap: 1,
         }}>
-          <Button
-            variant="contained"
-            startIcon={<RateReviewIcon />}
-            onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${annotatedRootSpans[0].id}`, { 
-              state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
-            })}
-            size="large"
-            sx={{ 
-              px: 3, 
-              minWidth: 225,
-              maxHeight: 35,
-              backgroundColor: 'secondary.main',
-              color: 'black',
-              fontWeight: 600,
-              '&:hover': {
-                backgroundColor: 'secondary.dark',
-              },
-            }}
+          <Tooltip
+            title={!allSpansFormatted ? "Formatting in progress... Cannot grade yet." : "Start grading this batch"}
+            arrow
           >
-            Grade Batch!
-          </Button>
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<RateReviewIcon />}
+                disabled={!allSpansFormatted}
+                onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${annotatedRootSpans[0].id}`, { 
+                  state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
+                })}
+                size="large"
+                sx={{ 
+                  px: 3, 
+                  minWidth: 225,
+                  maxHeight: 35,
+                  backgroundColor: 'secondary.main',
+                  color: 'black',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'secondary.dark',
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: 'grey.400',
+                    color: 'grey.600',
+                  }
+                }}
+              >
+                Grade Batch!
+              </Button>
+            </span>
+          </Tooltip>
           <Tooltip 
             title={!hasBadAnnotations && !isCategorizing ? "No bad annotations to categorize" : ""}
             placement="bottom"
@@ -928,6 +947,18 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
               ? '#1a1a1a !important' 
               : 'rgba(0, 0, 0, 0.05) !important',
           },
+          '& .row-disabled': {
+            cursor: 'not-allowed',
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.05)' 
+              : 'rgba(0, 0, 0, 0.05)',
+            color: 'text.disabled',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.05)' 
+                : 'rgba(0, 0, 0, 0.05)',
+            }
+          }
         }}
       >
         {/* Search Bar */}
@@ -986,7 +1017,13 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
             disableRowSelectionOnClick
             getRowHeight={() => 56}
             paginationMode="client"
-            onRowClick={(params) => handleView(params.row)}
+            onRowClick={(params) => {
+              if (!allSpansFormatted) return;
+              handleView(params.row);
+            }}
+            getRowClassName={(params) => {
+              return !allSpansFormatted ? 'row-disabled' : '';
+            }}
             onPaginationModelChange={(model) => {
               setPageSize(model.pageSize);
             }}
