@@ -200,7 +200,12 @@ const Annotation = ({ onSave}: Props) => {
         const result = await onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating, batchId);
         
         console.log('Annotation save result:', result);
-        
+
+        // Reset auto-categorize flag so a new grading session can auto-start categorization again
+        if (batchId) {
+          sessionStorage.removeItem(`hasAutoStarted_${batchId}`);
+        }
+
         // Only store success toast in sessionStorage if requested (survives navigation)
         if (shouldStoreSuccessToast) {
           sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
