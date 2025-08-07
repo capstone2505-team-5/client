@@ -821,66 +821,36 @@ const Annotation = ({ onSave}: Props) => {
               Input
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button 
-                variant={!displayFormattedInput ? "contained" : "outlined"}
-                size="small"
-                sx={{
-                  px: 2,
-                  minWidth: 45,
-                  borderColor: 'secondary.main',
-                  color: !displayFormattedInput 
-                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
-                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
-                  backgroundColor: !displayFormattedInput 
-                    ? 'secondary.main'
-                    : 'transparent',
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: 'secondary.dark',
-                    backgroundColor: !displayFormattedInput 
-                      ? 'secondary.dark'
-                      : 'rgba(255, 235, 59, 0.1)',
-                  }
-                }}
-                onClick={() => setDisplayFormattedInput(false)}
-              >
-                Raw
-              </Button>
               <Tooltip 
-                title={!currentSpan.formattedInput ? "Formatting in process..." : "View formatted input"}
+                title={displayFormattedInput 
+                  ? "Switch to raw input" 
+                  : (!currentSpan.formattedInput ? "Formatting in process..." : "Switch to formatted input")
+                }
                 arrow
               >
                 <span>
                   <Button 
-                    variant={displayFormattedInput ? "contained" : "outlined"}
+                    variant="outlined"
                     size="small"
-                    disabled={!currentSpan.formattedInput}
+                    disabled={!displayFormattedInput && !currentSpan.formattedInput}
                     sx={{
                       px: 2,
-                      minWidth: 75,
+                      minWidth: 120,
                       borderColor: 'secondary.main',
-                      color: displayFormattedInput 
-                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
-                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
-                      backgroundColor: displayFormattedInput 
-                        ? 'secondary.main'
-                        : 'transparent',
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
                       fontWeight: 600,
                       '&:hover': {
                         borderColor: 'secondary.dark',
-                        backgroundColor: displayFormattedInput 
-                          ? 'secondary.dark'
-                          : 'rgba(255, 235, 59, 0.1)',
+                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
                       },
                       '&.Mui-disabled': {
                         borderColor: 'text.disabled',
                         color: 'text.disabled',
-                        backgroundColor: 'transparent'
                       }
                     }}
-                    onClick={() => setDisplayFormattedInput(true)}
+                    onClick={() => setDisplayFormattedInput(!displayFormattedInput)}
                   >
-                    Formatted
+                    {displayFormattedInput ? 'Formatted' : 'Raw'}
                   </Button>
                 </span>
               </Tooltip>
@@ -965,66 +935,36 @@ const Annotation = ({ onSave}: Props) => {
               Output
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button 
-                variant={!displayFormattedOutput ? "contained" : "outlined"}
-                size="small"
-                sx={{
-                  px: 2,
-                  minWidth: 45,
-                  borderColor: 'secondary.main',
-                  color: !displayFormattedOutput 
-                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
-                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
-                  backgroundColor: !displayFormattedOutput 
-                    ? 'secondary.main'
-                    : 'transparent',
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: 'secondary.dark',
-                    backgroundColor: !displayFormattedOutput 
-                      ? 'secondary.dark'
-                      : 'rgba(255, 235, 59, 0.1)',
-                  }
-                }}
-                onClick={() => setDisplayFormattedOutput(false)}
-              >
-                Raw
-              </Button>
               <Tooltip 
-                title={!currentSpan.formattedOutput ? "Formatting in process..." : "View formatted output"}
+                title={displayFormattedOutput 
+                  ? "Switch to raw output" 
+                  : (!currentSpan.formattedOutput ? "Formatting in process..." : "Switch to formatted output")
+                }
                 arrow
               >
                 <span>
                   <Button 
-                    variant={displayFormattedOutput ? "contained" : "outlined"}
+                    variant="outlined"
                     size="small"
-                    disabled={!currentSpan.formattedOutput}
+                    disabled={!displayFormattedOutput && !currentSpan.formattedOutput}
                     sx={{
                       px: 2,
-                      minWidth: 100,
+                      minWidth: 120,
                       borderColor: 'secondary.main',
-                      color: displayFormattedOutput 
-                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
-                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
-                      backgroundColor: displayFormattedOutput 
-                        ? 'secondary.main'
-                        : 'transparent',
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
                       fontWeight: 600,
                       '&:hover': {
                         borderColor: 'secondary.dark',
-                        backgroundColor: displayFormattedOutput 
-                          ? 'secondary.dark'
-                          : 'rgba(255, 235, 59, 0.1)',
+                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
                       },
                       '&.Mui-disabled': {
                         borderColor: 'text.disabled',
                         color: 'text.disabled',
-                        backgroundColor: 'transparent'
                       }
                     }}
-                    onClick={() => setDisplayFormattedOutput(true)}
+                    onClick={() => setDisplayFormattedOutput(!displayFormattedOutput)}
                   >
-                    Formatted
+                    {displayFormattedOutput ? 'Formatted' : 'Raw'}
                   </Button>
                 </span>
               </Tooltip>
