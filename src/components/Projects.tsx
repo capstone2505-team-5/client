@@ -337,7 +337,7 @@ const Projects = () => {
           <DialogTitle 
             id="alert-dialog-title"
             sx={{ 
-              color: 'white',
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
               fontWeight: 'bold',
               fontSize: '1.5rem',
               pb: 1,

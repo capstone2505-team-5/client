@@ -445,10 +445,9 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       align: 'left',
       renderCell: (params) => (
         <Typography 
-          variant="body2" 
+          variant="body1" 
           sx={{ 
-            fontFamily: 'monospace',
-            color: 'white',
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
             fontWeight: 'medium'
           }}
         >
@@ -464,7 +463,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       headerAlign: 'left',
       align: 'left',
       renderCell: (params) => (
-        <Typography variant="body1" sx={{ color: 'white' }}>
+        <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? 'white' : 'black' }}>
           {params.value}
         </Typography>
       ),
@@ -529,7 +528,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         ['is', 'after', 'onOrAfter', 'before', 'onOrBefore'].includes(operator.value)
       ),
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'white' }}>
+        <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'white' : 'black' }}>
           {formatDateTime(params.value)}
         </Typography>
       ),
@@ -546,7 +545,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         <Typography 
           variant="body2" 
           sx={{ 
-            color: 'white',
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -568,7 +567,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         <Typography 
           variant="body2" 
           sx={{ 
-            color: 'white',
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
