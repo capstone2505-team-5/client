@@ -128,19 +128,6 @@ const Annotation = ({ onSave}: Props) => {
       setOriginalAnnotation({ rating: null, note: "" });
     }
     
-    // Auto-select formatted when available
-    if (currentSpan?.formattedInput) {
-      setDisplayFormattedInput(true);
-    } else {
-      setDisplayFormattedInput(false);
-    }
-    
-    if (currentSpan?.formattedOutput) {
-      setDisplayFormattedOutput(true);
-    } else {
-      setDisplayFormattedOutput(false);
-    }
-    
     // Auto-focus the notes field when span changes
     // Use a small delay to ensure the component has rendered
     const timer = setTimeout(() => {
