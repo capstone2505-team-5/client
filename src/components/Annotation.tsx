@@ -32,8 +32,8 @@ const Annotation = ({ onSave}: Props) => {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
   const [hotkeyModalOpen, setHotkeyModalOpen] = useState(false);
-  const [displayFormattedInput, setDisplayFormattedInput] = useState(false);
-  const [displayFormattedOutput, setDisplayFormattedOutput] = useState(false);
+  const [displayFormattedInput, setDisplayFormattedInput] = useState(true);
+  const [displayFormattedOutput, setDisplayFormattedOutput] = useState(true);
   const [displayConfirmCategorize, setDisplayConfirmCategorize] = useState(false);
   const [isFooterHidden, setIsFooterHidden] = useState(false);
 
