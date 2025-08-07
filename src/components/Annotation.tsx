@@ -5,11 +5,12 @@ import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
+import DeleteIcon from '@mui/icons-material/Delete';
 import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
 import { getPhoenixDashboardUrl } from "../services/services";
 import ReactMarkdown from 'react-markdown';
-import Context from './Context';
+import Context, { useContextFile } from './Context';
 
 interface Props {
   onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null, batchId: string) => Promise<{ isNew: boolean }>;
@@ -35,6 +36,9 @@ const Annotation = ({ onSave}: Props) => {
   const [displayFormattedOutput, setDisplayFormattedOutput] = useState(false);
   const [displayConfirmCategorize, setDisplayConfirmCategorize] = useState(false);
   const [isFooterHidden, setIsFooterHidden] = useState(false);
+
+  // Get file state from Context component
+  const { file, handleRemoveFile } = useContextFile();
 
   // Track original values to detect changes
   const [originalAnnotation, setOriginalAnnotation] = useState<{
@@ -1062,11 +1066,34 @@ const Annotation = ({ onSave}: Props) => {
             p: 2, 
             backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e3f2fd',
             borderBottom: '1px solid',
-            borderBottomColor: 'divider'
+            borderBottomColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Context
             </Typography>
+            {file && (
+              <Tooltip title="Remove file" arrow>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleRemoveFile}
+                  sx={{
+                    borderColor: 'secondary.main',
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    '&:hover': {
+                      borderColor: 'error.dark',
+                      backgroundColor: 'rgba(255, 130, 130, 0.1)',
+                    }
+                  }}
+                >
+                  Remove File
+                </Button>
+              </Tooltip>
+            )}
           </Box>
           <Box sx={{ 
             p: 2, 

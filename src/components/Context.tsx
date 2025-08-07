@@ -1,10 +1,14 @@
-import React, { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { useDocument } from '../contexts/DocumentContext';
 import FilePreview from './FilePreview';
 
-const Context = () => {
+interface ContextProps {
+  onRenderHeaderActions?: () => React.ReactNode;
+}
+
+const Context = ({ onRenderHeaderActions }: ContextProps) => {
   const { file, setFile } = useDocument();
   const theme = useTheme();
 
@@ -25,6 +29,13 @@ const Context = () => {
   const handleRemoveFile = () => {
     setFile(null);
   };
+
+  // Expose the remove button for header rendering
+  useEffect(() => {
+    if (onRenderHeaderActions && file) {
+      // This effect can be used to trigger parent re-render when file state changes
+    }
+  }, [file, onRenderHeaderActions]);
 
   return (
     <Box>
@@ -50,14 +61,18 @@ const Context = () => {
         </Box>
       ) : (
         <Box>
-          <Button variant="contained" onClick={handleRemoveFile} sx={{ mb: 2 }}>
-            Remove File
-          </Button>
           <FilePreview file={file} />
         </Box>
       )}
     </Box>
   );
+};
+
+// Export a hook to get the current file state and remove handler
+export const useContextFile = () => {
+  const { file, setFile } = useDocument();
+  const handleRemoveFile = () => setFile(null);
+  return { file, handleRemoveFile };
 };
 
 export default Context;
