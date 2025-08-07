@@ -820,7 +820,7 @@ const Annotation = ({ onSave}: Props) => {
                 variant={!displayFormattedInput ? "contained" : "outlined"}
                 size="small"
                 sx={{
-                  px: 3,
+                  px: 2,
                   minWidth: 45,
                   borderColor: 'secondary.main',
                   color: !displayFormattedInput 
@@ -851,7 +851,7 @@ const Annotation = ({ onSave}: Props) => {
                     size="small"
                     disabled={!currentSpan.formattedInput}
                     sx={{
-                      px: 3,
+                      px: 2,
                       minWidth: 75,
                       borderColor: 'secondary.main',
                       color: displayFormattedInput 
@@ -964,8 +964,8 @@ const Annotation = ({ onSave}: Props) => {
                 variant={!displayFormattedOutput ? "contained" : "outlined"}
                 size="small"
                 sx={{
-                  px: 3,
-                  minWidth: 100,
+                  px: 2,
+                  minWidth: 45,
                   borderColor: 'secondary.main',
                   color: !displayFormattedOutput 
                     ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
@@ -995,7 +995,7 @@ const Annotation = ({ onSave}: Props) => {
                     size="small"
                     disabled={!currentSpan.formattedOutput}
                     sx={{
-                      px: 3,
+                      px: 2,
                       minWidth: 100,
                       borderColor: 'secondary.main',
                       color: displayFormattedOutput 
