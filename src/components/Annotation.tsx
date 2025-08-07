@@ -416,7 +416,7 @@ const Annotation = ({ onSave}: Props) => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
+    <Container disableGutters maxWidth={false} sx={{ py: 2, px: 3}}>
       {/* CSS Grid Layout */}
       <Box
         sx={{
@@ -424,7 +424,7 @@ const Annotation = ({ onSave}: Props) => {
           gridTemplateColumns: {
             xs: '1fr',
             md: '1fr 1fr',
-            lg: '1fr 2fr 1fr'
+            lg: '1fr 2fr 2fr 1fr'
           },
           gridTemplateRows: {
             xs: 'auto auto auto auto auto',
@@ -447,10 +447,10 @@ const Annotation = ({ onSave}: Props) => {
               "annotation annotation"
             `,
             lg: `
-              "header header header"
-              "input output annotation"
-              "input output annotation"
-              "controls output annotation"
+              "header header header header"
+              "input output context controls"
+              "input output context annotation"
+              "input output context annotation"
             `
           },
           gap: 3,
@@ -1038,6 +1038,151 @@ const Annotation = ({ onSave}: Props) => {
             )}
           </Box>
         </Paper>
+
+        {/* Context Section */}
+        <Paper
+          elevation={2}
+          sx={{
+            gridArea: 'context',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}
+        >
+          <Box sx={{ 
+            p: 2, 
+            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e8f5e8',
+            borderBottom: '1px solid',
+            borderBottomColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
+              Context
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button 
+                variant={!displayFormattedInput ? "contained" : "outlined"}
+                size="small"
+                sx={{
+                  px: 3,
+                  minWidth: 50,
+                  borderColor: 'secondary.main',
+                  color: !displayFormattedInput 
+                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                  backgroundColor: !displayFormattedInput 
+                    ? 'secondary.main'
+                    : 'transparent',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: 'secondary.dark',
+                    backgroundColor: !displayFormattedInput 
+                      ? 'secondary.dark'
+                      : 'rgba(255, 235, 59, 0.1)',
+                  }
+                }}
+                onClick={() => setDisplayFormattedInput(false)}
+              >
+                Raw
+              </Button>
+              <Tooltip 
+                title={!currentSpan.formattedInput ? "Formatting in process..." : "View formatted input"}
+                arrow
+              >
+                <span>
+                  <Button 
+                    variant={displayFormattedInput ? "contained" : "outlined"}
+                    size="small"
+                    disabled={!currentSpan.formattedInput}
+                    sx={{
+                      px: 3,
+                      minWidth: 75,
+                      borderColor: 'secondary.main',
+                      color: displayFormattedInput 
+                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                      backgroundColor: displayFormattedInput 
+                        ? 'secondary.main'
+                        : 'transparent',
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderColor: 'secondary.dark',
+                        backgroundColor: displayFormattedInput 
+                          ? 'secondary.dark'
+                          : 'rgba(255, 235, 59, 0.1)',
+                      },
+                      '&.Mui-disabled': {
+                        borderColor: 'text.disabled',
+                        color: 'text.disabled',
+                        backgroundColor: 'transparent'
+                      }
+                    }}
+                    onClick={() => setDisplayFormattedInput(true)}
+                  >
+                    Formatted
+                  </Button>
+                </span>
+              </Tooltip>
+            </Box>
+          </Box>
+          <Box sx={{ 
+            p: 2, 
+            flex: 1, 
+            overflow: 'auto',
+            backgroundColor: theme.palette.background.paper
+          }}>
+            {displayFormattedInput ? (
+              <Box sx={{
+                '& p': {
+                  margin: '0.5em 0',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word'
+                },
+                '& code': {
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  padding: '2px 4px',
+                  borderRadius: '3px',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '0.9em',
+                  whiteSpace: 'pre-wrap'
+                },
+                '& pre': {
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  overflow: 'auto',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre',
+                  wordBreak: 'normal',
+                  overflowWrap: 'normal'
+                },
+                '& pre code': {
+                  backgroundColor: 'transparent',
+                  padding: 0,
+                  whiteSpace: 'pre'
+                }
+              }}>
+                <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown>
+              </Box>
+            ) : (
+              <pre style={{ 
+                whiteSpace: 'pre-wrap', 
+                margin: 0, 
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontSize: '0.9rem',
+                lineHeight: 1.5
+              }}>
+                {currentSpan.input}
+              </pre>
+            )}
+          </Box>
+        </Paper>
+
 
         {/* Annotation Section */}
         <Paper
