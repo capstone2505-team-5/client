@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
 import { getPhoenixDashboardUrl } from "../services/services";
@@ -36,6 +38,7 @@ const Annotation = ({ onSave}: Props) => {
   const [displayFormattedOutput, setDisplayFormattedOutput] = useState(true);
   const [displayConfirmCategorize, setDisplayConfirmCategorize] = useState(false);
   const [isFooterHidden, setIsFooterHidden] = useState(false);
+  const [isContextPanelVisible, setIsContextPanelVisible] = useState(true);
 
   // Get file state from Context component
   const { file, handleRemoveFile } = useContextFile();
@@ -408,7 +411,11 @@ const Annotation = ({ onSave}: Props) => {
   }
 
   return (
-    <Container disableGutters maxWidth={false} sx={{ py: 2, px: 3}}>
+    <Container 
+      disableGutters={isContextPanelVisible} 
+      maxWidth={isContextPanelVisible ? false : 'xl'} 
+      sx={{ py: 2, px: 3}}
+    >
       {/* CSS Grid Layout */}
       <Box
         sx={{
@@ -416,7 +423,7 @@ const Annotation = ({ onSave}: Props) => {
           gridTemplateColumns: {
             xs: '1fr',
             md: '1fr 1fr',
-            lg: '1fr 2fr 2fr 1fr'
+            lg: isContextPanelVisible ? '1fr 2fr 2fr 1fr' : '1fr 2fr 1fr',
           },
           gridTemplateRows: {
             xs: 'auto auto auto auto',
@@ -436,11 +443,18 @@ const Annotation = ({ onSave}: Props) => {
               "output output"
               "annotation annotation"
             `,
-            lg: `
+            lg: isContextPanelVisible
+              ? `
               "header header header header"
               "input output context annotation"
               "input output context annotation"
               "input output context annotation"
+            `
+              : `
+              "header header header"
+              "input output annotation"
+              "input output annotation"
+              "input output annotation"
             `
           },
           gap: 3,
@@ -759,7 +773,29 @@ const Annotation = ({ onSave}: Props) => {
           </Box>
 
           {/* Right Section - Hotkey Info */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+            {!isContextPanelVisible && (
+              <Tooltip title="Show context panel" arrow>
+                <Button
+                  variant="outlined"
+                  startIcon={<ViewColumnIcon />}
+                  onClick={() => setIsContextPanelVisible(true)}
+                  size="small"
+                  sx={{ 
+                    px: 2,
+                    borderColor: 'secondary.main',
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: 'secondary.dark',
+                      backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    }
+                  }}
+                >
+                  Show Context
+                </Button>
+              </Tooltip>
+            )}
             <Tooltip title="View keyboard shortcuts" arrow>
               <Button
                 variant="outlined"
@@ -980,58 +1016,72 @@ const Annotation = ({ onSave}: Props) => {
         </Paper>
 
         {/* Context Section */}
-        <Paper
-          elevation={2}
-          sx={{
-            gridArea: 'context',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}
-        >
-          <Box sx={{ 
-            p: 2, 
-            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e3f2fd',
-            borderBottom: '1px solid',
-            borderBottomColor: 'divider',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
-              Context
-            </Typography>
-            {file && (
-              <Tooltip title="Remove file" arrow>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<DeleteIcon />}
-                  onClick={handleRemoveFile}
-                  sx={{
-                    borderColor: 'secondary.main',
-                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                    '&:hover': {
-                      borderColor: 'error.dark',
-                      backgroundColor: 'rgba(255, 130, 130, 0.1)',
-                    }
-                  }}
-                >
-                  Remove File
-                </Button>
-              </Tooltip>
-            )}
-          </Box>
-          <Box sx={{ 
-            p: 2, 
-            flex: 1, 
-            overflow: 'auto',
-            backgroundColor: theme.palette.background.paper
-          }}>
-            <Context />
-          </Box>
-        </Paper>
-
+        {isContextPanelVisible && 
+          <Paper
+            elevation={2}
+            sx={{
+              gridArea: 'context',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
+            <Box sx={{ 
+              p: 2, 
+              backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e3f2fd',
+              borderBottom: '1px solid',
+              borderBottomColor: 'divider',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
+                Context
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {file && (
+                  <Tooltip title="Remove file" arrow>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DeleteIcon />}
+                      onClick={handleRemoveFile}
+                      sx={{
+                        borderColor: 'secondary.main',
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                        '&:hover': {
+                          borderColor: 'error.dark',
+                          backgroundColor: 'rgba(255, 130, 130, 0.1)',
+                        }
+                      }}
+                    >
+                      Remove File
+                    </Button>
+                  </Tooltip>
+                )}
+                <Tooltip title="Hide Context Panel" arrow>
+                  <IconButton 
+                    onClick={() => setIsContextPanelVisible(false)}
+                    size="small"
+                    sx={{
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+            <Box sx={{ 
+              p: 2, 
+              flex: 1, 
+              overflow: 'auto',
+              backgroundColor: theme.palette.background.paper
+            }}>
+              <Context />
+            </Box>
+          </Paper>
+        }
 
         {/* Annotation Section */}
         <Paper
