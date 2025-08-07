@@ -833,7 +833,7 @@ const Annotation = ({ onSave}: Props) => {
         >
           <Box sx={{ 
             p: 2, 
-            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e8f5e8',
+            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#c2c0c0',
             borderBottom: '1px solid',
             borderBottomColor: 'divider',
             display: 'flex',
@@ -947,7 +947,7 @@ const Annotation = ({ onSave}: Props) => {
         >
           <Box sx={{ 
             p: 2, 
-            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#fff3e0',
+            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#c2c0c0',
             borderBottom: '1px solid',
             borderBottomColor: 'divider',
             display: 'flex',
@@ -1028,7 +1028,7 @@ const Annotation = ({ onSave}: Props) => {
           >
             <Box sx={{ 
               p: 2, 
-              backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e3f2fd',
+              backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#c2c0c0',
               borderBottom: '1px solid',
               borderBottomColor: 'divider',
               display: 'flex',
