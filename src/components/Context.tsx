@@ -26,9 +26,9 @@ const Context = ({ onRenderHeaderActions }: ContextProps) => {
     }
   });
 
-  const handleRemoveFile = () => {
+  const handleRemoveFile = useCallback(() => {
     setFile(null);
-  };
+  }, [setFile]);
 
   // Expose the remove button for header rendering
   useEffect(() => {
@@ -71,7 +71,7 @@ const Context = ({ onRenderHeaderActions }: ContextProps) => {
 // Export a hook to get the current file state and remove handler
 export const useContextFile = () => {
   const { file, setFile } = useDocument();
-  const handleRemoveFile = () => setFile(null);
+  const handleRemoveFile = useCallback(() => setFile(null), [setFile]);
   return { file, handleRemoveFile };
 };
 

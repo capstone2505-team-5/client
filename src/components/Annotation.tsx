@@ -49,6 +49,14 @@ const Annotation = ({ onSave}: Props) => {
     note: string;
   }>({ rating: null, note: "" });
 
+  // Clear context file when starting a new batch or leaving the annotation view
+  useEffect(() => {
+    handleRemoveFile();
+    return () => {
+      handleRemoveFile();
+    };
+  }, [batchId, handleRemoveFile]);
+
   // Helper function to render keyboard keys
   const renderKey = (key: string) => (
     <Box
