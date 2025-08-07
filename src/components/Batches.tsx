@@ -92,15 +92,6 @@ const Batches = () => {
         setSnackbar({ open: true, message: "No spans in this batch to grade." });
         return;
       }
-      
-      const allSpansFormatted = batchData.rootSpans.every(
-        (span: any) => span.formattedInput && span.formattedOutput
-      );
-
-      if (!allSpansFormatted) {
-        setSnackbar({ open: true, message: "Formatting in progress... Please wait a moment and try again." });
-        return;
-      }
 
       // Navigate to the annotation page with the first root span's ID
       navigate(`/projects/${projectId}/batches/${batchId}/annotation/${batchData.rootSpans[0].id}`, {

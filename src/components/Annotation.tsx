@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, ToggleButtonGroup, ToggleButton } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -10,6 +10,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
+import { useFormattedFields } from "../hooks/useRootSpans";
 import { getPhoenixDashboardUrl } from "../services/services";
 import ReactMarkdown from 'react-markdown';
 import Context, { useContextFile } from './Context';
@@ -34,8 +35,10 @@ const Annotation = ({ onSave}: Props) => {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
   const [hotkeyModalOpen, setHotkeyModalOpen] = useState(false);
-  const [displayFormattedInput, setDisplayFormattedInput] = useState(true);
-  const [displayFormattedOutput, setDisplayFormattedOutput] = useState(true);
+  const [displayFormattedInput, setDisplayFormattedInput] = useState(false);
+  const [displayFormattedOutput, setDisplayFormattedOutput] = useState(false);
+  const [highlightInputToggle, setHighlightInputToggle] = useState(false);
+  const [highlightOutputToggle, setHighlightOutputToggle] = useState(false);
   const [displayConfirmCategorize, setDisplayConfirmCategorize] = useState(false);
   const [isFooterHidden, setIsFooterHidden] = useState(false);
   const [isContextPanelVisible, setIsContextPanelVisible] = useState(true);
@@ -103,6 +106,52 @@ const Annotation = ({ onSave}: Props) => {
 
   const {data: batchData, isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
   const annotatedRootSpans = batchData?.rootSpans || [];
+
+  // Access formatted cache and ensure it is populated once when formatting completes or on first mount
+  const { formattedBySpanId, refreshFormatted } = useFormattedFields(batchId || null);
+
+  useEffect(() => {
+    // Populate formatted cache once if empty and we have batch data loaded
+    if (batchId && batchData && Object.keys(formattedBySpanId || {}).length === 0) {
+      refreshFormatted().catch(() => {/* noop */});
+    }
+  }, [batchId, batchData]);
+
+  // If SSE completed recently, show a one-time pulse on the toggles and a snackbar (snackbar already handled via sessionStorage elsewhere)
+  useEffect(() => {
+    if (!batchId) return;
+    const key = `highlightFormatted_${batchId}`;
+    const shouldHighlight = sessionStorage.getItem(key);
+    if (shouldHighlight) {
+      sessionStorage.removeItem(key);
+      setHighlightInputToggle(true);
+      setHighlightOutputToggle(true);
+      const t = setTimeout(() => {
+        setHighlightInputToggle(false);
+        setHighlightOutputToggle(false);
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [batchId]);
+
+  // Listen for immediate formatting completion event to update UI without user interaction
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { batchId?: string } | undefined;
+      if (!batchId || (detail?.batchId && detail.batchId !== batchId)) return;
+      refreshFormatted().catch(() => {/* noop */});
+      // Show toast if not already queued
+      setSnackbar(prev => prev.open ? prev : ({ open: true, message: 'Formatted views are now available', severity: 'info' }));
+      setHighlightInputToggle(true);
+      setHighlightOutputToggle(true);
+      setTimeout(() => {
+        setHighlightInputToggle(false);
+        setHighlightOutputToggle(false);
+      }, 2000);
+    };
+    window.addEventListener('batchFormattingCompleted', handler);
+    return () => window.removeEventListener('batchFormattingCompleted', handler);
+  }, [batchId, refreshFormatted]);
 
   // Debug effect to track when batch data changes
   useEffect(() => {
@@ -852,39 +901,50 @@ const Annotation = ({ onSave}: Props) => {
               Input
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Tooltip 
-                title={displayFormattedInput 
-                  ? "Switch to raw input" 
-                  : (!currentSpan.formattedInput ? "Formatting in process..." : "Switch to formatted input")
-                }
-                arrow
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={displayFormattedInput ? 'formatted' : 'raw'}
+                onChange={(_e, val) => {
+                  if (val === 'raw') setDisplayFormattedInput(false);
+                  if (val === 'formatted') setDisplayFormattedInput(true);
+                }}
+                sx={{
+                  borderColor: 'secondary.main',
+                  '& .MuiToggleButton-root': {
+                    px: 2,
+                    fontWeight: 600,
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    borderColor: 'secondary.main',
+                  },
+                  '& .Mui-selected': {
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)'
+                  },
+                  animation: highlightInputToggle ? 'pulse 1s ease-in-out 2' : 'none',
+                  '@keyframes pulse': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(255, 235, 59, 0.6)' },
+                    '70%': { boxShadow: '0 0 0 10px rgba(255, 235, 59, 0)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(255, 235, 59, 0)' }
+                  }
+                }}
               >
-                <span>
-                  <Button 
-                    variant="outlined"
-                    size="small"
-                    disabled={!displayFormattedInput && !currentSpan.formattedInput}
-                    sx={{
-                      px: 2,
-                      minWidth: 120,
-                      borderColor: 'secondary.main',
-                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                      fontWeight: 600,
-                      '&:hover': {
-                        borderColor: 'secondary.dark',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: 'text.disabled',
-                        color: 'text.disabled',
-                      }
-                    }}
-                    onClick={() => setDisplayFormattedInput(!displayFormattedInput)}
-                  >
-                    {displayFormattedInput ? 'Formatted' : 'Raw'}
-                  </Button>
-                </span>
-              </Tooltip>
+                <ToggleButton value="raw">Raw</ToggleButton>
+                {(() => {
+                  const ready = !!(((formattedBySpanId?.[currentSpan.id]?.formattedInput) ?? currentSpan.formattedInput));
+                  const button = (
+                    <ToggleButton value="formatted" disabled={!ready}>
+                      {ready ? 'Formatted' : 'Formatted'}
+                    </ToggleButton>
+                  );
+                  return ready ? (
+                    button
+                  ) : (
+                    <Tooltip title="Formatting in progress..." arrow>
+                      <span>{button}</span>
+                    </Tooltip>
+                  );
+                })()}
+              </ToggleButtonGroup>
             </Box>
           </Box>
           <Box sx={{ 
@@ -893,53 +953,60 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            {displayFormattedInput ? (
-              <Box sx={{
-                '& p': {
-                  margin: '0.5em 0',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word'
-                },
-                '& code': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  padding: '2px 4px',
-                  borderRadius: '3px',
-                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                  fontSize: '0.9em',
-                  whiteSpace: 'pre-wrap'
-                },
-                '& pre': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-                  padding: '12px',
-                  borderRadius: '6px',
-                  overflow: 'auto',
+            {(() => {
+              const overlay = formattedBySpanId?.[currentSpan.id];
+              const formatted = overlay?.formattedInput ?? currentSpan.formattedInput;
+              if (displayFormattedInput) {
+                return (
+                  <Box sx={{
+                    '& p': {
+                      margin: '0.5em 0',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word'
+                    },
+                    '& code': {
+                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                      padding: '2px 4px',
+                      borderRadius: '3px',
+                      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                      fontSize: '0.9em',
+                      whiteSpace: 'pre-wrap'
+                    },
+                    '& pre': {
+                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      padding: '12px',
+                      borderRadius: '6px',
+                      overflow: 'auto',
+                      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                      fontSize: '0.9rem',
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre',
+                      wordBreak: 'normal',
+                      overflowWrap: 'normal'
+                    },
+                    '& pre code': {
+                      backgroundColor: 'transparent',
+                      padding: 0,
+                      whiteSpace: 'pre'
+                    }
+                  }}>
+                    <ReactMarkdown>{formatted || ''}</ReactMarkdown>
+                  </Box>
+                );
+              }
+              return (
+                <pre style={{ 
+                  whiteSpace: 'pre-wrap', 
+                  margin: 0, 
                   fontFamily: 'Consolas, Monaco, "Courier New", monospace',
                   fontSize: '0.9rem',
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre',
-                  wordBreak: 'normal',
-                  overflowWrap: 'normal'
-                },
-                '& pre code': {
-                  backgroundColor: 'transparent',
-                  padding: 0,
-                  whiteSpace: 'pre'
-                }
-              }}>
-                <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown>
-              </Box>
-            ) : (
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                margin: 0, 
-                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                fontSize: '0.9rem',
-                lineHeight: 1.5
-              }}>
-                {currentSpan.input}
-              </pre>
-            )}
+                  lineHeight: 1.5
+                }}>
+                  {currentSpan.input}
+                </pre>
+              );
+            })()}
           </Box>
         </Paper>
 
@@ -966,39 +1033,50 @@ const Annotation = ({ onSave}: Props) => {
               Output
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Tooltip 
-                title={displayFormattedOutput 
-                  ? "Switch to raw output" 
-                  : (!currentSpan.formattedOutput ? "Formatting in process..." : "Switch to formatted output")
-                }
-                arrow
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={displayFormattedOutput ? 'formatted' : 'raw'}
+                onChange={(_e, val) => {
+                  if (val === 'raw') setDisplayFormattedOutput(false);
+                  if (val === 'formatted') setDisplayFormattedOutput(true);
+                }}
+                sx={{
+                  borderColor: 'secondary.main',
+                  '& .MuiToggleButton-root': {
+                    px: 2,
+                    fontWeight: 600,
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    borderColor: 'secondary.main',
+                  },
+                  '& .Mui-selected': {
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)'
+                  },
+                  animation: highlightOutputToggle ? 'pulse 1s ease-in-out 2' : 'none',
+                  '@keyframes pulse': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(255, 235, 59, 0.6)' },
+                    '70%': { boxShadow: '0 0 0 10px rgba(255, 235, 59, 0)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(255, 235, 59, 0)' }
+                  }
+                }}
               >
-                <span>
-                  <Button 
-                    variant="outlined"
-                    size="small"
-                    disabled={!displayFormattedOutput && !currentSpan.formattedOutput}
-                    sx={{
-                      px: 2,
-                      minWidth: 120,
-                      borderColor: 'secondary.main',
-                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
-                      fontWeight: 600,
-                      '&:hover': {
-                        borderColor: 'secondary.dark',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: 'text.disabled',
-                        color: 'text.disabled',
-                      }
-                    }}
-                    onClick={() => setDisplayFormattedOutput(!displayFormattedOutput)}
-                  >
-                    {displayFormattedOutput ? 'Formatted' : 'Raw'}
-                  </Button>
-                </span>
-              </Tooltip>
+                <ToggleButton value="raw">Raw</ToggleButton>
+                {(() => {
+                  const ready = !!(((formattedBySpanId?.[currentSpan.id]?.formattedOutput) ?? currentSpan.formattedOutput));
+                  const button = (
+                    <ToggleButton value="formatted" disabled={!ready}>
+                      {ready ? 'Formatted' : 'Formatted'}
+                    </ToggleButton>
+                  );
+                  return ready ? (
+                    button
+                  ) : (
+                    <Tooltip title="Formatting in progress..." arrow>
+                      <span>{button}</span>
+                    </Tooltip>
+                  );
+                })()}
+              </ToggleButtonGroup>
             </Box>
           </Box>
           <Box sx={{ 
@@ -1007,19 +1085,24 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            {displayFormattedOutput ? (
-              <ReactMarkdown>{currentSpan.formattedOutput || ''}</ReactMarkdown>
-            ) : (
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                margin: 0,
-                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                fontSize: '0.9rem',
-                lineHeight: 1.5
-              }}>
-                {currentSpan.output}
-              </pre>
-            )}
+            {(() => {
+              const overlay = formattedBySpanId?.[currentSpan.id];
+              const formatted = overlay?.formattedOutput ?? currentSpan.formattedOutput;
+              if (displayFormattedOutput) {
+                return <ReactMarkdown>{formatted || ''}</ReactMarkdown>;
+              }
+              return (
+                <pre style={{ 
+                  whiteSpace: 'pre-wrap', 
+                  margin: 0,
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.5
+                }}>
+                  {currentSpan.output}
+                </pre>
+              );
+            })()}
           </Box>
         </Paper>
 

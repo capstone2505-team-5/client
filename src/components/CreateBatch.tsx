@@ -30,7 +30,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef, GridRowParams } from "@mui/x-data-grid";
-import { useRootSpanMutations, useRootSpansByProjectFiltered, useUniqueSpanNames, useRandomSpans } from "../hooks/useRootSpans";
+import { useRootSpanMutations, useRootSpansByProjectFiltered, useUniqueSpanNames, useRandomSpans, useFormattedFields } from "../hooks/useRootSpans";
 
 interface FilterFormData {
   searchText: string;
@@ -80,6 +80,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   
   // Get the invalidation functions from the mutations hook
   const { invalidateBatch, invalidateProject } = useRootSpanMutations();
+  const { refreshFormatted } = useFormattedFields(null);
 
   // Fetch unique span names for the dropdown
   const { data: spanNames = [] } = useUniqueSpanNames(projectId || null);
@@ -173,7 +174,17 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       
       // Handle different event types from the server
       if (data.status === 'completed') {
-        updateBatchSpans(batchId);
+        // Refresh only the formatted cache; avoid invalidating rootSpans to preserve user input state.
+        refreshFormatted(batchId).catch(() => {/* noop */});
+        // Set a one-time UI hint for annotation screen
+        sessionStorage.setItem(`highlightFormatted_${batchId}`, 'true');
+        sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
+          open: true,
+          message: 'Formatted views are now available',
+          severity: 'info'
+        }));
+        // Dispatch a custom event so any open annotation screen can react instantly
+        window.dispatchEvent(new CustomEvent('batchFormattingCompleted', { detail: { batchId } }));
       }
     };
     eventSource.onerror = (event) => {

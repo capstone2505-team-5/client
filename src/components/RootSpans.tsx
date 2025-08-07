@@ -769,14 +769,14 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           gap: 1,
         }}>
           <Tooltip
-            title={!allSpansFormatted ? "Formatting in progress... Cannot grade yet." : "Start grading this batch"}
+            title={"Start grading this batch"}
             arrow
           >
             <span>
               <Button
                 variant="contained"
                 startIcon={<RateReviewIcon />}
-                disabled={!allSpansFormatted}
+                disabled={annotatedRootSpans.length === 0}
                 onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${annotatedRootSpans[0].id}`, { 
                   state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
                 })}
@@ -1017,11 +1017,10 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
             getRowHeight={() => 56}
             paginationMode="client"
             onRowClick={(params) => {
-              if (!allSpansFormatted) return;
               handleView(params.row);
             }}
             getRowClassName={(params) => {
-              return !allSpansFormatted ? 'row-disabled' : '';
+              return '';
             }}
             onPaginationModelChange={(model) => {
               setPageSize(model.pageSize);
