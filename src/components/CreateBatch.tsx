@@ -504,16 +504,46 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           </Typography>
         </Box>
 
-        {/* Create Batch Button - Top Right */}
+        {/* Batch Name Input and Action Buttons - Top Right */}
         <Box sx={{ 
           position: 'absolute',
           right: 0,
           top: '50%',
           transform: 'translateY(-50%)',
           display: 'flex',
-          flexDirection: 'column',
-          gap: 1,
+          alignItems: 'center',
+          gap: 2,
         }}>
+          <TextField
+            label="New Batch Name"
+            value={name}
+            onChange={handleNameChange}
+            sx={{ 
+              minWidth: 250,
+              '& .MuiOutlinedInput-root': {
+                height: 40,
+                '& fieldset': {
+                  borderColor: 'secondary.main',
+                  borderWidth: '2px',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'secondary.dark',
+                  borderWidth: '2px',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'secondary.main',
+                  borderWidth: '3px',
+                },
+              },
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: 'secondary.main',
+              },
+            }}
+            size="small"
+            required
+            error={!name && name !== ""}
+          />
+          
           <Tooltip
             title={
               !name && selectedRootSpanIds.length === 0 
@@ -525,7 +555,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                     : "Create batch with selected spans"
             }
             arrow
-            placement="left"
+            placement="top"
           >
             <span>
               <Button
@@ -536,7 +566,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                 sx={{ 
                   px: 3, 
                   minWidth: 200,
-                  maxHeight: 40,
+                  height: 40,
                   backgroundColor: 'secondary.main',
                   color: 'black',
                   fontWeight: 600,
@@ -563,7 +593,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             sx={{ 
               px: 3, 
               minWidth: 200,
-              maxHeight: 40,
+              height: 40,
               borderColor: 'grey.400',
               color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
               fontWeight: 600,
@@ -580,37 +610,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
         </Box>
       </Box>
 
-      {/* Batch Name Control */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 3, alignItems: 'flex-end' }}>
-        <TextField
-          label="New Batch Name"
-          value={name}
-          onChange={handleNameChange}
-          sx={{ 
-            minWidth: 300,
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: 'secondary.main',
-                borderWidth: '2px',
-              },
-              '&:hover fieldset': {
-                borderColor: 'secondary.dark',
-                borderWidth: '2px',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: 'secondary.main',
-                borderWidth: '3px',
-              },
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: 'secondary.main',
-            },
-          }}
-          size="medium"
-          required
-          error={!name && name !== ""}
-        />
-      </Box>
+
 
       {/* Filter Form */}
       <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -974,7 +974,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           },
         }}
       >
-        <Box sx={{ height: 'calc(100vh - 600px)' }}>
+        <Box sx={{ height: 'calc(100vh - 490px)' }}>
           <DataGrid
             rows={annotatedRootSpans}
             columns={columns}
