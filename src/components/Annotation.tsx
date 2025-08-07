@@ -9,6 +9,7 @@ import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
 import { getPhoenixDashboardUrl } from "../services/services";
 import ReactMarkdown from 'react-markdown';
+import Context from './Context';
 
 interface Props {
   onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null, batchId: string) => Promise<{ isNew: boolean }>;
@@ -1059,12 +1060,9 @@ const Annotation = ({ onSave}: Props) => {
         >
           <Box sx={{ 
             p: 2, 
-            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e8f5e8',
+            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e3f2fd',
             borderBottom: '1px solid',
-            borderBottomColor: 'divider',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
+            borderBottomColor: 'divider'
           }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Context
@@ -1076,53 +1074,7 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            {displayFormattedInput ? (
-              <Box sx={{
-                '& p': {
-                  margin: '0.5em 0',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word'
-                },
-                '& code': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  padding: '2px 4px',
-                  borderRadius: '3px',
-                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                  fontSize: '0.9em',
-                  whiteSpace: 'pre-wrap'
-                },
-                '& pre': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-                  padding: '12px',
-                  borderRadius: '6px',
-                  overflow: 'auto',
-                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                  fontSize: '0.9rem',
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre',
-                  wordBreak: 'normal',
-                  overflowWrap: 'normal'
-                },
-                '& pre code': {
-                  backgroundColor: 'transparent',
-                  padding: 0,
-                  whiteSpace: 'pre'
-                }
-              }}>
-                <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown>
-              </Box>
-            ) : (
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                margin: 0, 
-                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                fontSize: '0.9rem',
-                lineHeight: 1.5
-              }}>
-                {currentSpan.input}
-              </pre>
-            )}
+            <Context />
           </Box>
         </Paper>
 

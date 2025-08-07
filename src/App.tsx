@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { DocumentProvider } from "./contexts/DocumentContext";
 import { useTheme } from "./contexts/ThemeContext";
 import { darkTheme, lightTheme } from "./theme/theme";
 import Annotation from "./components/Annotation";
@@ -21,7 +22,7 @@ import { useRootSpansContext, useRootSpanMutations } from "./hooks/useRootSpans"
 
 const queryClient = new QueryClient();
 
-const AppWithQuery = () => {
+function AppContent() {
   // Keep track of current context for the unified query
   const [currentContext, setCurrentContext] = useState<{
     type: 'batch' | 'project';
@@ -135,16 +136,15 @@ const AppWithQuery = () => {
 
   // handleSpansOnDeleteBatch function removed - database handles cleanup automatically
 
-  const AppContent = () => {
-    const { isDarkMode } = useTheme();
-    const showNavBar = true; // Always show NavBar now
+  const { isDarkMode } = useTheme();
+  const showNavBar = true; // Always show NavBar now
 
-    return (
-      <MuiThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-        <CssBaseline />
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          {showNavBar && <NavBar />}
-          <Box component="main" sx={{ flex: 1 }}>
+  return (
+    <MuiThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <CssBaseline />
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {showNavBar && <NavBar />}
+        <Box component="main" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
@@ -186,32 +186,25 @@ const AppWithQuery = () => {
             }
           />
             </Routes>
-          </Box>
-          <Footer />
         </Box>
-      </MuiThemeProvider>
-    );
-  };
+        <Footer />
+      </Box>
+    </MuiThemeProvider>
+  );
+}
 
-  if (error) {
-    return <>Error loading data: {error.message}</>
-  }
-
+function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <DocumentProvider>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </QueryClientProvider>
+      </DocumentProvider>
     </ThemeProvider>
   );
-};
-
-const App = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AppWithQuery />
-    </QueryClientProvider>
-  );
-};
+}
 
 export default App;
