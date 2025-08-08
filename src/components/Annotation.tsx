@@ -955,7 +955,7 @@ const Annotation = ({ onSave}: Props) => {
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Input
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
               <ToggleButtonGroup
                 exclusive
                 size="small"
@@ -967,7 +967,11 @@ const Annotation = ({ onSave}: Props) => {
                 sx={{
                   borderColor: 'secondary.main',
                   '& .MuiToggleButton-root': {
-                    px: 2,
+                    px: 1,
+                    py: 0.5,
+                    minWidth: 36,
+                    lineHeight: 1.2,
+                    fontSize: '0.75rem',
                     fontWeight: 600,
                     color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
                     borderColor: 'secondary.main',
@@ -988,7 +992,7 @@ const Annotation = ({ onSave}: Props) => {
                   const ready = !!(((formattedBySpanId?.[currentSpan.id]?.formattedInput) ?? currentSpan.formattedInput));
                   const button = (
                     <ToggleButton value="formatted" disabled={!ready}>
-                      {ready ? 'Formatted' : 'Formatted'}
+                      {ready ? 'Format' : 'Format'}
                     </ToggleButton>
                   );
                   return ready ? (
@@ -1087,7 +1091,7 @@ const Annotation = ({ onSave}: Props) => {
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Output
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
               <ToggleButtonGroup
                 exclusive
                 size="small"
@@ -1099,7 +1103,11 @@ const Annotation = ({ onSave}: Props) => {
                 sx={{
                   borderColor: 'secondary.main',
                   '& .MuiToggleButton-root': {
-                    px: 2,
+                    px: 1,
+                    py: 0.5,
+                    minWidth: 36,
+                    lineHeight: 1.2,
+                    fontSize: '0.75rem',
                     fontWeight: 600,
                     color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
                     borderColor: 'secondary.main',
@@ -1120,7 +1128,7 @@ const Annotation = ({ onSave}: Props) => {
                   const ready = !!(((formattedBySpanId?.[currentSpan.id]?.formattedOutput) ?? currentSpan.formattedOutput));
                   const button = (
                     <ToggleButton value="formatted" disabled={!ready}>
-                      {ready ? 'Formatted' : 'Formatted'}
+                      {ready ? 'Format' : 'Format'}
                     </ToggleButton>
                   );
                   return ready ? (
