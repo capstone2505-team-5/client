@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { DocumentProvider } from "./contexts/DocumentContext";
@@ -31,7 +31,7 @@ function AppContent() {
 
   // Use TanStack Query instead of manual state management
   // Always call the hook - handle null context inside the hook
-  const { data: annotatedRootSpans = [], isLoading, error } = useRootSpansContext(currentContext);
+  const { data: annotatedRootSpans = [], isLoading } = useRootSpansContext(currentContext);
   const { invalidateBatch, invalidateProject } = useRootSpanMutations();
   
   // Add the queryClient hook
@@ -39,7 +39,6 @@ function AppContent() {
 
   // Track last fetched IDs to maintain your existing logic
   const lastFetchedBatchId = useRef<string | null>(null);
-  const lastFetchedProjectId = useRef<string | null>(null);
 
   // Functions that child components can call - now just update context for TanStack Query
   const loadRootSpansByBatch = useCallback((batchId: string) => {
@@ -51,16 +50,6 @@ function AppContent() {
       console.log('App level: Skipping batch fetch, already loaded:', batchId);
     }
   }, []);
-
-  const loadRootSpansByProject = useCallback((projectId: string) => {
-    // Used by EditBatch component - keeping for backwards compatibility
-    if (currentContext?.type !== 'project' || currentContext?.id !== projectId) {
-      setCurrentContext({ type: 'project', id: projectId });
-    }
-    
-    // Update the last fetched tracker
-    lastFetchedProjectId.current = projectId;
-  }, [currentContext]);
 
   const handleSaveAnnotation = async (
     annotationId: string,
