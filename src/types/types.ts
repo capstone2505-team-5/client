@@ -31,6 +31,8 @@ export interface AnnotatedRootSpan {
   endTime: string | null;
   input: string;
   output: string;
+  formattedInput?: string;
+  formattedOutput?: string;
   projectId?: string;
   projectName?: string;
   spanName: string | null;
@@ -42,7 +44,7 @@ export interface Batch {
   projectId: string;
   name: string;
   createdAt: string;
-  spanCount: number;
+  validRootSpanCount: number;
   percentAnnotated: number;
   percentGood: number;
   categories: Record<string, number>;
@@ -53,6 +55,6 @@ export interface Project {
   name: string;
   createdAt: string;
   updatedAt: string;
-  rootSpanCount: number;
+  validRootSpanCount: number;
   numBatches: number;
 }

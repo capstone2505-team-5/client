@@ -127,7 +127,7 @@ const Projects = () => {
       ),
     },
     {
-      field: 'rootSpanCount',
+      field: 'validRootSpanCount',
       headerName: 'Root Spans',
       flex: 1,
       minWidth: 120,

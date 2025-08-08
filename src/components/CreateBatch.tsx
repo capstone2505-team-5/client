@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material";
 import type { AnnotatedRootSpan, Project } from "../types/types";
+import { useRootSpanMutations } from "../hooks/useRootSpans";
 
 interface CreateBatchProps {
   annotatedRootSpans: AnnotatedRootSpan[];
@@ -34,8 +35,11 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
   const [timeInterval, setTimeInterval] = useState<'all' | '1h' | '24h' | '7d'>('all');
   const selectedRootSpanIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
   const location = useLocation();
-  const { projectName } = location.state || {};
+  const { projectName, batchId } = location.state || {};
   const { projectId } = useParams<{ projectId: string }>();
+  
+  // Get the invalidation functions from the mutations hook
+  const { invalidateBatch, invalidateProject } = useRootSpanMutations();
   
   useEffect(() => {
     if (projectId) {
@@ -92,20 +96,57 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
     []
   );
 
-  const handleSubmit = useCallback(async () => {
+  const updateBatchSpans = useCallback((batchId: string) => {
+    // Invalidate both the batch and project queries to refresh data
+    invalidateBatch(batchId);
+    if (projectId) {
+      invalidateProject(projectId);
+    }
+  }, [invalidateBatch, invalidateProject, projectId]);
+
+  const startListeningForSSE = (batchId: string) => {
+    const eventSource = new EventSource(`/api/batches/${batchId}/events`);
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log('SSE Event received:', data);
+      
+      // Handle different event types from the server
+      if (data.status === 'completed') {
+        updateBatchSpans(batchId);
+      }
+    };
+    eventSource.onerror = (event) => {
+      console.error('SSE connection error:', event);
+      eventSource.close();
+    };
+
+    // Set a timeout to close connection after 2 minutes
+    setTimeout(() => {
+      if (eventSource.readyState === EventSource.OPEN) {
+        eventSource.close();
+        console.log(`SSE timeout for batch ${batchId}`);
+      }
+    }, 120000); // 2 minutes timeout
+    
+  }
+
+  const handleCreateBatch = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
     
     try {
-      console.log("Creating batch", name, projectId, selectedRootSpanIds);
       const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
-      console.log("Batch created with ID:", batchId);
+      // Start SSE connection
+      startListeningForSSE(batchId);
+      
+      // Navigate to the newly created batch (good UX)
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 
       });
+      
     } catch (error) {
       console.error("Failed to create batch:", error);
     }
-  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName]);
+  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName, startListeningForSSE]);
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -184,7 +225,7 @@ const CreateBatch = ({ annotatedRootSpans, onLoadRootSpans, onCreateBatch, isLoa
         <Button
           variant="contained"
           disabled={!name || selectedRootSpanIds.length === 0}
-          onClick={handleSubmit}
+          onClick={handleCreateBatch}
         >
           Create Batch
         </Button>

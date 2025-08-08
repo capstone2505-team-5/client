@@ -34,7 +34,7 @@ const AppWithQuery = () => {
   // Use TanStack Query instead of manual state management
   // Always call the hook - handle null context inside the hook
   const { data: annotatedRootSpans = [], isLoading, error } = useRootSpansContext(currentContext);
-  const { updateRootSpanInCache, invalidateAll, invalidateBatch, invalidateProject } = useRootSpanMutations();
+  const { invalidateBatch, invalidateProject } = useRootSpanMutations();
   
   // Add the queryClient hook
   const queryClient = useQueryClient();
@@ -55,24 +55,27 @@ const AppWithQuery = () => {
   }, []);
 
   const loadRootSpansByProject = useCallback((projectId: string) => {
-    if (projectId !== lastFetchedProjectId.current) {
-      console.log('App level: Loading project', projectId, 'lastFetched:', lastFetchedProjectId.current);
-      lastFetchedProjectId.current = projectId;
+    // Always set context to project when this function is called from CreateBatch
+    // But avoid unnecessary updates if we're already in the right state
+    if (currentContext?.type !== 'project' || currentContext?.id !== projectId) {
       setCurrentContext({ type: 'project', id: projectId });
-    } else {
-      console.log('App level: Skipping project fetch, already loaded:', projectId);
     }
-  }, []);
+    
+    // Update the last fetched tracker
+    lastFetchedProjectId.current = projectId;
+  }, [currentContext]);
 
   const handleSaveAnnotation = async (
     annotationId: string,
     rootSpanId: string,
     note: string,
     rating: Rating | null
-  ): Promise<void> => {
+  ): Promise<{ isNew: boolean }> => {
+    let res: any = null;
+    const isNew = annotationId === "";
+    
     try {
-      let res: any = null;
-      if (annotationId === "") {
+      if (isNew) {
         if (rating) {
           res = await createAnnotation(rootSpanId, note || "", rating);
         }
@@ -82,25 +85,25 @@ const AppWithQuery = () => {
         }
       }
 
-      // Optimistically update the cache
-      updateRootSpanInCache(rootSpanId, (span) => ({
-        ...span,
-        annotation: rating ? {
-          id: annotationId || res?.id || '',
-          note: note || '',
-          rating,
-          categories: span.annotation?.categories || []
-        } : null
-      }));
+      // Instead of optimistic updates, just invalidate the relevant caches
+      // This will trigger a refetch with fresh data from the server
+      if (currentContext?.type === 'batch' && currentContext.id) {
+        invalidateBatch(currentContext.id);
+      } else if (currentContext?.type === 'project' && currentContext.id) {
+        invalidateProject(currentContext.id);
+      }
 
       if (res) {
         console.log(
-          annotationId ? "Annotation updated:" : "Annotation created:",
+          isNew ? "Annotation created:" : "Annotation updated:",
           res
         );
       }
+      
+      return { isNew };
     } catch (err) {
       console.error("Failed to save annotation", err);
+      throw err; // Re-throw the error so the Annotation component can handle it
     }
   };
 
@@ -108,13 +111,7 @@ const AppWithQuery = () => {
     try {
       const { id: batchId } = await createBatch({ name, projectId, rootSpanIds });
 
-      // Optimistically update spans with new batch ID
-      const idSet = new Set(rootSpanIds);
-      rootSpanIds.forEach(rootSpanId => {
-        updateRootSpanInCache(rootSpanId, (span) => ({ ...span, batchId }));
-      });
-
-      // Invalidate related queries to ensure consistency
+      // Let the server handle the updates, just invalidate caches to refetch fresh data
       invalidateProject(projectId);
       
       // Also invalidate the batches query so the batches list updates
@@ -126,7 +123,7 @@ const AppWithQuery = () => {
       console.error("Failed to create batch", error);
       throw error; // Re-throw so calling component can handle the error
     }
-  }, [updateRootSpanInCache, invalidateProject, queryClient]);
+  }, [invalidateProject, queryClient]);
 
   const handleUpdateBatch = async (
     batchId: string,
@@ -136,42 +133,15 @@ const AppWithQuery = () => {
     try {
       await updateBatch(batchId, { name, rootSpanIds });
 
-      const keepSet = new Set(rootSpanIds);
-
-      // Update all spans in cache
-      annotatedRootSpans.forEach(span => {
-        const inBatchNow = span.batchId === batchId;
-        const shouldBeIn = keepSet.has(span.id);
-
-        if (!inBatchNow && shouldBeIn) {
-          updateRootSpanInCache(span.id, s => ({ ...s, batchId: batchId }));
-        } else if (inBatchNow && !shouldBeIn) {
-          updateRootSpanInCache(span.id, s => ({ ...s, batchId: null }));
-        }
-      });
-
-      // Invalidate batch-specific queries
+      // Instead of optimistic updates, just invalidate the batch cache
+      // This will trigger a refetch with fresh data from the server
       invalidateBatch(batchId);
     } catch (error) {
       console.error('Failed to update batch', error);
     }
   };
 
-  const handleSpansOnDeleteBatch = async (batchId: string) => {
-    try {
-      // Update spans to remove batch association
-      annotatedRootSpans.forEach(span => {
-        if (span.batchId === batchId) {
-          updateRootSpanInCache(span.id, s => ({ ...s, batchId: null }));
-        }
-      });
-
-      // Invalidate queries
-      invalidateAll();
-    } catch (error) {
-      console.error("Failed to delete batch", error);
-    }
-  };
+  // handleSpansOnDeleteBatch function removed - database handles cleanup automatically
 
   const AppContent = () => {
     const { isDarkMode } = useTheme();
@@ -186,7 +156,7 @@ const AppWithQuery = () => {
             <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:projectId" element={<Batches onDeleteBatch={handleSpansOnDeleteBatch} />} />
+          <Route path="/projects/:projectId" element={<Batches />} />
           <Route
             path="/projects/:projectId/batches/:batchId"
             element={
@@ -222,10 +192,9 @@ const AppWithQuery = () => {
 
           <Route path="/projects/:projectId/batches/:batchId/rootSpans/:rootSpanId" element={<RootSpanDetails />} />
           <Route
-            path="/projects/:projectId/batches/:batchId/annotation" // TODO: change to annotation/:rootSpanId
+            path="/projects/:projectId/batches/:batchId/annotation/:rootSpanId"
             element={
               <Annotation
-                annotatedRootSpans={annotatedRootSpans}
                 onSave={handleSaveAnnotation}
               />
             }

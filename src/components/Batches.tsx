@@ -22,22 +22,18 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from "@mui/icons-material/Delete";
 import RateReviewIcon from '@mui/icons-material/RateReview';
-import { fetchBatches, deleteBatch } from "../services/services";
+import { fetchBatches, deleteBatch, fetchRootSpansByBatch } from "../services/services";
 import type { Batch } from "../types/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-interface BatchProps {
-  onDeleteBatch: (batchId: string) => void;
-}
-
-const Batches = ({ onDeleteBatch }: BatchProps) => {
+const Batches = () => {
   const navigate = useNavigate();
   // const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const location = useLocation();
-  const { projectName } = location.state || {};
-  const { projectId } = useParams();
+  const { projectName, batchName } = location.state || {};
+  const { projectId, batchId } = useParams();
   const theme = useTheme();
 
   const handleClose = () => {
@@ -70,17 +66,35 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       await deleteBatch(batchId);
       // Invalidate batches query to refetch data
       queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
-      onDeleteBatch(batchId);
+      // Invalidate project queries since deleted batch spans are now available for new batches
+      queryClient.invalidateQueries({ queryKey: ['rootSpans', 'project', projectId] });
+      // Note: Don't invalidate the deleted batch's query - it would cause 404 errors
     } catch (error) {
       console.error("Failed to delete batch", error);
     }
   };
 
-  const handleAnnotate = (batchId: string, batchName: string) => {
-    const batch = batches.find(b => b.id === batchId);
-    navigate(`/projects/${projectId}/batches/${batchId}/annotation`, {
-      state: { projectName, batchName: batchName}
-    });
+  const handleAnnotate = async (batchId: string, batchName: string) => {
+    try {
+      // Fetch the root spans for this batch to get the first one's ID
+      const rootSpans = await queryClient.fetchQuery({
+        queryKey: ['rootSpans', 'batch', batchId],
+        queryFn: () => fetchRootSpansByBatch(batchId),
+        staleTime: 1000 * 60 * 5, // 5 minutes
+      });
+
+      if (rootSpans.length === 0) {
+        console.warn(`No root spans found in batch ${batchId}`);
+        return;
+      }
+
+      // Navigate to the annotation page with the first root span's ID
+      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${rootSpans[0].id}`, {
+        state: { projectName, batchName: batchName, projectId }
+      });
+    } catch (error) {
+      console.error("Failed to fetch root spans for batch:", error);
+    }
   };
 
   const columns: GridColDef[] = [
@@ -98,7 +112,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
       ),
     },
     {
-      field: 'spanCount',
+      field: 'validRootSpanCount',
       headerName: 'Spans',
       flex: 0.5,
       minWidth: 80,
@@ -355,7 +369,7 @@ const Batches = ({ onDeleteBatch }: BatchProps) => {
           variant="contained"
           startIcon={<AddIcon sx={{ color: 'black !important' }} />}
           onClick={() => navigate(`/projects/${projectId}/batches/create`, { 
-            state: { projectName: projectName, projectId: projectId } 
+            state: { projectName, projectId, batchId, batchName } 
           })}
           sx={{
             backgroundColor: 'secondary.main',

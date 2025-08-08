@@ -83,6 +83,11 @@ const Footer = () => {
     const newHiddenState = !isHidden;
     setIsHidden(newHiddenState);
     localStorage.setItem('llmonade-footer-hidden', JSON.stringify(newHiddenState));
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('footerVisibilityChanged', {
+      detail: { isHidden: newHiddenState }
+    }));
   };
 
   // Don't show footer on home/getting started page
