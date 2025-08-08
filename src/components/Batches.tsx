@@ -21,7 +21,6 @@ import DialogActions from '@mui/material/DialogActions';
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from "@mui/icons-material/Delete";
-import RateReviewIcon from '@mui/icons-material/RateReview';
 import { fetchBatches, deleteBatch, fetchRootSpansByBatch } from "../services/services";
 import type { Batch } from "../types/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -32,12 +31,12 @@ const Batches = () => {
   // const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
-  const [annotatingBatchId, setAnnotatingBatchId] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
   const location = useLocation();
   const { projectName, batchName } = location.state || {};
   const { projectId, batchId } = useParams();
   const theme = useTheme();
+  const [loadingBatchId, setLoadingBatchId] = useState<string | null>(null);
 
   const handleClose = () => {
     setOpen(false);
@@ -78,8 +77,8 @@ const Batches = () => {
   };
 
   const handleAnnotate = async (batchId: string, batchName: string) => {
-    setAnnotatingBatchId(batchId);
     try {
+      setLoadingBatchId(batchId);
       // Fetch the root spans for this batch to get the first one's ID
       const batchData = await queryClient.fetchQuery({
         queryKey: ['rootSpansByBatch', batchId],
@@ -88,6 +87,7 @@ const Batches = () => {
 
       if (!batchData.rootSpans || batchData.rootSpans.length === 0) {
         setSnackbar({ open: true, message: "No spans in this batch to grade." });
+        setLoadingBatchId(null);
         return;
       }
 
@@ -99,7 +99,7 @@ const Batches = () => {
       console.error("Failed to fetch root spans for batch:", error);
       setSnackbar({ open: true, message: "Error fetching batch details. Please try again." });
     } finally {
-      setAnnotatingBatchId(null);
+      setLoadingBatchId(null);
     }
   };
 
@@ -216,12 +216,11 @@ const Batches = () => {
           <Button
             size="medium"
             variant="outlined"
-            startIcon={annotatingBatchId === params.row.id ? <CircularProgress size={20} color="inherit" /> : <RateReviewIcon />}
-            disabled={annotatingBatchId === params.row.id}
             onClick={(e) => {
               e.stopPropagation();
               handleAnnotate(params.row.id, params.row.name);
             }}
+            disabled={loadingBatchId === params.row.id}
             sx={{ 
               minWidth: '110px', 
               color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
@@ -236,7 +235,14 @@ const Batches = () => {
               }
             }}
           >
-            {annotatingBatchId === params.row.id ? 'Checking...' : 'Grade Batch'}
+            {loadingBatchId === params.row.id ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={16} thickness={5} />
+                Loading
+              </Box>
+            ) : (
+              'Grade Batch'
+            )}
           </Button>
           
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
