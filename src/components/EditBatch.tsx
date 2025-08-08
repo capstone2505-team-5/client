@@ -32,7 +32,7 @@ import SortIcon from '@mui/icons-material/Sort';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef, GridRowParams } from "@mui/x-data-grid";
-import { useRootSpanMutations, useEditBatchSpans, useUniqueSpanNames, useRandomSpans, useRootSpansByBatch } from "../hooks/useRootSpans";
+import { useEditBatchSpans, useUniqueSpanNames, useRandomSpans, useRootSpansByBatch } from "../hooks/useRootSpans";
 
 interface FilterFormData {
   searchText: string;
@@ -83,9 +83,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
   });
   const [showSelectedFirst, setShowSelectedFirst] = useState(true);
   
-  // Get the invalidation functions from the mutations hook
-  const { invalidateBatch, invalidateProject } = useRootSpanMutations();
-
+  
   // Fetch current batch information
   const { data: batchData, isLoading: batchLoading } = useRootSpansByBatch(batchId || null);
 
@@ -155,14 +153,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
   
   // Use the loading state to prevent DataGrid resets, but don't show completely empty data
   const stableLoading = (isRandomMode ? isRandomLoading : isLoading) && !currentData;
-
-  const updateBatchSpans = useCallback((batchId: string) => {
-    // Invalidate both the batch and project queries to refresh data
-    invalidateBatch(batchId);
-    if (projectId) {
-      invalidateProject(projectId);
-    }
-  }, [invalidateBatch, invalidateProject, projectId]);
 
   // Filter form handlers
   const onFilterSubmit = useCallback((data: FilterFormData) => {

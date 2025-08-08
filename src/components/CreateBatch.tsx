@@ -124,14 +124,6 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   // Use the loading state to prevent DataGrid resets, but don't show completely empty data
   const stableLoading = (isRandomMode ? isRandomLoading : isLoading) && !currentData;
 
-  const updateBatchSpans = useCallback((batchId: string) => {
-    // Invalidate both the batch and project queries to refresh data
-    invalidateBatch(batchId);
-    if (projectId) {
-      invalidateProject(projectId);
-    }
-  }, [invalidateBatch, invalidateProject, projectId]);
-
   // Filter form handlers
   const onFilterSubmit = useCallback((data: FilterFormData) => {
     console.log('Filter submitted:', data);
