@@ -15,7 +15,6 @@ const FilePreview = ({ file }: { file: File }) => {
   const [panMode, setPanMode] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleZoomIn = () => {
@@ -28,7 +27,6 @@ const FilePreview = ({ file }: { file: File }) => {
 
   const handleResetZoom = () => {
     setScale(1.0);
-    setScrollOffset({ x: 0, y: 0 });
     if (containerRef.current) {
       containerRef.current.scrollLeft = 0;
       containerRef.current.scrollTop = 0;

@@ -172,20 +172,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
     setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
   }, [paginationModel.pageSize]);
 
-  const handleRandomSpans = useCallback(() => {
-    console.log('Random spans requested');
-    setIsRandomMode(true);
-    // Clear applied filters when switching to random mode
-    setAppliedFilters({
-      searchText: '',
-      spanName: '',
-      dateFilter: 'all',
-      startDate: null,
-      endDate: null,
-    });
-    setPaginationModel({ page: 0, pageSize: 50 });
-  }, []);
-
   const handleClearFilters = useCallback(() => {
     reset();
     setIsRandomMode(false);
@@ -447,7 +433,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
 
   return (
     <Container maxWidth={false} sx={{ mt: 1.5, mb: 1.5, px: 3 }}>
-      <Box sx={{ mb: 1.5, position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+      <Box sx={{ mb: 2.5, position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', minHeight: 120 }}>
         {/* Breadcrumbs - Far Left */}
         <Box sx={{ 
           position: 'absolute',
@@ -591,7 +577,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 2,
+          gap: 0.5,
         }}>
           <TextField
             label="Batch Name"

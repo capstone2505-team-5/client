@@ -39,7 +39,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import type { AnnotatedRootSpan } from "../types/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { categorizeAnnotations, deleteRootSpan, deleteAnnotation } from "../services/services";
+import { categorizeAnnotations, deleteRootSpan } from "../services/services";
 
 // Custom Rating Filter Component
 const RatingFilterInputValue = (props: GridFilterInputValueProps) => {
@@ -369,14 +369,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       
       // Delete root span from batch (always succeeds)
       await deleteRootSpan(batchId, rootSpanId);
-      
-      // Try to delete annotation (may not exist)
-      // try {
-      //   await deleteAnnotation(rootSpanId);
-      // } catch (annotationError) {
-      //   // Ignore if annotation doesn't exist
-      //   console.log("No annotation to delete for span:", rootSpanId);
-      // }
       
       handleClose();
       
@@ -997,10 +989,10 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
             columns={columns}
             initialState={{
               pagination: {
-                paginationModel: { page: 0, pageSize: 25 },
+                paginationModel: { page: 0, pageSize: pageSize },
               },
             }}
-            pageSizeOptions={[5, 10, 25]}
+            pageSizeOptions={[25, 50, 100]}
             disableRowSelectionOnClick
             getRowHeight={() => 56}
             paginationMode="client"

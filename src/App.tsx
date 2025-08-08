@@ -11,7 +11,6 @@ import Projects from "./components/Projects";
 import Batches from "./components/Batches";
 import NavBar from "./components/NavBar";
 import CreateBatch from "./components/CreateBatch";
-import RootSpanDetails from "./components/RootSpanDetails";
 import Footer from "./components/Footer";
 import RootSpans from "./components/RootSpans";
 import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
@@ -165,7 +164,6 @@ function AppContent() {
             }
           />
 
-          <Route path="/projects/:projectId/batches/:batchId/rootSpans/:rootSpanId" element={<RootSpanDetails />} />
           <Route
             path="/projects/:projectId/batches/:batchId/annotation/:rootSpanId"
             element={
