@@ -12,12 +12,9 @@ import NavBar from "./components/NavBar";
 import CreateBatch from "./components/CreateBatch";
 import RootSpanDetails from "./components/RootSpanDetails";
 import Footer from "./components/Footer";
-import type { AnnotatedRootSpan, Rating } from "./types/types";
 import RootSpans from "./components/RootSpans";
-import {
-  categorizeAnnotations,
-} from "./services/services";
 import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
+import type { Rating } from "./types/types";
 import EditBatch from "./components/EditBatch";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useRootSpansContext, useRootSpanMutations } from "./hooks/useRootSpans";
@@ -55,8 +52,7 @@ const AppWithQuery = () => {
   }, []);
 
   const loadRootSpansByProject = useCallback((projectId: string) => {
-    // Always set context to project when this function is called from CreateBatch
-    // But avoid unnecessary updates if we're already in the right state
+    // Used by EditBatch component - keeping for backwards compatibility
     if (currentContext?.type !== 'project' || currentContext?.id !== projectId) {
       setCurrentContext({ type: 'project', id: projectId });
     }
@@ -69,7 +65,8 @@ const AppWithQuery = () => {
     annotationId: string,
     rootSpanId: string,
     note: string,
-    rating: Rating | null
+    rating: Rating | null,
+    batchId: string,
   ): Promise<{ isNew: boolean }> => {
     let res: any = null;
     const isNew = annotationId === "";
@@ -85,13 +82,8 @@ const AppWithQuery = () => {
         }
       }
 
-      // Instead of optimistic updates, just invalidate the relevant caches
-      // This will trigger a refetch with fresh data from the server
-      if (currentContext?.type === 'batch' && currentContext.id) {
-        invalidateBatch(currentContext.id);
-      } else if (currentContext?.type === 'project' && currentContext.id) {
-        invalidateProject(currentContext.id);
-      }
+      // Always invalidate batch cache when saving annotations
+      invalidateBatch(batchId);
 
       if (res) {
         console.log(
@@ -171,10 +163,7 @@ const AppWithQuery = () => {
             path="/projects/:projectId/batches/create"
             element={
               <CreateBatch
-                annotatedRootSpans={annotatedRootSpans}
-                onLoadRootSpans={loadRootSpansByProject}
                 onCreateBatch={handleCreateBatch}
-                isLoading={isLoading}
               />
             }
           />
@@ -182,10 +171,7 @@ const AppWithQuery = () => {
             path="/projects/:projectId/batches/:batchId/edit"
             element={
               <EditBatch
-                annotatedRootSpans={annotatedRootSpans}
-                onLoadRootSpans={loadRootSpansByProject}
                 onUpdateBatch={handleUpdateBatch}
-                isLoading={isLoading}
               />
             }
           />

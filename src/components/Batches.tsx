@@ -10,6 +10,8 @@ import {
   Chip,
   Stack,
   useTheme,
+  CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
@@ -25,12 +27,15 @@ import RateReviewIcon from '@mui/icons-material/RateReview';
 import { fetchBatches, deleteBatch, fetchRootSpansByBatch } from "../services/services";
 import type { Batch } from "../types/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Snackbar from '@mui/material/Snackbar';
 
 const Batches = () => {
   const navigate = useNavigate();
   // const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
+  const [annotatingBatchId, setAnnotatingBatchId] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '' });
   const location = useLocation();
   const { projectName, batchName } = location.state || {};
   const { projectId, batchId } = useParams();
@@ -75,25 +80,37 @@ const Batches = () => {
   };
 
   const handleAnnotate = async (batchId: string, batchName: string) => {
+    setAnnotatingBatchId(batchId);
     try {
       // Fetch the root spans for this batch to get the first one's ID
-      const rootSpans = await queryClient.fetchQuery({
-        queryKey: ['rootSpans', 'batch', batchId],
+      const batchData = await queryClient.fetchQuery({
+        queryKey: ['rootSpansByBatch', batchId],
         queryFn: () => fetchRootSpansByBatch(batchId),
-        staleTime: 1000 * 60 * 5, // 5 minutes
       });
 
-      if (rootSpans.length === 0) {
-        console.warn(`No root spans found in batch ${batchId}`);
+      if (!batchData.rootSpans || batchData.rootSpans.length === 0) {
+        setSnackbar({ open: true, message: "No spans in this batch to grade." });
+        return;
+      }
+      
+      const allSpansFormatted = batchData.rootSpans.every(
+        (span: any) => span.formattedInput && span.formattedOutput
+      );
+
+      if (!allSpansFormatted) {
+        setSnackbar({ open: true, message: "Formatting in progress... Please wait a moment and try again." });
         return;
       }
 
       // Navigate to the annotation page with the first root span's ID
-      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${rootSpans[0].id}`, {
+      navigate(`/projects/${projectId}/batches/${batchId}/annotation/${batchData.rootSpans[0].id}`, {
         state: { projectName, batchName: batchName, projectId }
       });
     } catch (error) {
       console.error("Failed to fetch root spans for batch:", error);
+      setSnackbar({ open: true, message: "Error fetching batch details. Please try again." });
+    } finally {
+      setAnnotatingBatchId(null);
     }
   };
 
@@ -210,7 +227,8 @@ const Batches = () => {
           <Button
             size="medium"
             variant="outlined"
-            startIcon={<RateReviewIcon />}
+            startIcon={annotatingBatchId === params.row.id ? <CircularProgress size={20} color="inherit" /> : <RateReviewIcon />}
+            disabled={annotatingBatchId === params.row.id}
             onClick={(e) => {
               e.stopPropagation();
               handleAnnotate(params.row.id, params.row.name);
@@ -229,7 +247,7 @@ const Batches = () => {
               }
             }}
           >
-            Grade Batch
+            {annotatingBatchId === params.row.id ? 'Checking...' : 'Grade Batch'}
           </Button>
           
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -238,7 +256,9 @@ const Batches = () => {
               color="primary"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/projects/${projectId}/batches/${params.row.id}/edit`);
+                navigate(`/projects/${projectId}/batches/${params.row.id}/edit`, {
+                  state: { projectName, projectId, batchName: params.row.name }
+                });
               }}
               sx={{ 
                 border: '1px solid',
@@ -501,6 +521,13 @@ const Batches = () => {
           />
         </Box>
       </Paper>
+       <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      />
       <Fragment>
         <Dialog
           open={open}

@@ -11,7 +11,7 @@ import { getPhoenixDashboardUrl } from "../services/services";
 import ReactMarkdown from 'react-markdown';
 
 interface Props {
-  onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null) => Promise<{ isNew: boolean }>;
+  onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null, batchId: string) => Promise<{ isNew: boolean }>;
 }
 
 const Annotation = ({ onSave}: Props) => {
@@ -85,7 +85,20 @@ const Annotation = ({ onSave}: Props) => {
   };
 
 
-  const {data: annotatedRootSpans = [], isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
+  const {data: batchData, isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
+  const annotatedRootSpans = batchData?.rootSpans || [];
+
+  // Debug effect to track when batch data changes
+  useEffect(() => {
+    if (batchData) {
+      console.log('Batch data updated:', {
+        batchId,
+        totalSpans: batchData.rootSpans.length,
+        annotatedSpans: batchData.rootSpans.filter(span => span.annotation?.rating).length,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [batchData, batchId]);
 
   // Find current span and its index
   const currentSpanIndex = annotatedRootSpans.findIndex(span => 
@@ -110,6 +123,19 @@ const Annotation = ({ onSave}: Props) => {
       setOriginalAnnotation({ rating: null, note: "" });
     }
     
+    // Auto-select formatted when available
+    if (currentSpan?.formattedInput) {
+      setDisplayFormattedInput(true);
+    } else {
+      setDisplayFormattedInput(false);
+    }
+    
+    if (currentSpan?.formattedOutput) {
+      setDisplayFormattedOutput(true);
+    } else {
+      setDisplayFormattedOutput(false);
+    }
+    
     // Auto-focus the notes field when span changes
     // Use a small delay to ensure the component has rendered
     const timer = setTimeout(() => {
@@ -123,13 +149,17 @@ const Annotation = ({ onSave}: Props) => {
 
   // Check for pending toast after navigation (similar to RootSpans)
   useEffect(() => {
-    const pending = sessionStorage.getItem('pendingAnnotationToast');
-    if (pending) {
-      sessionStorage.removeItem('pendingAnnotationToast');
-      const toastData = JSON.parse(pending);
-      setSnackbar(toastData);
-    }
+    const timer = setTimeout(() => {
+      const pending = sessionStorage.getItem('pendingAnnotationToast');
+      if (pending) {
+        sessionStorage.removeItem('pendingAnnotationToast');
+        const toastData = JSON.parse(pending);
+        setSnackbar(toastData);
+      } 
+    }, 200); // delay in ms (adjust as needed)
+    return () => clearTimeout(timer); // cleanup if span changes quickly
   }, [currentSpan?.id]); // Trigger when span changes
+  
   
   // Use the span from the API data if available, otherwise fall back to the passed one
   // const currentSpan = annotatedRootSpans[currentSpanIndex];
@@ -143,9 +173,9 @@ const Annotation = ({ onSave}: Props) => {
   };
 
   // Auto-save function
-  const autoSave = async () => {
+  const autoSave = async (shouldStoreSuccessToast: boolean = true) => {
     // Check if there are changes to save
-    if (currentSpan && rating && hasAnnotationChanged()) {
+    if (currentSpan && rating && hasAnnotationChanged() && batchId) {
       // Validate: bad ratings require notes
       if (rating === 'bad' && !note.trim()) {
         // Show immediate error toast (don't use sessionStorage since we're not navigating)
@@ -159,16 +189,33 @@ const Annotation = ({ onSave}: Props) => {
 
       try {
         setIsSaving(true);
-        const result = await onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating);
+        console.log('Auto-saving annotation:', {
+          annotationId: currentSpan.annotation?.id || "",
+          rootSpanId: currentSpan.id,
+          note,
+          rating,
+          batchId
+        });
         
-        // Store success toast in sessionStorage (survives navigation)
-        sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
-          open: true,
-          message: result.isNew 
-            ? 'Annotation created successfully!' 
-            : 'Annotation updated successfully!',
-          severity: 'success'
-        }));
+        const result = await onSave(currentSpan.annotation?.id || "", currentSpan.id, note, rating, batchId);
+        
+        console.log('Annotation save result:', result);
+
+        // Reset auto-categorize flag so a new grading session can auto-start categorization again
+        if (batchId) {
+          sessionStorage.removeItem(`hasAutoStarted_${batchId}`);
+        }
+
+        // Only store success toast in sessionStorage if requested (survives navigation)
+        if (shouldStoreSuccessToast) {
+          sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
+            open: true,
+            message: result.isNew 
+              ? 'Annotation created successfully!' 
+              : 'Annotation updated successfully!',
+            severity: 'success'
+          }));
+        }
         
         return true; // Indicate successful save
       } catch (error: any) {
@@ -251,7 +298,7 @@ const Annotation = ({ onSave}: Props) => {
             await goToPreviousSpan();
             break;
           case 'ArrowRight':
-            // If on last span, show confirmation dialog like the button does
+            // If on last span, show confirmation dialog
             if (currentSpanIndex === annotatedRootSpans.length - 1) {
               setDisplayConfirmCategorize(true);
             } else {
@@ -762,17 +809,24 @@ const Annotation = ({ onSave}: Props) => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button 
-                variant="outlined" 
+                variant={!displayFormattedInput ? "contained" : "outlined"}
                 size="small"
                 sx={{
                   px: 3,
                   minWidth: 50,
                   borderColor: 'secondary.main',
-                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  color: !displayFormattedInput 
+                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                  backgroundColor: !displayFormattedInput 
+                    ? 'secondary.main'
+                    : 'transparent',
                   fontWeight: 600,
                   '&:hover': {
                     borderColor: 'secondary.dark',
-                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    backgroundColor: !displayFormattedInput 
+                      ? 'secondary.dark'
+                      : 'rgba(255, 235, 59, 0.1)',
                   }
                 }}
                 onClick={() => setDisplayFormattedInput(false)}
@@ -785,18 +839,30 @@ const Annotation = ({ onSave}: Props) => {
               >
                 <span>
                   <Button 
-                    variant="outlined" 
+                    variant={displayFormattedInput ? "contained" : "outlined"}
                     size="small"
                     disabled={!currentSpan.formattedInput}
                     sx={{
                       px: 3,
                       minWidth: 75,
                       borderColor: 'secondary.main',
-                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                      color: displayFormattedInput 
+                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                      backgroundColor: displayFormattedInput 
+                        ? 'secondary.main'
+                        : 'transparent',
                       fontWeight: 600,
                       '&:hover': {
                         borderColor: 'secondary.dark',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        backgroundColor: displayFormattedInput 
+                          ? 'secondary.dark'
+                          : 'rgba(255, 235, 59, 0.1)',
+                      },
+                      '&.Mui-disabled': {
+                        borderColor: 'text.disabled',
+                        color: 'text.disabled',
+                        backgroundColor: 'transparent'
                       }
                     }}
                     onClick={() => setDisplayFormattedInput(true)}
@@ -813,15 +879,53 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            <pre style={{ 
-              whiteSpace: 'pre-wrap', 
-              margin: 0, 
-              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-              fontSize: '0.9rem',
-              lineHeight: 1.5
-            }}>
-              {displayFormattedInput ? <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown> : currentSpan.input}
-            </pre>
+            {displayFormattedInput ? (
+              <Box sx={{
+                '& p': {
+                  margin: '0.5em 0',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word'
+                },
+                '& code': {
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  padding: '2px 4px',
+                  borderRadius: '3px',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '0.9em',
+                  whiteSpace: 'pre-wrap'
+                },
+                '& pre': {
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  overflow: 'auto',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre',
+                  wordBreak: 'normal',
+                  overflowWrap: 'normal'
+                },
+                '& pre code': {
+                  backgroundColor: 'transparent',
+                  padding: 0,
+                  whiteSpace: 'pre'
+                }
+              }}>
+                <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown>
+              </Box>
+            ) : (
+              <pre style={{ 
+                whiteSpace: 'pre-wrap', 
+                margin: 0, 
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontSize: '0.9rem',
+                lineHeight: 1.5
+              }}>
+                {currentSpan.input}
+              </pre>
+            )}
           </Box>
         </Paper>
 
@@ -849,17 +953,24 @@ const Annotation = ({ onSave}: Props) => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button 
-                variant="outlined" 
+                variant={!displayFormattedOutput ? "contained" : "outlined"}
                 size="small"
                 sx={{
                   px: 3,
                   minWidth: 100,
                   borderColor: 'secondary.main',
-                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                  color: !displayFormattedOutput 
+                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                  backgroundColor: !displayFormattedOutput 
+                    ? 'secondary.main'
+                    : 'transparent',
                   fontWeight: 600,
                   '&:hover': {
                     borderColor: 'secondary.dark',
-                    backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    backgroundColor: !displayFormattedOutput 
+                      ? 'secondary.dark'
+                      : 'rgba(255, 235, 59, 0.1)',
                   }
                 }}
                 onClick={() => setDisplayFormattedOutput(false)}
@@ -872,18 +983,30 @@ const Annotation = ({ onSave}: Props) => {
               >
                 <span>
                   <Button 
-                    variant="outlined" 
+                    variant={displayFormattedOutput ? "contained" : "outlined"}
                     size="small"
                     disabled={!currentSpan.formattedOutput}
                     sx={{
                       px: 3,
                       minWidth: 100,
                       borderColor: 'secondary.main',
-                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                      color: displayFormattedOutput 
+                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
+                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
+                      backgroundColor: displayFormattedOutput 
+                        ? 'secondary.main'
+                        : 'transparent',
                       fontWeight: 600,
                       '&:hover': {
                         borderColor: 'secondary.dark',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                        backgroundColor: displayFormattedOutput 
+                          ? 'secondary.dark'
+                          : 'rgba(255, 235, 59, 0.1)',
+                      },
+                      '&.Mui-disabled': {
+                        borderColor: 'text.disabled',
+                        color: 'text.disabled',
+                        backgroundColor: 'transparent'
                       }
                     }}
                     onClick={() => setDisplayFormattedOutput(true)}
@@ -1127,7 +1250,11 @@ const Annotation = ({ onSave}: Props) => {
          <DialogContent sx={{ pt: 2, pb: 3, textAlign: 'center' }}>
           {(() => {
             const annotatedCount = annotatedRootSpans.filter(span => span.annotation?.rating).length;
-            return annotatedCount === annotatedRootSpans.length ? (
+            // Check if current annotation has changed and has a rating - if so, this would complete the batch
+            const willCompleteAfterSave = hasAnnotationChanged() && rating && 
+              (annotatedCount + 1) === annotatedRootSpans.length;
+            
+            return (annotatedCount === annotatedRootSpans.length || willCompleteAfterSave) ? (
               <Typography variant="body1" sx={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
                 You finished grading this batch!! Do you want to categorize now?
               </Typography>
@@ -1152,7 +1279,8 @@ const Annotation = ({ onSave}: Props) => {
           </Button>
           <Button 
             onClick={async () => {
-              const success = await autoSave();
+              // Save annotation if it has changed, then navigate
+              const success = await autoSave(false); // Pass false for categorize flow (no toast)
               if (success) {
                 navigate(`/projects/${projectId}/batches/${batchId}`, { 
                   state: { 

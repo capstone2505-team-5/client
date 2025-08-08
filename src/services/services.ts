@@ -43,10 +43,7 @@ export const fetchBatches = async (projectId: string): Promise<Batch[]> => {
   return response.data;
 }
 
-export const fetchBatch = async (id: string): Promise<{ id: string; name: string; rootSpanIds: string[] }> => {
-  const response = await axios.get(`/api/batches/${id}`);
-  return response.data.batchSummary;
-}
+
 
 export const createBatch = async (data: { name: string; projectId: string; rootSpanIds: string[] }) => {
   const response = await axios.post('/api/batches', data);
@@ -78,21 +75,125 @@ export const fetchProjects = async (): Promise<Project[]> => {
   return response.data;
 }
 
-export const fetchRootSpansByBatch = async (batchId: string): Promise<AnnotatedRootSpan[]> => {
+export const fetchRootSpansByBatch = async (batchId: string): Promise<{
+  rootSpans: AnnotatedRootSpan[];
+  batchSummary: { id: string; name: string; projectId: string; createdAt: string; validRootSpanCount: number; percentAnnotated: number | null; percentGood: number | null; categories: string[] } | null;
+  totalCount: number;
+}> => {
   const response = await axios.get(`/api/batches/${batchId}`, {
     params: {
       numPerPage: 100
     }
   });
-  return response.data.rootSpans;
+  return response.data;
 }
 
-export const fetchRootSpansByProject = async (projectId: string): Promise<AnnotatedRootSpan[]> => {
-  const response = await axios.get('/api/rootSpans', {
+export const fetchRootSpansByProject = async (
+  projectId: string, 
+  page: number = 0, 
+  pageSize: number = 100
+): Promise<{ rootSpans: AnnotatedRootSpan[]; totalCount: number }> => {
+  const config = {
     params: { 
       projectId,
-      numPerPage: 100 // Large number to get all spans
+      pageNumber: page + 1,  // Convert 0-based to 1-based indexing
+      numPerPage: pageSize  // Fixed: backend expects 'numPerPage', not 'numberPerPage'
     }
-  });
-  return response.data.rootSpans;
+  };
+  
+  const response = await axios.get('/api/rootSpans', config);
+  
+  // Your backend returns rootSpans in this case
+  const spans = response.data.rootSpans || response.data.annotatedspans || [];
+  
+  return {
+    rootSpans: spans,
+    totalCount: response.data.totalCount || 0
+  };
 }
+
+export const fetchUniqueSpanNames = async (projectId: string): Promise<string[]> => {
+  const response = await axios.get(`/api/projects/${projectId}/spanNames`);
+  return response.data.spanNames;
+};
+
+export const fetchRandomSpans = async (
+  projectId: string
+): Promise<{ rootSpans: AnnotatedRootSpan[]; totalCount: number }> => {
+  const response = await axios.get(`/api/projects/${projectId}/randomSpans`);
+  
+  return {
+    rootSpans: response.data.rootSpans || [],
+    totalCount: response.data.totalCount || 0
+  };
+};
+
+export const fetchRootSpansByProjectFiltered = async (
+  projectId: string, 
+  page: number = 0, 
+  pageSize: number = 100,
+  filters?: {
+    searchText?: string;
+    spanName?: string;
+    dateFilter?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<{ rootSpans: AnnotatedRootSpan[]; totalCount: number }> => {
+  const params: any = { 
+    projectId,
+    pageNumber: page + 1,  // Convert 0-based to 1-based indexing
+    numPerPage: pageSize
+  };
+  
+  // Add filter parameters
+  if (filters?.searchText) params.searchText = filters.searchText;
+  if (filters?.spanName) params.spanName = filters.spanName;
+  if (filters?.dateFilter) params.dateFilter = filters.dateFilter;
+  if (filters?.startDate) params.startDate = filters.startDate;
+  if (filters?.endDate) params.endDate = filters.endDate;
+  
+  const response = await axios.get('/api/rootSpans', { params });
+  
+  const spans = response.data.rootSpans || response.data.annotatedspans || [];
+  
+  return {
+    rootSpans: spans,
+    totalCount: response.data.totalCount || 0
+  };
+};
+
+export const fetchEditBatchSpans = async (
+  batchId: string, 
+  page: number = 0, 
+  pageSize: number = 100,
+  filters?: {
+    searchText?: string;
+    spanName?: string;
+    dateFilter?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<{ rootSpans: AnnotatedRootSpan[]; totalCount: number }> => {
+  const params: any = { 
+    batchId,
+    pageNumber: page + 1,  // Convert 0-based to 1-based indexing
+    numPerPage: pageSize
+  };
+  
+  // Add filter parameters
+  if (filters?.searchText) params.searchText = filters.searchText;
+  if (filters?.spanName) params.spanName = filters.spanName;
+  if (filters?.dateFilter) params.dateFilter = filters.dateFilter;
+  if (filters?.startDate) params.startDate = filters.startDate;
+  if (filters?.endDate) params.endDate = filters.endDate;
+  
+  const response = await axios.get('/api/batches/edit', { params });
+  
+  const spans = response.data.editBatchRootSpans || [];
+  
+  return {
+    rootSpans: spans,
+    totalCount: response.data.totalCount || 0
+  };
+};

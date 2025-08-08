@@ -150,7 +150,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   const theme = muiUseTheme();
   const queryClient = useQueryClient();
   const [isCategorizing, setIsCategorizing] = useState(false);
-  const hasAutoStartedRef = useRef(false); // Track if we've already auto-started categorization
+  const categorizationInProgressRef = useRef(false); // Track if categorization is currently in progress
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -165,20 +165,87 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
 
   // Auto-start categorization when navigated from "Done" button
   useEffect(() => {
-    if (startCategorization && batchId && annotatedRootSpans.length > 0 && !hasAutoStartedRef.current) {
+    console.log('Auto-start categorization effect triggered:', {
+      startCategorization,
+      batchId,
+      annotatedRootSpansLength: annotatedRootSpans.length,
+      categorizationInProgress: categorizationInProgressRef.current,
+      timestamp: new Date().toISOString()
+    });
+    
+    const autoStartKey = `hasAutoStarted_${batchId}`;
+    const hasAutoStarted = sessionStorage.getItem(autoStartKey);
+    
+    if (startCategorization && 
+        batchId && 
+        annotatedRootSpans.length > 0 && 
+        !hasAutoStarted &&
+        !categorizationInProgressRef.current &&
+        !categorizeModalOpen) { // Don't auto-start if modal is currently open
+      
+      console.log('All auto-start conditions passed:', {
+        startCategorization,
+        batchId,
+        annotatedRootSpansLength: annotatedRootSpans.length,
+        hasAutoStarted,
+        categorizationInProgress: categorizationInProgressRef.current,
+        categorizeModalOpen
+      });
+      
       // Check if there are bad annotations to categorize
       const hasBadAnnotations = annotatedRootSpans.some(span => 
         span.annotation?.rating === 'bad'
       );
       
+      console.log('Auto-start categorization conditions met:', {
+        hasBadAnnotations,
+        badAnnotationsCount: annotatedRootSpans.filter(span => span.annotation?.rating === 'bad').length
+      });
+      
       if (hasBadAnnotations) {
-        hasAutoStartedRef.current = true; // Mark as started to prevent loops
-        handleCategorize();
+        console.log('About to mark batch as auto-started:', batchId);
+        sessionStorage.setItem(autoStartKey, 'true'); // Mark this batch as auto-started
+        categorizationInProgressRef.current = true; // Also set ref to prevent immediate re-runs
+        console.log('Marked batch as auto-started, starting categorization');
+        
+        // Use setTimeout to avoid calling handleCategorize directly in useEffect
+        setTimeout(() => {
+          handleCategorize();
+        }, 0);
       }
     }
-  }, [startCategorization]);
+  }, [startCategorization]); // Only depend on startCategorization to prevent loops
 
+  // Separate effect to check sessionStorage when categorization finishes
+  useEffect(() => {
+    console.log('SessionStorage check effect triggered, isCategorizing:', isCategorizing);
+    if (!isCategorizing) {
+      // Small delay to let the API complete and sessionStorage update
+      const timer = setTimeout(() => {
+        const pendingCategorize = sessionStorage.getItem('pendingCategorizeModal');
+        console.log('Checking sessionStorage for pendingCategorizeModal:', pendingCategorize);
+        if (pendingCategorize) {
+          sessionStorage.removeItem('pendingCategorizeModal');
+          console.log('Removed pendingCategorizeModal from sessionStorage');
+          const modalData = JSON.parse(pendingCategorize);
+          setCategorizeResults(modalData.results);
+          setCategorizeModalOpen(true);
+          // Clear the categorization progress ref after a delay to allow future categorization
+          setTimeout(() => {
+            categorizationInProgressRef.current = false;
+          }, 1000); // Clear after 1 second to prevent immediate re-runs but allow future categorization
+          console.log('Set categorize results and opened modal:', modalData.results);
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isCategorizing]); // Trigger when categorization state changes
 
+  // Debug effect to monitor modal state changes
+  useEffect(() => {
+    console.log('Modal state changed - categorizeModalOpen:', categorizeModalOpen, 'categorizeResults:', categorizeResults);
+  }, [categorizeModalOpen, categorizeResults]);
 
   const handleClose = () => {
     setOpen(false);
@@ -186,7 +253,17 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
   };
 
   const handleCategorizeModalClose = () => {
+    console.log('handleCategorizeModalClose called - modal being closed');
     setCategorizeModalOpen(false);
+    categorizationInProgressRef.current = false; // Reset the categorization progress ref
+    
+    // Invalidate cache now that modal is closed to refresh the data
+    if (batchId) {
+      queryClient.invalidateQueries({ queryKey: ['rootSpans', 'batch', batchId] });
+      queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
+      console.log('Cache invalidated after modal closed');
+    }
+    
     // Delay clearing results until after dialog close animation completes
     setTimeout(() => {
       setCategorizeResults(null);
@@ -216,24 +293,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     }
   }, []); // Only run on mount to avoid loops
 
-  // Separate effect to check sessionStorage when categorization finishes
-  useEffect(() => {
-    if (!isCategorizing) {
-      // Small delay to let the API complete and sessionStorage update
-      const timer = setTimeout(() => {
-        const pendingCategorize = sessionStorage.getItem('pendingCategorizeModal');
-        if (pendingCategorize) {
-          sessionStorage.removeItem('pendingCategorizeModal');
-          const modalData = JSON.parse(pendingCategorize);
-          setCategorizeResults(modalData.results);
-          setCategorizeModalOpen(true);
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isCategorizing]); // Trigger when categorization state changes
-
   const handleConfirmDelete = async () => {
     if (rootSpanToDelete) {
       await handleDelete(rootSpanToDelete);
@@ -245,27 +304,45 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     navigate(`annotation/${annotatedRootSpan.id}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
   };
 
+  const allSpansFormatted = useMemo(() => {
+    if (annotatedRootSpans.length === 0) return false;
+    return annotatedRootSpans.every(
+      span => span.formattedInput && span.formattedOutput
+    );
+  }, [annotatedRootSpans]);
+
   const handleCategorize = async () => {
+    // Prevent multiple simultaneous categorization calls
+    if (isCategorizing) {
+      console.log('Categorization already in progress, ignoring additional call');
+      return;
+    }
+    
+    console.log('handleCategorize started, setting isCategorizing to true');
     try {
       if (batchId) {  
         setIsCategorizing(true);
+        
+        // Debug: Show current categories before categorization
+        const currentBadSpans = annotatedRootSpans.filter(span => span.annotation?.rating === 'bad');
+        console.log('Current bad spans before categorization:', currentBadSpans.map(span => ({
+          id: span.id,
+          note: span.annotation?.note,
+          categories: span.annotation?.categories || []
+        })));
+        
+        console.log('Calling categorizeAnnotations API for batchId:', batchId);
         const result = await categorizeAnnotations(batchId);
+        console.log('categorizeAnnotations API completed, result:', result);
         
         // Store categorization results in sessionStorage (survives re-renders)
         const resultsToStore = (!result || Object.keys(result).length === 0) ? {} : result;
         sessionStorage.setItem('pendingCategorizeModal', JSON.stringify({
           results: resultsToStore
         }));
+        console.log('Stored pendingCategorizeModal in sessionStorage:', resultsToStore);
         
-        // Reload the root spans data to reflect updated annotations
-        queryClient.invalidateQueries({ queryKey: ['rootSpans', 'batch', batchId] });
-        // Also reload batches data to update category counts
-        queryClient.invalidateQueries({ queryKey: ['batches', projectId] });
-        
-        // Reload the current data
-        if (batchId) {
-          onLoadRootSpans(batchId);
-        }
+        // Don't invalidate cache here - wait until modal closes to avoid disrupting the modal
       }
     } catch (error: any) {
       console.error("Failed to categorize annotations", error);
@@ -276,12 +353,12 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         results: { __error: errorMessage }
       }));
       
-      // Trigger re-render to show the modal
-      if (batchId) {
-        onLoadRootSpans(batchId);
-      }
+      // Cache invalidation should handle data refresh
+      console.log('Error occurred, sessionStorage updated with error message');
     } finally {
+      console.log('handleCategorize finished, setting isCategorizing to false');
       setIsCategorizing(false);
+      categorizationInProgressRef.current = false; // Reset ref after completion
     }
   };
 
@@ -368,10 +445,9 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       align: 'left',
       renderCell: (params) => (
         <Typography 
-          variant="body2" 
+          variant="body1" 
           sx={{ 
-            fontFamily: 'monospace',
-            color: 'white',
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
             fontWeight: 'medium'
           }}
         >
@@ -387,7 +463,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       headerAlign: 'left',
       align: 'left',
       renderCell: (params) => (
-        <Typography variant="body1" sx={{ color: 'white' }}>
+        <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? 'white' : 'black' }}>
           {params.value}
         </Typography>
       ),
@@ -452,7 +528,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         ['is', 'after', 'onOrAfter', 'before', 'onOrBefore'].includes(operator.value)
       ),
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'white' }}>
+        <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'white' : 'black' }}>
           {formatDateTime(params.value)}
         </Typography>
       ),
@@ -469,7 +545,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         <Typography 
           variant="body2" 
           sx={{ 
-            color: 'white',
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -491,7 +567,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
         <Typography 
           variant="body2" 
           sx={{ 
-            color: 'white',
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -692,30 +768,42 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           alignItems: 'flex-end',
           gap: 1,
         }}>
-          <Button
-            variant="contained"
-            startIcon={<RateReviewIcon />}
-            onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${annotatedRootSpans[0].id}`, { 
-              state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
-            })}
-            size="large"
-            sx={{ 
-              px: 3, 
-              minWidth: 225,
-              maxHeight: 35,
-              backgroundColor: 'secondary.main',
-              color: 'black',
-              fontWeight: 600,
-              '&:hover': {
-                backgroundColor: 'secondary.dark',
-              },
-            }}
+          <Tooltip
+            title={!allSpansFormatted ? "Formatting in progress... Cannot grade yet." : "Start grading this batch"}
+            arrow
           >
-            Grade Batch!
-          </Button>
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<RateReviewIcon />}
+                disabled={!allSpansFormatted}
+                onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${annotatedRootSpans[0].id}`, { 
+                  state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
+                })}
+                size="large"
+                sx={{ 
+                  px: 3, 
+                  minWidth: 225,
+                  maxHeight: 35,
+                  backgroundColor: 'secondary.main',
+                  color: 'black',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'secondary.dark',
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: 'grey.400',
+                    color: 'grey.600',
+                  }
+                }}
+              >
+                Grade Batch!
+              </Button>
+            </span>
+          </Tooltip>
           <Tooltip 
             title={!hasBadAnnotations && !isCategorizing ? "No bad annotations to categorize" : ""}
-            placement="top"
+            placement="bottom"
             arrow
           >
             <span>
@@ -858,6 +946,18 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
               ? '#1a1a1a !important' 
               : 'rgba(0, 0, 0, 0.05) !important',
           },
+          '& .row-disabled': {
+            cursor: 'not-allowed',
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.05)' 
+              : 'rgba(0, 0, 0, 0.05)',
+            color: 'text.disabled',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.05)' 
+                : 'rgba(0, 0, 0, 0.05)',
+            }
+          }
         }}
       >
         {/* Search Bar */}
@@ -916,7 +1016,13 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
             disableRowSelectionOnClick
             getRowHeight={() => 56}
             paginationMode="client"
-            onRowClick={(params) => handleView(params.row)}
+            onRowClick={(params) => {
+              if (!allSpansFormatted) return;
+              handleView(params.row);
+            }}
+            getRowClassName={(params) => {
+              return !allSpansFormatted ? 'row-disabled' : '';
+            }}
             onPaginationModelChange={(model) => {
               setPageSize(model.pageSize);
             }}

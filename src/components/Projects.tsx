@@ -306,15 +306,15 @@ const Projects = () => {
           />
           
           <Button
-            variant="contained"
-            startIcon={<AddIcon sx={{ color: 'black !important' }} />}
+            variant="outlined"
+            startIcon={<AddIcon sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)' }} />}
             size="small"
             onClick={handleClickOpen}
             sx={{
               whiteSpace: 'nowrap',
               ml: 2,
-              backgroundColor: 'secondary.main',
-              color: 'black',
+              borderColor: 'secondary.main',
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
               fontWeight: 600,
               '&:hover': {
                 backgroundColor: 'secondary.dark',
@@ -337,7 +337,7 @@ const Projects = () => {
           <DialogTitle 
             id="alert-dialog-title"
             sx={{ 
-              color: 'primary.main',
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
               fontWeight: 'bold',
               fontSize: '1.5rem',
               pb: 1,
@@ -387,45 +387,61 @@ const Projects = () => {
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1, justifyContent: 'center' }}>
             <Button 
+              component="a"
               href={phoenixDashboardUrl} 
               target="_blank" 
               rel="noopener noreferrer" 
               onClick={handleClose}
-              variant="contained"
-              color="primary"
+              variant="outlined"
+              size="small"
               sx={{ 
                 minWidth: '120px',
-                fontWeight: 'bold'
+                borderColor: 'secondary.main',
+                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: 'secondary.dark',
+                },
               }}
             >
               Dashboard
             </Button>
             <Button 
+              component="a"
               href="https://arize.com/docs/phoenix/integrations" 
               target="_blank" 
               rel="noopener noreferrer" 
               onClick={handleClose}
-              variant="contained"
-              color="primary"
+              variant="outlined"
+              size="small"
               sx={{ 
                 minWidth: '120px',
-                borderColor: 'primary.main',
-                fontWeight: 'bold'
+                borderColor: 'secondary.main',
+                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: 'secondary.dark',
+                },
               }}
             >
               Documentation
             </Button>
-                         <Button 
-               onClick={handleClose} 
-               variant="contained"
-               color="primary"
-               sx={{ 
-                 minWidth: '100px',
-                 fontWeight: 'bold'
-               }}
-             >
-               Close
-             </Button>
+            <Button 
+              onClick={handleClose} 
+              variant="outlined"
+              size="small"
+              sx={{ 
+                minWidth: '100px',
+                borderColor: 'secondary.main',
+                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.99)' : 'rgba(0, 0, 0, 0.6)',
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: 'secondary.dark',
+                },
+              }}
+            >
+              Close
+            </Button>
           </DialogActions>
         </Dialog>
       </Fragment>
