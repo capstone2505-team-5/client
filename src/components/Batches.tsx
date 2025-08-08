@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, Fragment } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   Container,
@@ -8,10 +8,8 @@ import {
   IconButton,
   Paper,
   Chip,
-  Stack,
   useTheme,
   CircularProgress,
-  Tooltip,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef } from "@mui/x-data-grid";
@@ -498,14 +496,28 @@ const Batches = () => {
                   alignItems: 'center', 
                   justifyContent: 'center', 
                   height: '100%',
-                  py: 4
+                  py: 4,
+                  px: 2
                 }}>
-                  <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                    No batches available
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Create your first batch to get started
-                  </Typography>
+                  {batchesError ? (
+                    <>
+                      <Typography variant="h6" sx={{ mb: 1, color: 'error.main' }}>
+                        Error loading batches
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                        {batchesError instanceof Error ? batchesError.message : 'An unexpected error occurred.'}
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                        No batches available
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Create your first batch to get started
+                      </Typography>
+                    </>
+                  )}
                 </Box>
               )
             }}

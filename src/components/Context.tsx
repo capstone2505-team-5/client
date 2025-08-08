@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Box, Typography, Button, useTheme } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 import { useDocument } from '../contexts/DocumentContext';
 import FilePreview from './FilePreview';
 
@@ -25,10 +25,6 @@ const Context = ({ onRenderHeaderActions }: ContextProps) => {
       'application/pdf': ['.pdf'],
     }
   });
-
-  const handleRemoveFile = useCallback(() => {
-    setFile(null);
-  }, [setFile]);
 
   // Expose the remove button for header rendering
   useEffect(() => {

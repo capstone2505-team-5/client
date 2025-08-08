@@ -30,7 +30,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef, GridRowParams } from "@mui/x-data-grid";
-import { useRootSpanMutations, useRootSpansByProjectFiltered, useUniqueSpanNames, useRandomSpans, useFormattedFields } from "../hooks/useRootSpans";
+import { useRootSpansByProjectFiltered, useUniqueSpanNames, useRandomSpans, useFormattedFields } from "../hooks/useRootSpans";
 
 interface FilterFormData {
   searchText: string;
