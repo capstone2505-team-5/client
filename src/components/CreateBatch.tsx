@@ -80,7 +80,6 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   });
   
   // Get the invalidation functions from the mutations hook
-  const { invalidateBatch, invalidateProject } = useRootSpanMutations();
   const { refreshFormatted } = useFormattedFields(null);
 
   // Fetch unique span names for the dropdown
