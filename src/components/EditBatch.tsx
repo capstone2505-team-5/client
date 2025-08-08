@@ -59,6 +59,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
   const theme = muiUseTheme();
   const [displaySpanDetails, setDisplaySpanDetails] = useState(false);
   const [selectedSpanForModal, setSelectedSpanForModal] = useState<any>(null);
+  const MAX_SPANS_PER_BATCH = 150;
   
   // Filter form setup
   const { control, handleSubmit, watch, reset, setValue } = useForm<FilterFormData>({
@@ -236,6 +237,10 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
     setSelectedSet(prevSelected => {
       const newSelected = new Set(prevSelected);
       if (isSelected) {
+        if (newSelected.size >= MAX_SPANS_PER_BATCH) {
+          console.warn(`Selection limit reached (${MAX_SPANS_PER_BATCH}). Deselect some spans to add new ones.`);
+          return newSelected;
+        }
         newSelected.add(spanId);
       } else {
         newSelected.delete(spanId);
@@ -255,8 +260,10 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
       const newSelected = new Set(prevSelected);
       
       if (shouldSelectAll) {
-        // Select all on current page
-        currentPageIds.forEach(id => newSelected.add(id));
+        // Select up to remaining capacity
+        const remaining = Math.max(0, MAX_SPANS_PER_BATCH - newSelected.size);
+        const idsToAdd = currentPageIds.filter(id => !newSelected.has(id)).slice(0, remaining);
+        idsToAdd.forEach(id => newSelected.add(id));
       } else {
         // Deselect all on current page
         currentPageIds.forEach(id => newSelected.delete(id));
@@ -619,13 +626,15 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
             <Tooltip
               title={
-                !name && selectedRootSpanIds.length === 0 
+                !name && selectedRootSpanIds.length === 0
                   ? "Enter a batch name and select spans to update the batch"
-                  : !name 
+                  : !name
                     ? "Enter a batch name to update the batch"
                     : selectedRootSpanIds.length === 0
                       ? "Select at least one span to update the batch"
-                      : "Update batch with selected spans"
+                      : selectedRootSpanIds.length > MAX_SPANS_PER_BATCH
+                        ? `You can select up to ${MAX_SPANS_PER_BATCH} spans`
+                        : "Update batch with selected spans"
               }
               arrow
               placement="bottom"
@@ -634,7 +643,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                 <Button
                   variant="contained"
                   onClick={handleUpdateBatch}
-                  disabled={!name || selectedRootSpanIds.length === 0}
+                  disabled={!name || selectedRootSpanIds.length === 0 || selectedRootSpanIds.length > MAX_SPANS_PER_BATCH}
                   size="large"
                   sx={{ 
                     px: 3, 
@@ -652,7 +661,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                     }
                   }}
                 >
-                  Update Batch ({selectedRootSpanIds.length})
+                  Update Batch ({selectedRootSpanIds.length}{selectedRootSpanIds.length > MAX_SPANS_PER_BATCH ? ` / ${MAX_SPANS_PER_BATCH}` : ''})
                 </Button>
               </span>
             </Tooltip>
@@ -1145,18 +1154,18 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
               
               {selectedSet.size > 0 && (
                 <Typography variant="body2" sx={{ 
-                  color: 'secondary.main',
+                  color: selectedSet.size > MAX_SPANS_PER_BATCH ? 'error.main' : 'secondary.main',
                   fontWeight: 'bold',
                   backgroundColor: theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 235, 59, 0.1)' 
-                    : 'rgba(255, 235, 59, 0.2)',
+                    ? (selectedSet.size > MAX_SPANS_PER_BATCH ? 'rgba(244, 67, 54, 0.12)' : 'rgba(255, 235, 59, 0.1)')
+                    : (selectedSet.size > MAX_SPANS_PER_BATCH ? 'rgba(244, 67, 54, 0.12)' : 'rgba(255, 235, 59, 0.2)'),
                   px: 1,
                   py: 0.25,
                   borderRadius: 1,
                   border: '1px solid',
-                  borderColor: 'secondary.main'
+                  borderColor: selectedSet.size > MAX_SPANS_PER_BATCH ? 'error.main' : 'secondary.main'
                 }}>
-                  {selectedSet.size} selected across pages
+                  {selectedSet.size} selected across pages{selectedSet.size > MAX_SPANS_PER_BATCH ? ` (max ${MAX_SPANS_PER_BATCH})` : ''}
                 </Typography>
               )}
             </Box>
