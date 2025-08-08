@@ -81,7 +81,15 @@ const RatingFilterInputValue = (props: GridFilterInputValueProps) => {
         value={item.value || ''}
         onChange={handleFilterChange}
         displayEmpty
-        sx={{ minWidth: 120 }}
+        size="small"
+        sx={{ 
+          minWidth: 140,
+          '& .MuiSelect-select': { py: 0.5, minHeight: 0 },
+        }}
+        MenuProps={{
+          MenuListProps: { dense: true },
+          PaperProps: { sx: { maxHeight: 240 } }
+        }}
       >
         <MenuItem value="">
           <ListItemText primary="All" />
@@ -304,13 +312,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     navigate(`annotation/${annotatedRootSpan.id}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
   };
 
-  const allSpansFormatted = useMemo(() => {
-    if (annotatedRootSpans.length === 0) return false;
-    return annotatedRootSpans.every(
-      span => span.formattedInput && span.formattedOutput
-    );
-  }, [annotatedRootSpans]);
-
   const handleCategorize = async () => {
     // Prevent multiple simultaneous categorization calls
     if (isCategorizing) {
@@ -476,15 +477,16 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       align: 'center',
       sortable: true,
       filterable: true,
+      filterOperators: ratingFilterOperators,
       type: 'singleSelect',
       valueOptions: [
         { value: 'good', label: 'Good' },
         { value: 'bad', label: 'Bad' },
         { value: 'none', label: 'Not Rated' },
       ],
-        valueGetter: (value, row) => row.annotation?.rating || 'none',
-       renderCell: (params) => {
-         const rating = params.value as string;
+      valueGetter: (_, row) => row.annotation?.rating || 'none',
+      renderCell: (params) => {
+        const rating = params.value as string;
         const getStatusIcon = () => {
           switch (rating) {
             case 'good':
@@ -648,20 +650,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       span.annotation?.rating === 'bad'
     );
   }, [annotatedRootSpans]);
-
-  // Calculate dynamic height based on rows per page
-  const getDataGridHeight = () => {
-    const headerHeight = 56;
-    const footerHeight = 56;
-    const rowHeight = 56;
-    const padding = 20;
-    
-    // Ensure minimum height to show pagination
-    const minRows = Math.min(pageSize, annotatedRootSpans.length);
-    const displayRows = Math.max(minRows, 5); // Show at least 5 rows worth of space
-    
-    return headerHeight + (displayRows * rowHeight) + footerHeight + padding;
-  };
 
   return (
     <Container maxWidth={false} sx={{ mt: 1.5, mb: 1.5, px: 3 }}>
@@ -1019,7 +1007,7 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
             onRowClick={(params) => {
               handleView(params.row);
             }}
-            getRowClassName={(params) => {
+            getRowClassName={() => {
               return '';
             }}
             onPaginationModelChange={(model) => {
@@ -1033,6 +1021,13 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
                   },
                   '& .MuiFormControl-root': {
                     margin: 1,
+                  },
+                  '& .MuiFormControl-root .MuiInputBase-root': {
+                    height: 36,
+                  },
+                  '& .MuiFormControl-root .MuiInputBase-input': {
+                    paddingTop: 6,
+                    paddingBottom: 6,
                   },
                 },
               },
