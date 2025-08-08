@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, ToggleButtonGroup, ToggleButton } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, ToggleButtonGroup, ToggleButton, Skeleton } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -106,6 +106,61 @@ const Annotation = ({ onSave}: Props) => {
 
   const {data: batchData, isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
   const annotatedRootSpans = batchData?.rootSpans || [];
+
+  if (isLoadingSpans) {
+    return (
+      <Container maxWidth={false} sx={{ py: 2, px: 3 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: '1fr 1fr',
+              lg: '1fr 2fr 2fr 1fr',
+            },
+            gridTemplateAreas: {
+              xs: `
+                "header"
+                "input"
+                "output"
+                "annotation"
+              `,
+              md: `
+                "header header"
+                "input input"
+                "output output"
+                "annotation annotation"
+              `,
+              lg: `
+                "header header header header"
+                "input output context annotation"
+                "input output context annotation"
+                "input output context annotation"
+              `,
+            },
+            gap: 3,
+            minHeight: '600px',
+          }}
+        >
+          <Box sx={{ gridArea: 'header' }}>
+            <Skeleton variant="rounded" height={80} />
+          </Box>
+          <Box sx={{ gridArea: 'input' }}>
+            <Skeleton variant="rounded" height={240} />
+          </Box>
+          <Box sx={{ gridArea: 'output' }}>
+            <Skeleton variant="rounded" height={240} />
+          </Box>
+          <Box sx={{ gridArea: 'context', display: { xs: 'none', lg: 'block' } }}>
+            <Skeleton variant="rounded" height={240} />
+          </Box>
+          <Box sx={{ gridArea: 'annotation' }}>
+            <Skeleton variant="rounded" height={200} />
+          </Box>
+        </Box>
+      </Container>
+    );
+  }
 
   // Access formatted cache and ensure it is populated once when formatting completes or on first mount
   const { formattedBySpanId, refreshFormatted } = useFormattedFields(batchId || null);
