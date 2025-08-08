@@ -521,7 +521,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           right: 0,
           top: '50%',
           transform: 'translateY(-50%)',
-          display: 'flex',
+          display: 'column',
           alignItems: 'center',
           gap: 2,
         }}>
@@ -530,7 +530,8 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             value={name}
             onChange={handleNameChange}
             sx={{ 
-              minWidth: 250,
+              width: '100%',
+              mb: 1,
               '& .MuiOutlinedInput-root': {
                 height: 40,
                 '& fieldset': {
@@ -554,7 +555,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             required
             error={!name && name !== ""}
           />
-          
+          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
           <Tooltip
             title={
               !name && selectedRootSpanIds.length === 0 
@@ -566,7 +567,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                     : "Create batch with selected spans"
             }
             arrow
-            placement="top"
+            placement="bottom"
           >
             <span>
               <Button
@@ -618,6 +619,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
           >
             Cancel
           </Button>
+          </Box>
         </Box>
       </Box>
 

@@ -583,105 +583,105 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           transform: 'translateY(-50%)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 1,
+          alignItems: 'center',
+          gap: 2,
         }}>
-          <Tooltip
-            title={
-              !name && selectedRootSpanIds.length === 0 
-                ? "Enter a batch name and select spans to update the batch"
-                : !name 
-                  ? "Enter a batch name to update the batch"
-                  : selectedRootSpanIds.length === 0
-                    ? "Select at least one span to update the batch"
-                    : "Update batch with selected spans"
-            }
-            arrow
-            placement="left"
-          >
-            <span>
-              <Button
-                variant="contained"
-                onClick={handleUpdateBatch}
-                disabled={!name || selectedRootSpanIds.length === 0}
-                size="large"
-                sx={{ 
-                  px: 3, 
-                  minWidth: 200,
-                  maxHeight: 40,
-                  mt: 3,
-                  backgroundColor: 'secondary.main',
-                  color: 'black',
-                  fontWeight: 600,
-                  '&:hover': {
-                    backgroundColor: 'secondary.dark',
-                  },
-                  '&.Mui-disabled': {
-                    backgroundColor: 'grey.400',
-                    color: 'grey.600',
-                  }
-                }}
-              >
-                Update Batch ({selectedRootSpanIds.length})
-              </Button>
-            </span>
-          </Tooltip>
-          
-          <Button
-            variant="outlined"
-            onClick={() => navigate(`/projects/${projectId}`, { 
-              state: { projectName: projectName, projectId: projectId, batchId: batchId, batchName: batchName } 
-            })}
-            size="large"
+          <TextField
+            label="Batch Name"
+            value={name}
+            onChange={handleNameChange}
             sx={{ 
-              px: 3, 
-              minWidth: 200,
-              maxHeight: 40,
-              borderColor: 'grey.400',
-              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-              fontWeight: 600,
-              '&:hover': {
-                borderColor: 'grey.600',
-                backgroundColor: theme.palette.mode === 'dark' 
-                  ? 'rgba(255, 255, 255, 0.08)' 
-                  : 'rgba(0, 0, 0, 0.04)',
-              }
+              width: '100%',
+              mb: 1,
+              '& .MuiOutlinedInput-root': {
+                height: 40,
+                '& fieldset': {
+                  borderColor: 'secondary.main',
+                  borderWidth: '2px',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'secondary.dark',
+                  borderWidth: '2px',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'secondary.main',
+                  borderWidth: '3px',
+                },
+              },
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: 'secondary.main',
+              },
             }}
-          >
-            Cancel
-          </Button>
+            size="small"
+            required
+            error={!name && name !== ""}
+          />
+          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
+            <Tooltip
+              title={
+                !name && selectedRootSpanIds.length === 0 
+                  ? "Enter a batch name and select spans to update the batch"
+                  : !name 
+                    ? "Enter a batch name to update the batch"
+                    : selectedRootSpanIds.length === 0
+                      ? "Select at least one span to update the batch"
+                      : "Update batch with selected spans"
+              }
+              arrow
+              placement="bottom"
+            >
+              <span>
+                <Button
+                  variant="contained"
+                  onClick={handleUpdateBatch}
+                  disabled={!name || selectedRootSpanIds.length === 0}
+                  size="large"
+                  sx={{ 
+                    px: 3, 
+                    minWidth: 200,
+                    height: 40,
+                    backgroundColor: 'secondary.main',
+                    color: 'black',
+                    fontWeight: 600,
+                    '&:hover': {
+                      backgroundColor: 'secondary.dark',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: 'grey.400',
+                      color: 'grey.600',
+                    }
+                  }}
+                >
+                  Update Batch ({selectedRootSpanIds.length})
+                </Button>
+              </span>
+            </Tooltip>
+            
+            <Button
+              variant="outlined"
+              onClick={() => navigate(`/projects/${projectId}`, { 
+                state: { projectName: projectName, projectId: projectId, batchId: batchId, batchName: batchName } 
+              })}
+              size="large"
+              sx={{ 
+                px: 3, 
+                minWidth: 200,
+                height: 40,
+                borderColor: 'grey.400',
+                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                fontWeight: 600,
+                '&:hover': {
+                  borderColor: 'grey.600',
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.08)' 
+                    : 'rgba(0, 0, 0, 0.04)',
+                }
+              }}
+            >
+              Cancel
+            </Button>
+          </Box>
         </Box>
-      </Box>
-
-      {/* Batch Name Control */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 3, alignItems: 'flex-end' }}>
-        <TextField
-          label="Batch Name"
-          value={name}
-          onChange={handleNameChange}
-          sx={{ 
-            minWidth: 300,
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: 'secondary.main',
-                borderWidth: '2px',
-              },
-              '&:hover fieldset': {
-                borderColor: 'secondary.dark',
-                borderWidth: '2px',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: 'secondary.main',
-                borderWidth: '3px',
-              },
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: 'secondary.main',
-            },
-          }}
-          size="medium"
-          required
-          error={!name && name !== ""}
-        />
       </Box>
 
       {/* Filter Form */}
@@ -1059,7 +1059,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           },
         }}
       >
-        <Box sx={{ height: 'calc(100vh - 600px)' }}>
+        <Box sx={{ height: 'calc(100vh - 490px)' }}>
           <DataGrid
             rows={annotatedRootSpans}
             columns={columns}
