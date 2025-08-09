@@ -44,7 +44,7 @@ export const fetchBatches = async (projectId: string): Promise<Batch[]> => {
 }
 
 export const checkBatchFormatted = async (batchId: string) => {
-  const response = await axios.get(`/api/batches/formatted/${batchId}`);
+  const response = await axios.get(`/api/batches/${batchId}/status`);
   return response.data;
 }
 
