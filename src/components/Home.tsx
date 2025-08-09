@@ -1,5 +1,4 @@
 // src/components/Home.tsx
-import { useState, useEffect } from "react";
 import { Container, Typography, Box, Card, CardContent, Button, Link, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { getPhoenixDashboardUrl } from "../services/services";
@@ -12,7 +11,6 @@ const Home = () => {
   const theme = useTheme();
     const {
     data: phoenixDashboardUrl = '',
-    isLoading: urlLoading,
   } = useQuery({
     queryKey: ['phoenixDashboardUrl'],
     queryFn: getPhoenixDashboardUrl,

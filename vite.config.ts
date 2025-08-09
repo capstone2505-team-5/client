@@ -20,4 +20,14 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./setupTests.ts"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Ensure config.js is not bundled
+        manualChunks: {
+          config: ['config.js']
+        }
+      }
+    }
+  }
 });
