@@ -30,7 +30,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef, GridRowParams } from "@mui/x-data-grid";
-import { useRootSpansByProjectFiltered, useUniqueSpanNames, useRandomSpans, useFormattedFields } from "../hooks/useRootSpans";
+import { useRootSpansByProjectFiltered, useUniqueSpanNames, useRandomSpans } from "../hooks/useRootSpans";
 
 interface FilterFormData {
   searchText: string;
@@ -78,9 +78,6 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
     startDate: null,
     endDate: null,
   });
-  
-  // Get the invalidation functions from the mutations hook
-  const { refreshFormatted } = useFormattedFields(null);
 
   // Fetch unique span names for the dropdown
   const { data: spanNames = [] } = useUniqueSpanNames(projectId || null);
@@ -158,50 +155,13 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
     setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
   }, [reset, paginationModel.pageSize]);
 
-  const startListeningForSSE = (batchId: string) => {
-    const eventSource = new EventSource(`/api/batches/${batchId}/events`);
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log('SSE Event received:', data);
-      
-      // Handle different event types from the server
-      if (data.status === 'completed') {
-        // Refresh only the formatted cache; avoid invalidating rootSpans to preserve user input state.
-        refreshFormatted(batchId).catch(() => {/* noop */});
-        // Set a one-time UI hint for annotation screen
-        sessionStorage.setItem(`highlightFormatted_${batchId}`, 'true');
-        sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
-          open: true,
-          message: 'Formatted views are now available',
-          severity: 'info'
-        }));
-        // Dispatch a custom event so any open annotation screen can react instantly
-        window.dispatchEvent(new CustomEvent('batchFormattingCompleted', { detail: { batchId } }));
-      }
-    };
-    eventSource.onerror = (event) => {
-      console.error('SSE connection error:', event);
-      eventSource.close();
-    };
-
-    // Set a timeout to close connection after 2 minutes
-    setTimeout(() => {
-      if (eventSource.readyState === EventSource.OPEN) {
-        eventSource.close();
-        console.log(`SSE timeout for batch ${batchId}`);
-      }
-    }, 120000); // 2 minutes timeout
-    
-  }
 
   const handleCreateBatch = useCallback(async () => {
     if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
     
     try {
       const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
-      // Start SSE connection
-      // startListeningForSSE(batchId);
-      
+
       // Navigate to the newly created batch
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 
@@ -210,7 +170,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
     } catch (error) {
       console.error("Failed to create batch:", error);
     }
-  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName, startListeningForSSE]);
+  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName]);
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);

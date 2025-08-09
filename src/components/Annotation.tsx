@@ -11,7 +11,7 @@ import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
 import { useFormattedFields } from "../hooks/useRootSpans";
-import { getPhoenixDashboardUrl } from "../services/services";
+import { getPhoenixDashboardUrl, checkBatchFormatted } from "../services/services";
 import ReactMarkdown from 'react-markdown';
 import Context, { useContextFile } from './Context';
 
@@ -172,6 +172,82 @@ const Annotation = ({ onSave}: Props) => {
     }
   }, [batchId, batchData]);
 
+  // Polling for formatted availability with fast-path check
+  useEffect(() => {
+    if (!batchId) return;
+
+    let stopped = false;
+    let intervalId: number | null = null;
+    const startedAt = Date.now();
+
+    const notifyOnce = () => {
+      const notifiedKey = `formattingNotified_${batchId}`;
+      if (sessionStorage.getItem(notifiedKey)) return;
+      sessionStorage.setItem(`highlightFormatted_${batchId}`, 'true');
+      sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
+        open: true,
+        message: 'Formatted views are now available',
+        severity: 'info'
+      }));
+      window.dispatchEvent(new CustomEvent('batchFormattingCompleted', { detail: { batchId } }));
+      sessionStorage.setItem(notifiedKey, 'true');
+    };
+
+    const hasAnyFormattedNow = () => {
+      if (!annotatedRootSpans || annotatedRootSpans.length === 0) return false;
+      return annotatedRootSpans.some(span => {
+        const overlay = formattedBySpanId?.[span.id];
+        const formattedInput = overlay?.formattedInput ?? span.formattedInput;
+        const formattedOutput = overlay?.formattedOutput ?? span.formattedOutput;
+        return !!(formattedInput || formattedOutput);
+      });
+    };
+
+    (async () => {
+      try {
+        // Attempt to hydrate formatted cache first
+        await refreshFormatted();
+        if (stopped) return;
+
+        // Single server check
+        const first = await checkBatchFormatted(batchId);
+        if (stopped) return;
+        if (first && (first.isFormatted === true || first.formatted === true)) {
+          await refreshFormatted();
+          if (!stopped) notifyOnce();
+          return;
+        }
+
+        // Start polling every 5s, up to 6 minutes
+        intervalId = window.setInterval(async () => {
+          if (Date.now() - startedAt > 10 * 60 * 1000) {
+            if (intervalId) window.clearInterval(intervalId);
+            intervalId = null;
+            return;
+          }
+          try {
+            const res = await checkBatchFormatted(batchId);
+            if (res && (res.isFormatted === true || res.formatted === true)) {
+              if (intervalId) window.clearInterval(intervalId);
+              intervalId = null;
+              await refreshFormatted();
+              if (!stopped) notifyOnce();
+            }
+          } catch (e) {
+            // swallow transient errors
+          }
+        }, 5000);
+      } catch (e) {
+        // swallow
+      }
+    })();
+
+    return () => {
+      stopped = true;
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [batchId, annotatedRootSpans, formattedBySpanId, refreshFormatted]);
+
   // If SSE completed recently, show a one-time pulse on the toggles and a snackbar (snackbar already handled via sessionStorage elsewhere)
   useEffect(() => {
     if (!batchId) return;
@@ -265,7 +341,7 @@ const Annotation = ({ onSave}: Props) => {
       } 
     }, 200); // delay in ms (adjust as needed)
     return () => clearTimeout(timer); // cleanup if span changes quickly
-  }, [currentSpan?.id]); // Trigger when span changes
+  }, [currentSpan?.id]);
   
   
   // Use the span from the API data if available, otherwise fall back to the passed one
@@ -615,7 +691,7 @@ const Annotation = ({ onSave}: Props) => {
                   borderColor: 'secondary.main',
                   boxShadow: theme.palette.mode === 'dark'
                     ? '0 2px 8px rgba(255, 235, 59, 0.2)'
-                    : '0 2px 8px rgba(255, 235, 59, 0.3)',
+                    : '0 2px 8px rgba(255, 255, 59, 0.3)',
                   cursor: 'pointer',
                   '&:hover': {
                     borderColor: 'secondary.dark',
