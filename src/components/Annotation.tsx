@@ -238,7 +238,7 @@ const Annotation = ({ onSave}: Props) => {
           }
         }, 5000);
       } catch (e) {
-        // swallow
+        // swallow transient errors
       }
     })();
 

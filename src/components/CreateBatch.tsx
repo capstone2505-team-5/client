@@ -19,6 +19,7 @@ import {
   Modal,
   Backdrop,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -57,6 +58,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
   const [displaySpanDetails, setDisplaySpanDetails] = useState(false);
   const [selectedSpanForModal, setSelectedSpanForModal] = useState<any>(null);
   const MAX_SPANS_PER_BATCH = 150;
+  const [isCreating, setIsCreating] = useState(false);
   
   // Filter form setup
   const { control, handleSubmit, watch, reset, setValue } = useForm<FilterFormData>({
@@ -157,9 +159,11 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
 
 
   const handleCreateBatch = useCallback(async () => {
+    if (isCreating) return; // guard against double submit
     if (!name || selectedRootSpanIds.length === 0 || !projectId) return;
     
     try {
+      setIsCreating(true);
       const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
 
       // Navigate to the newly created batch
@@ -169,8 +173,11 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       
     } catch (error) {
       console.error("Failed to create batch:", error);
+    } finally {
+      // Safe to reset even if navigating away; component will unmount
+      setIsCreating(false);
     }
-  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName]);
+  }, [name, selectedRootSpanIds, onCreateBatch, navigate, projectId, projectName, isCreating]);
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -512,19 +519,22 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             size="small"
             required
             error={!name && name !== ""}
+            disabled={isCreating}
           />
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
           <Tooltip
             title={
-              !name && selectedRootSpanIds.length === 0
-                ? "Enter a batch name and select spans to create a batch"
-                : !name
-                  ? "Enter a batch name to create the batch"
-                  : selectedRootSpanIds.length === 0
-                    ? "Select at least one span to create a batch"
-                    : selectedRootSpanIds.length > MAX_SPANS_PER_BATCH
-                      ? `You can select up to ${MAX_SPANS_PER_BATCH} spans`
-                      : "Create batch with selected spans"
+              isCreating
+                ? "Creating batch..."
+                : (!name && selectedRootSpanIds.length === 0
+                  ? "Enter a batch name and select spans to create a batch"
+                  : !name
+                    ? "Enter a batch name to create the batch"
+                    : selectedRootSpanIds.length === 0
+                      ? "Select at least one span to create a batch"
+                      : selectedRootSpanIds.length > MAX_SPANS_PER_BATCH
+                        ? `You can select up to ${MAX_SPANS_PER_BATCH} spans`
+                        : "Create batch with selected spans")
             }
             arrow
             placement="bottom"
@@ -533,7 +543,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
               <Button
                 variant="contained"
                 onClick={handleCreateBatch}
-                disabled={!name || selectedRootSpanIds.length === 0 || selectedRootSpanIds.length > MAX_SPANS_PER_BATCH}
+                disabled={isCreating || !name || selectedRootSpanIds.length === 0 || selectedRootSpanIds.length > MAX_SPANS_PER_BATCH}
                 size="large"
                 sx={{ 
                   px: 3, 
@@ -551,7 +561,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                   }
                 }}
               >
-                Create Batch ({selectedRootSpanIds.length}{selectedRootSpanIds.length > MAX_SPANS_PER_BATCH ? ` / ${MAX_SPANS_PER_BATCH}` : ''})
+                {isCreating ? 'Creating…' : `Create Batch (${selectedRootSpanIds.length}${selectedRootSpanIds.length > MAX_SPANS_PER_BATCH ? ` / ${MAX_SPANS_PER_BATCH}` : ''})`}
               </Button>
             </span>
           </Tooltip>
@@ -562,6 +572,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
               state: { projectName: projectName, projectId: projectId } 
             })}
             size="large"
+            disabled={isCreating}
             sx={{ 
               px: 3, 
               minWidth: 200,
@@ -612,6 +623,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                     size="small"
                     placeholder="Search spans by input, output, or span ID..."
                     fullWidth
+                    disabled={isCreating}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -624,6 +636,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                             size="small"
                             onClick={() => setValue('searchText', '')}
                             edge="end"
+                            disabled={isCreating}
                           >
                             <ClearIcon fontSize="small" />
                           </IconButton>
@@ -640,7 +653,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                   name="spanName"
                   control={control}
                   render={({ field }) => (
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <FormControl size="small" sx={{ minWidth: 200 }} disabled={isCreating}>
                       <InputLabel>Span Name</InputLabel>
                       <Select {...field} label="Span Name">
                         <MenuItem value="">All Spans</MenuItem>
@@ -658,7 +671,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                   name="dateFilter"
                   control={control}
                   render={({ field }) => (
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <FormControl size="small" sx={{ minWidth: 160 }} disabled={isCreating}>
                       <InputLabel>Time Period</InputLabel>
                       <Select {...field} label="Time Period">
                         <MenuItem value="all">All Time</MenuItem>
@@ -685,6 +698,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                             textField: {
                               size: 'small',
                               sx: { minWidth: 140 },
+                              disabled: isCreating
                             },
                           }}
                         />
@@ -701,6 +715,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                             textField: {
                               size: 'small',
                               sx: { minWidth: 140 },
+                              disabled: isCreating
                             },
                           }}
                         />
@@ -716,6 +731,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                     variant="outlined"
                     size="small"
                     startIcon={<FilterListIcon />}
+                    disabled={isCreating}
                     sx={{
                       borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
                       color: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
@@ -741,7 +757,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                         size="small"
                         startIcon={<ShuffleIcon />}
                         onClick={handleRandomSpans}
-                        disabled={isRandomDisabled}
+                        disabled={isRandomDisabled || isCreating}
                         sx={{
                           borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
                           color: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
@@ -762,6 +778,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                     variant="text"
                     size="small"
                     onClick={handleClearFilters}
+                    disabled={isCreating}
                     sx={{ color: 'text.secondary' }}
                   >
                     Clear
@@ -1011,6 +1028,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
                 value={paginationModel.pageSize}
                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 sx={{ color: 'text.primary' }}
+                disabled={isCreating}
               >
                 <MenuItem value={25}>25</MenuItem>
                 <MenuItem value={50}>50</MenuItem>
@@ -1053,7 +1071,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
               <Button
                 size="small"
                 onClick={() => handlePageChange(0)}
-                disabled={paginationModel.page === 0 || stableLoading}
+                disabled={paginationModel.page === 0 || stableLoading || isCreating}
                 sx={{ minWidth: 'auto', px: 1 }}
               >
                 ⟪
@@ -1061,7 +1079,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
               <Button
                 size="small"
                 onClick={() => handlePageChange(paginationModel.page - 1)}
-                disabled={paginationModel.page === 0 || stableLoading}
+                disabled={paginationModel.page === 0 || stableLoading || isCreating}
                 sx={{ minWidth: 'auto', px: 1 }}
               >
                 ⟨
@@ -1072,7 +1090,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
               <Button
                 size="small"
                 onClick={() => handlePageChange(paginationModel.page + 1)}
-                disabled={paginationModel.page >= Math.ceil(totalCount / paginationModel.pageSize) - 1 || stableLoading}
+                disabled={paginationModel.page >= Math.ceil(totalCount / paginationModel.pageSize) - 1 || stableLoading || isCreating}
                 sx={{ minWidth: 'auto', px: 1 }}
               >
                 ⟩
@@ -1080,7 +1098,7 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
               <Button
                 size="small"
                 onClick={() => handlePageChange(Math.ceil(totalCount / paginationModel.pageSize) - 1)}
-                disabled={paginationModel.page >= Math.ceil(totalCount / paginationModel.pageSize) - 1 || stableLoading}
+                disabled={paginationModel.page >= Math.ceil(totalCount / paginationModel.pageSize) - 1 || stableLoading || isCreating}
                 sx={{ minWidth: 'auto', px: 1 }}
               >
                 ⟫
@@ -1088,117 +1106,182 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
             </Box>
           </Box>
         </Box>
+
+        {/* Span Details Modal */}
+        <Modal
+          open={displaySpanDetails}
+          onClose={handleCloseModal}
+          closeAfterTransition
+          BackdropComponent={Backdrop}
+          BackdropProps={{
+            timeout: 500,
+          }}
+        >
+          <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '80%',
+            maxWidth: 800,
+            maxHeight: '80vh',
+            bgcolor: 'background.paper',
+            border: '2px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            overflow: 'auto',
+          }}>
+            {selectedSpanForModal && (
+              <>
+                <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 'bold' }}>
+                  Span Details
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                      Span Name
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      borderRadius: 1 
+                    }}>
+                      {selectedSpanForModal.spanName}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                      Date
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      borderRadius: 1 
+                    }}>
+                      {formatDateTime(selectedSpanForModal.startTime)}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                      Input
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      borderRadius: 1,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}>
+                      {selectedSpanForModal.input || 'No input data'}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                      Output
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      borderRadius: 1,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}>
+                      {selectedSpanForModal.output || 'No output data'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                  <Button 
+                    onClick={handleCloseModal}
+                    variant="contained"
+                    sx={{
+                      backgroundColor: 'secondary.main',
+                      color: 'black',
+                      '&:hover': {
+                        backgroundColor: 'secondary.dark',
+                      }
+                    }}
+                  >
+                    Close
+                  </Button>
+                </Box>
+              </>
+            )}
+          </Box>
+        </Modal>
       </Paper>
 
-      {/* Span Details Modal */}
-      <Modal
-        open={displaySpanDetails}
-        onClose={handleCloseModal}
-        closeAfterTransition
-        BackdropComponent={Backdrop}
-        BackdropProps={{
-          timeout: 500,
+      {/* Creating Backdrop */}
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
         }}
+        open={isCreating}
+        onClick={(e) => e.stopPropagation()}
       >
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '80%',
-          maxWidth: 800,
-          maxHeight: '80vh',
-          bgcolor: 'background.paper',
-          border: '2px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          boxShadow: 24,
-          p: 4,
-          overflow: 'auto',
-        }}>
-          {selectedSpanForModal && (
-            <>
-              <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 'bold' }}>
-                Span Details
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
-                    Span Name
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    p: 2, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    borderRadius: 1 
-                  }}>
-                    {selectedSpanForModal.spanName}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
-                    Date
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    p: 2, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    borderRadius: 1 
-                  }}>
-                    {formatDateTime(selectedSpanForModal.startTime)}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
-                    Input
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    p: 2, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    borderRadius: 1,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word'
-                  }}>
-                    {selectedSpanForModal.input || 'No input data'}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
-                    Output
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    p: 2, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    borderRadius: 1,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word'
-                  }}>
-                    {selectedSpanForModal.output || 'No output data'}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                <Button 
-                  onClick={handleCloseModal}
-                  variant="contained"
-                  sx={{
-                    backgroundColor: 'secondary.main',
-                    color: 'black',
-                    '&:hover': {
-                      backgroundColor: 'secondary.dark',
-                    }
-                  }}
-                >
-                  Close
-                </Button>
-              </Box>
-            </>
-          )}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            p: 4,
+            borderRadius: 2,
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(40, 40, 40, 0.95)' 
+              : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid',
+            borderColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            minWidth: 300,
+          }}
+        >
+          <CircularProgress 
+            size={60} 
+            thickness={4}
+            sx={{ 
+              color: 'secondary.main',
+              mb: 3 
+            }} 
+          />
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 'bold',
+              mb: 1,
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121'
+            }}
+          >
+            Creating Batch
+          </Typography>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.7)' 
+                : 'rgba(0, 0, 0, 0.6)',
+              maxWidth: 400,
+              lineHeight: 1.5
+            }}
+          >
+            Please wait a moment while your batch is being created…
+          </Typography>
         </Box>
-      </Modal>
+      </Backdrop>
     </Container>
   );
 };
