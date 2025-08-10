@@ -166,6 +166,13 @@ const CreateBatch = ({ onCreateBatch }: CreateBatchProps) => {
       setIsCreating(true);
       const batchId = await onCreateBatch(name, projectId, selectedRootSpanIds);
 
+      // Store success toast in sessionStorage for RootSpans to display after navigation
+      sessionStorage.setItem('pendingToast', JSON.stringify({
+        open: true,
+        message: `Batch "${name}" created with ${selectedRootSpanIds.length} span${selectedRootSpanIds.length === 1 ? '' : 's'}`,
+        severity: 'success'
+      }));
+
       // Navigate to the newly created batch
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 

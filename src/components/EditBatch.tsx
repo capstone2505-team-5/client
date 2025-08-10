@@ -182,6 +182,13 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
       setIsUpdating(true);
       await onUpdateBatch(batchId, name, selectedRootSpanIds);
       
+      // Store success toast for RootSpans to display after navigation
+      sessionStorage.setItem('pendingToast', JSON.stringify({
+        open: true,
+        message: `Batch update successful`,
+        severity: 'success'
+      }));
+
       // Navigate back to the batch view
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 
@@ -290,6 +297,9 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
     setDisplaySpanDetails(false);
     setSelectedSpanForModal(null);
   };
+
+  // Whether to show the "Selected spans first" indicator
+  const showSelectedFirst = true;
 
   const columns: GridColDef[] = [
     {
