@@ -193,16 +193,6 @@ const Annotation = ({ onSave}: Props) => {
       sessionStorage.setItem(notifiedKey, 'true');
     };
 
-    const hasAnyFormattedNow = () => {
-      if (!annotatedRootSpans || annotatedRootSpans.length === 0) return false;
-      return annotatedRootSpans.some(span => {
-        const overlay = formattedBySpanId?.[span.id];
-        const formattedInput = overlay?.formattedInput ?? span.formattedInput;
-        const formattedOutput = overlay?.formattedOutput ?? span.formattedOutput;
-        return !!(formattedInput || formattedOutput);
-      });
-    };
-
     (async () => {
       try {
         // Attempt to hydrate formatted cache first
@@ -218,7 +208,7 @@ const Annotation = ({ onSave}: Props) => {
           return;
         }
 
-        // Start polling every 5s, up to 6 minutes
+        // Start polling every 5s, up to 10 minute
         intervalId = window.setInterval(async () => {
           if (Date.now() - startedAt > 10 * 60 * 1000) {
             if (intervalId) window.clearInterval(intervalId);
