@@ -83,8 +83,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
     startDate: null,
     endDate: null,
   });
-  const [showSelectedFirst, setShowSelectedFirst] = useState(true);
-  
   
   // Fetch current batch information
   const { data: batchData, isLoading: batchLoading } = useRootSpansByBatch(batchId || null);
@@ -136,7 +134,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
   
   // Sort spans to show selected ones first if enabled
   const annotatedRootSpans = useMemo(() => {
-    if (!showSelectedFirst) return rawRootSpans;
     
     return [...rawRootSpans].sort((a, b) => {
       const aSelected = selectedSet.has(a.id);
@@ -149,12 +146,12 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
       // Within each group, maintain original order
       return 0;
     });
-  }, [rawRootSpans, selectedSet, showSelectedFirst]);
+  }, [rawRootSpans, selectedSet]);
   
   const totalCount = currentData?.totalCount || 0;
   
   // Use the loading state to prevent DataGrid resets, but don't show completely empty data
-  const stableLoading = (isRandomMode ? isRandomLoading : isLoading) && !currentData;
+  const stableLoading = (isRandomMode ? isRandomLoading : isLoading || batchLoading) && !currentData;
 
   // Filter form handlers
   const onFilterSubmit = useCallback((data: FilterFormData) => {
@@ -293,15 +290,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
     setDisplaySpanDetails(false);
     setSelectedSpanForModal(null);
   };
-
-  // Show loading state while batch data is loading
-  if (batchLoading) {
-    return (
-      <Container maxWidth={false} sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <Typography variant="h6">Loading batch information...</Typography>
-      </Container>
-    );
-  }
 
   const columns: GridColDef[] = [
     {
@@ -812,33 +800,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
 
                 {/* Action Buttons */}
                 <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
-                <Button
-                    type="button"
-                    variant={showSelectedFirst ? "contained" : "outlined"}
-                    size="small"
-                    startIcon={<SortIcon />}
-                    onClick={() => setShowSelectedFirst(!showSelectedFirst)}
-                    disabled={isUpdating}
-                    sx={{
-                      borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
-                      color: showSelectedFirst 
-                        ? (theme.palette.mode === 'dark' ? 'black' : 'white')
-                        : (theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main'),
-                      backgroundColor: showSelectedFirst 
-                        ? (theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main')
-                        : 'transparent',
-                      '&:hover': {
-                        borderColor: theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark',
-                        backgroundColor: showSelectedFirst
-                          ? (theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark')
-                          : (theme.palette.mode === 'dark' 
-                              ? 'rgba(255, 235, 59, 0.1)' 
-                              : 'rgba(25, 118, 210, 0.1)'),
-                      },
-                    }}
-                  >
-                    Selected Spans First
-                  </Button>
                   <Button
                     type="submit"
                     variant="outlined"
@@ -877,7 +838,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           {/* Filter Status Indicator */}
           {(isRandomMode || Object.values(appliedFilters).some(value => 
             value && value !== '' && value !== 'all'
-          ) || showSelectedFirst) && (
+          )) && (
             <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               {isRandomMode ? (
                 <>
