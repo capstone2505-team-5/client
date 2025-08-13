@@ -228,5 +228,13 @@
     </script>
     
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Set default config for development
+      window.APP_CONFIG = {
+        API_GATEWAY_URL: 'http://localhost:3000'
+      };
+    </script>
+    <!-- Production config will override the above -->
+    <script src="/config.js"></script>
   </body>
 </html>

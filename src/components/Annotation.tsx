@@ -1,14 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Container, Typography, Box, Button, TextField, Chip, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Container, Typography, Box, Button, TextField, Paper, useTheme as muiUseTheme, Tooltip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, ToggleButtonGroup, ToggleButton, Skeleton } from "@mui/material";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import type { Rating as RatingType } from "../types/types";
 import { useRootSpansByBatch } from "../hooks/useRootSpans";
-import { getPhoenixDashboardUrl } from "../services/services";
+import { useFormattedFields } from "../hooks/useRootSpans";
+import { getPhoenixDashboardUrl, checkBatchFormatted } from "../services/services";
 import ReactMarkdown from 'react-markdown';
+import Context, { useContextFile } from './Context';
 
 interface Props {
   onSave: (annotationId: string, rootSpanId: string, note: string, rating: RatingType | null, batchId: string) => Promise<{ isNew: boolean }>;
@@ -32,14 +37,28 @@ const Annotation = ({ onSave}: Props) => {
   const [hotkeyModalOpen, setHotkeyModalOpen] = useState(false);
   const [displayFormattedInput, setDisplayFormattedInput] = useState(false);
   const [displayFormattedOutput, setDisplayFormattedOutput] = useState(false);
+  const [highlightInputToggle, setHighlightInputToggle] = useState(false);
+  const [highlightOutputToggle, setHighlightOutputToggle] = useState(false);
   const [displayConfirmCategorize, setDisplayConfirmCategorize] = useState(false);
   const [isFooterHidden, setIsFooterHidden] = useState(false);
+  const [isContextPanelVisible, setIsContextPanelVisible] = useState(true);
+
+  // Get file state from Context component
+  const { file, handleRemoveFile } = useContextFile();
 
   // Track original values to detect changes
   const [originalAnnotation, setOriginalAnnotation] = useState<{
     rating: RatingType | null;
     note: string;
   }>({ rating: null, note: "" });
+
+  // Clear context file when starting a new batch or leaving the annotation view
+  useEffect(() => {
+    handleRemoveFile();
+    return () => {
+      handleRemoveFile();
+    };
+  }, [batchId, handleRemoveFile]);
 
   // Helper function to render keyboard keys
   const renderKey = (key: string) => (
@@ -88,6 +107,173 @@ const Annotation = ({ onSave}: Props) => {
   const {data: batchData, isLoading: isLoadingSpans} = useRootSpansByBatch(batchId || null);
   const annotatedRootSpans = batchData?.rootSpans || [];
 
+  if (isLoadingSpans) {
+    return (
+      <Container maxWidth={false} sx={{ py: 2, px: 3 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: '1fr 1fr',
+              lg: '1fr 2fr 2fr 1fr',
+            },
+            gridTemplateAreas: {
+              xs: `
+                "header"
+                "input"
+                "output"
+                "annotation"
+              `,
+              md: `
+                "header header"
+                "input input"
+                "output output"
+                "annotation annotation"
+              `,
+              lg: `
+                "header header header header"
+                "input output context annotation"
+                "input output context annotation"
+                "input output context annotation"
+              `,
+            },
+            gap: 3,
+            minHeight: '600px',
+          }}
+        >
+          <Box sx={{ gridArea: 'header' }}>
+            <Skeleton variant="rounded" height={80} />
+          </Box>
+          <Box sx={{ gridArea: 'input' }}>
+            <Skeleton variant="rounded" height={240} />
+          </Box>
+          <Box sx={{ gridArea: 'output' }}>
+            <Skeleton variant="rounded" height={240} />
+          </Box>
+          <Box sx={{ gridArea: 'context', display: { xs: 'none', lg: 'block' } }}>
+            <Skeleton variant="rounded" height={240} />
+          </Box>
+          <Box sx={{ gridArea: 'annotation' }}>
+            <Skeleton variant="rounded" height={200} />
+          </Box>
+        </Box>
+      </Container>
+    );
+  }
+
+  // Access formatted cache and ensure it is populated once when formatting completes or on first mount
+  const { formattedBySpanId, refreshFormatted } = useFormattedFields(batchId || null);
+
+  useEffect(() => {
+    // Populate formatted cache once if empty and we have batch data loaded
+    if (batchId && batchData && Object.keys(formattedBySpanId || {}).length === 0) {
+      refreshFormatted().catch(() => {/* noop */});
+    }
+  }, [batchId, batchData]);
+
+  // Polling for formatted availability with fast-path check
+  useEffect(() => {
+    if (!batchId) return;
+
+    let stopped = false;
+    let intervalId: number | null = null;
+    const startedAt = Date.now();
+
+    const notifyOnce = () => {
+      const notifiedKey = `formattingNotified_${batchId}`;
+      if (sessionStorage.getItem(notifiedKey)) return;
+      sessionStorage.setItem(`highlightFormatted_${batchId}`, 'true');
+      sessionStorage.setItem('pendingAnnotationToast', JSON.stringify({
+        open: true,
+        message: 'Formatted views are now available',
+        severity: 'info'
+      }));
+      window.dispatchEvent(new CustomEvent('batchFormattingCompleted', { detail: { batchId } }));
+      sessionStorage.setItem(notifiedKey, 'true');
+    };
+
+    (async () => {
+      try {
+        // Attempt to hydrate formatted cache first
+        await refreshFormatted();
+        if (stopped) return;
+
+        // Single server check
+        const first = await checkBatchFormatted(batchId);
+        if (stopped) return;
+        if (first && (first.isFormatted === true || first.formatted === true)) {
+          await refreshFormatted();
+          if (!stopped) notifyOnce();
+          return;
+        }
+
+        // Start polling every 5s, up to 10 minute
+        intervalId = window.setInterval(async () => {
+          if (Date.now() - startedAt > 10 * 60 * 1000) {
+            if (intervalId) window.clearInterval(intervalId);
+            intervalId = null;
+            return;
+          }
+          try {
+            const res = await checkBatchFormatted(batchId);
+            if (res && (res.isFormatted === true || res.formatted === true)) {
+              if (intervalId) window.clearInterval(intervalId);
+              intervalId = null;
+              await refreshFormatted();
+              if (!stopped) notifyOnce();
+            }
+          } catch (e) {
+            // swallow transient errors
+          }
+        }, 5000);
+      } catch (e) {
+        // swallow transient errors
+      }
+    })();
+
+    return () => {
+      stopped = true;
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [batchId, annotatedRootSpans, formattedBySpanId, refreshFormatted]);
+
+  // If SSE completed recently, show a one-time pulse on the toggles and a snackbar (snackbar already handled via sessionStorage elsewhere)
+  useEffect(() => {
+    if (!batchId) return;
+    const key = `highlightFormatted_${batchId}`;
+    const shouldHighlight = sessionStorage.getItem(key);
+    if (shouldHighlight) {
+      sessionStorage.removeItem(key);
+      setHighlightInputToggle(true);
+      setHighlightOutputToggle(true);
+      const t = setTimeout(() => {
+        setHighlightInputToggle(false);
+        setHighlightOutputToggle(false);
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [batchId]);
+
+  // Listen for immediate formatting completion event to update UI without user interaction
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { batchId?: string } | undefined;
+      if (!batchId || (detail?.batchId && detail.batchId !== batchId)) return;
+      refreshFormatted().catch(() => {/* noop */});
+      // Show toast if not already queued
+      setSnackbar(prev => prev.open ? prev : ({ open: true, message: 'Formatted views are now available', severity: 'info' }));
+      setHighlightInputToggle(true);
+      setHighlightOutputToggle(true);
+      setTimeout(() => {
+        setHighlightInputToggle(false);
+        setHighlightOutputToggle(false);
+      }, 2000);
+    };
+    window.addEventListener('batchFormattingCompleted', handler);
+    return () => window.removeEventListener('batchFormattingCompleted', handler);
+  }, [batchId, refreshFormatted]);
+
   // Debug effect to track when batch data changes
   useEffect(() => {
     if (batchData) {
@@ -123,19 +309,6 @@ const Annotation = ({ onSave}: Props) => {
       setOriginalAnnotation({ rating: null, note: "" });
     }
     
-    // Auto-select formatted when available
-    if (currentSpan?.formattedInput) {
-      setDisplayFormattedInput(true);
-    } else {
-      setDisplayFormattedInput(false);
-    }
-    
-    if (currentSpan?.formattedOutput) {
-      setDisplayFormattedOutput(true);
-    } else {
-      setDisplayFormattedOutput(false);
-    }
-    
     // Auto-focus the notes field when span changes
     // Use a small delay to ensure the component has rendered
     const timer = setTimeout(() => {
@@ -158,7 +331,7 @@ const Annotation = ({ onSave}: Props) => {
       } 
     }, 200); // delay in ms (adjust as needed)
     return () => clearTimeout(timer); // cleanup if span changes quickly
-  }, [currentSpan?.id]); // Trigger when span changes
+  }, [currentSpan?.id]);
   
   
   // Use the span from the API data if available, otherwise fall back to the passed one
@@ -416,7 +589,11 @@ const Annotation = ({ onSave}: Props) => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
+    <Container 
+      disableGutters={isContextPanelVisible} 
+      maxWidth={isContextPanelVisible ? false : 'xl'} 
+      sx={{ py: 2, px: 3}}
+    >
       {/* CSS Grid Layout */}
       <Box
         sx={{
@@ -424,33 +601,38 @@ const Annotation = ({ onSave}: Props) => {
           gridTemplateColumns: {
             xs: '1fr',
             md: '1fr 1fr',
-            lg: '1fr 2fr 1fr'
+            lg: isContextPanelVisible ? '1fr 2fr 2fr 1fr' : '1fr 2fr 1fr',
           },
           gridTemplateRows: {
-            xs: 'auto auto auto auto auto',
-            md: 'auto auto auto 2fr auto',
+            xs: 'auto auto auto auto',
+            md: 'auto auto 2fr auto',
             lg: 'auto 1fr 1fr auto'
           },
           gridTemplateAreas: {
             xs: `
               "header"
               "input"
-              "controls"
               "output"
               "annotation"
             `,
             md: `
               "header header"
               "input input"
-              "controls controls"
               "output output"
               "annotation annotation"
             `,
-            lg: `
+            lg: isContextPanelVisible
+              ? `
+              "header header header header"
+              "input output context annotation"
+              "input output context annotation"
+              "input output context annotation"
+            `
+              : `
               "header header header"
               "input output annotation"
               "input output annotation"
-              "controls output annotation"
+              "input output annotation"
             `
           },
           gap: 3,
@@ -463,14 +645,14 @@ const Annotation = ({ onSave}: Props) => {
           sx={{
             gridArea: 'header',
             display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'start',
-            gap: 2,
+            gridTemplateColumns: 'auto 2fr 2fr auto',
+            alignItems: 'center',
+            gap: 3,
             py: 1
           }}
         >
           {/* Left Section - Breadcrumbs */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-start', alignSelf: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {/* Project Box */}
             {projectName && (
             <>
@@ -486,7 +668,11 @@ const Annotation = ({ onSave}: Props) => {
                 }}
                 sx={{
                   px: 2,
-                  py: 0.75,
+                  py: 1,
+                  minHeight: '80px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
                   backgroundColor: theme.palette.mode === 'dark' 
                     ? 'rgba(0, 0, 0, 0.4)' 
                     : 'rgba(255, 255, 255, 0.9)',
@@ -495,7 +681,7 @@ const Annotation = ({ onSave}: Props) => {
                   borderColor: 'secondary.main',
                   boxShadow: theme.palette.mode === 'dark'
                     ? '0 2px 8px rgba(255, 235, 59, 0.2)'
-                    : '0 2px 8px rgba(255, 235, 59, 0.3)',
+                    : '0 2px 8px rgba(255, 255, 59, 0.3)',
                   cursor: 'pointer',
                   '&:hover': {
                     borderColor: 'secondary.dark',
@@ -545,7 +731,11 @@ const Annotation = ({ onSave}: Props) => {
                 }}
                 sx={{
                 px: 2,
-                py: 0.75,
+                py: 1,
+                minHeight: '80px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
                 backgroundColor: theme.palette.mode === 'dark' 
                   ? 'rgba(0, 0, 0, 0.4)' 
                   : 'rgba(255, 255, 255, 0.9)',
@@ -585,12 +775,93 @@ const Annotation = ({ onSave}: Props) => {
                 </Typography>
               </Box>
               </Tooltip>
+              <ChevronRightIcon sx={{ color: 'text.secondary', fontSize: '1.5rem' }} />
             </>
           )}
+
+          {/* Span Box */}
+          <Box 
+            sx={{
+              px: 2,
+              py: 1,
+              minHeight: '80px',
+              minWidth: 'fit-content',
+              maxWidth: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(0, 0, 0, 0.4)' 
+                : 'rgba(255, 255, 255, 0.9)',
+              borderRadius: 2,
+              border: '2px solid',
+              borderColor: 'secondary.main',
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 2px 8px rgba(76, 175, 80, 0.2)'
+                : '0 2px 8px rgba(76, 175, 80, 0.3)',
+            }}
+          >
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                fontWeight: 'medium',
+                fontSize: '0.875rem',
+                letterSpacing: '0.5px'
+              }}
+            >
+              SPAN
+            </Typography>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                mt: -0.5,
+                wordBreak: 'break-all',
+                lineHeight: 1.2
+              }}
+            >
+              {currentSpan.id}
+            </Typography>
+            <Typography 
+              variant="body2" 
+              component="a"
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  const phoenixUrl = await getPhoenixDashboardUrl();
+                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${currentSpan.traceId}`, '_blank');
+                } catch (error) {
+                  console.error('Failed to get Phoenix dashboard URL:', error);
+                }
+              }}
+              sx={{ 
+                fontSize: '0.75rem', 
+                color: 'primary.main',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                mt: 0.5,
+                '&:hover': {
+                  color: 'primary.dark',
+                }
+              }}
+            >
+              Details in Phoenix →
+            </Typography>
+          </Box>
           </Box>
 
-                    {/* Center Section - Progress */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '400px', alignSelf: 'center' }}>
+          {/* Progress Section - Spans both output and context columns */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center',
+            minWidth: '450px',
+            maxWidth: '500px',
+            mx: 'auto'
+          }}>
             {annotatedRootSpans.length > 0 && (() => {
               // Calculate how many spans have been annotated (have a rating)
               const annotatedCount = annotatedRootSpans.filter(span => span.annotation?.rating).length;
@@ -599,7 +870,7 @@ const Annotation = ({ onSave}: Props) => {
               return (
                 <>
                   <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121', mb: 1 }}>
-                    Grading Progress
+                    Batch Grading Progress
                   </Typography>
                   
                   {/* Enhanced Progress Bar Container */}
@@ -607,7 +878,7 @@ const Annotation = ({ onSave}: Props) => {
                     position: 'relative', 
                     width: '100%', 
                     height: 40,
-                    borderRadius: 20,
+                    borderRadius: 16,
                     backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
                     border: '2px solid',
                     borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
@@ -650,7 +921,7 @@ const Annotation = ({ onSave}: Props) => {
                         variant="body1"
                         sx={{
                           fontWeight: 'bold',
-                          fontSize: '1rem',
+                          fontSize: '0.875rem',
                           color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121',
                           textShadow: theme.palette.mode === 'dark' 
                             ? '0 1px 2px rgba(0,0,0,0.8)' 
@@ -667,8 +938,8 @@ const Annotation = ({ onSave}: Props) => {
                     variant="body2" 
                     sx={{ 
                       color: 'text.secondary',
-                      mt: 1,
-                      fontSize: '0.875rem',
+                      mt: 0.5,
+                      fontSize: '1rem',
                       fontWeight: 'medium'
                     }}
                   >
@@ -680,7 +951,29 @@ const Annotation = ({ onSave}: Props) => {
           </Box>
 
           {/* Right Section - Hotkey Info */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+            {!isContextPanelVisible && (
+              <Tooltip title="Show context panel" arrow>
+                <Button
+                  variant="outlined"
+                  startIcon={<ViewColumnIcon />}
+                  onClick={() => setIsContextPanelVisible(true)}
+                  size="small"
+                  sx={{ 
+                    px: 2,
+                    borderColor: 'secondary.main',
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: 'secondary.dark',
+                      backgroundColor: 'rgba(255, 235, 59, 0.1)',
+                    }
+                  }}
+                >
+                  Show Context
+                </Button>
+              </Tooltip>
+            )}
             <Tooltip title="View keyboard shortcuts" arrow>
               <Button
                 variant="outlined"
@@ -704,86 +997,7 @@ const Annotation = ({ onSave}: Props) => {
           </Box>
         </Box>
 
-        {/* Controls Section */}
-        <Paper
-          elevation={2}
-          sx={{
-            gridArea: 'controls',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}
-        >
-          <Box sx={{ 
-            p: 2, 
-            flex: 1, 
-            overflow: 'auto',
-            backgroundColor: theme.palette.background.paper,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 2
-          }}>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Span ID
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-              {currentSpan.id || 'N/A'}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Span Name
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-              {currentSpan.spanName || 'N/A'}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Categories
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {currentSpan.annotation?.categories && currentSpan.annotation.categories.length > 0 ? (
-                currentSpan.annotation.categories.map(category => (
-                  <Chip key={category} label={category} size="small" variant="outlined" />
-                ))
-              ) : (
-                <Typography variant="body2" color="text.secondary">None</Typography>
-              )}
-            </Box>
-            
-          </Box>
-          <Box>
 
-            <Button
-              variant="text"
-              size="medium"
-              sx={{ 
-                p: 0,
-                minWidth: 'auto',
-                textTransform: 'none',
-                color: 'primary.main',
-                '&:hover': {
-                  backgroundColor: 'transparent',
-                  textDecoration: 'underline'
-                }
-              }}
-              onClick={async () => {
-                try {
-                  const phoenixUrl = await getPhoenixDashboardUrl();
-                  // Open Phoenix dashboard in a new tab
-                  window.open(`${phoenixUrl}/projects/${projectId}/spans/${currentSpan.traceId}`, '_blank');
-                } catch (error) {
-                  console.error('Failed to get Phoenix dashboard URL:', error);
-                }
-              }}
-            >
-              View Details in Phoenix →
-            </Button>
-          </Box>
-          </Box>
-        </Paper>
 
         {/* Input Section */}
         <Paper
@@ -797,7 +1011,7 @@ const Annotation = ({ onSave}: Props) => {
         >
           <Box sx={{ 
             p: 2, 
-            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e8f5e8',
+            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#c2c0c0',
             borderBottom: '1px solid',
             borderBottomColor: 'divider',
             display: 'flex',
@@ -807,70 +1021,55 @@ const Annotation = ({ onSave}: Props) => {
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Input
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button 
-                variant={!displayFormattedInput ? "contained" : "outlined"}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <ToggleButtonGroup
+                exclusive
                 size="small"
+                value={displayFormattedInput ? 'formatted' : 'raw'}
+                onChange={(_e, val) => {
+                  if (val === 'raw') setDisplayFormattedInput(false);
+                  if (val === 'formatted') setDisplayFormattedInput(true);
+                }}
                 sx={{
-                  px: 3,
-                  minWidth: 50,
                   borderColor: 'secondary.main',
-                  color: !displayFormattedInput 
-                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
-                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
-                  backgroundColor: !displayFormattedInput 
-                    ? 'secondary.main'
-                    : 'transparent',
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: 'secondary.dark',
-                    backgroundColor: !displayFormattedInput 
-                      ? 'secondary.dark'
-                      : 'rgba(255, 235, 59, 0.1)',
+                  '& .MuiToggleButton-root': {
+                    px: 1,
+                    py: 0.5,
+                    minWidth: 36,
+                    lineHeight: 1.2,
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    borderColor: 'secondary.main',
+                  },
+                  '& .Mui-selected': {
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)'
+                  },
+                  animation: highlightInputToggle ? 'pulse 1s ease-in-out 2' : 'none',
+                  '@keyframes pulse': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(255, 235, 59, 0.6)' },
+                    '70%': { boxShadow: '0 0 0 10px rgba(255, 235, 59, 0)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(255, 235, 59, 0)' }
                   }
                 }}
-                onClick={() => setDisplayFormattedInput(false)}
               >
-                Raw
-              </Button>
-              <Tooltip 
-                title={!currentSpan.formattedInput ? "Formatting in process..." : "View formatted input"}
-                arrow
-              >
-                <span>
-                  <Button 
-                    variant={displayFormattedInput ? "contained" : "outlined"}
-                    size="small"
-                    disabled={!currentSpan.formattedInput}
-                    sx={{
-                      px: 3,
-                      minWidth: 75,
-                      borderColor: 'secondary.main',
-                      color: displayFormattedInput 
-                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
-                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
-                      backgroundColor: displayFormattedInput 
-                        ? 'secondary.main'
-                        : 'transparent',
-                      fontWeight: 600,
-                      '&:hover': {
-                        borderColor: 'secondary.dark',
-                        backgroundColor: displayFormattedInput 
-                          ? 'secondary.dark'
-                          : 'rgba(255, 235, 59, 0.1)',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: 'text.disabled',
-                        color: 'text.disabled',
-                        backgroundColor: 'transparent'
-                      }
-                    }}
-                    onClick={() => setDisplayFormattedInput(true)}
-                  >
-                    Formatted
-                  </Button>
-                </span>
-              </Tooltip>
+                <ToggleButton value="raw">Raw</ToggleButton>
+                {(() => {
+                  const ready = !!(((formattedBySpanId?.[currentSpan.id]?.formattedInput) ?? currentSpan.formattedInput));
+                  const button = (
+                    <ToggleButton value="formatted" disabled={!ready}>
+                      {ready ? 'Format' : 'Format'}
+                    </ToggleButton>
+                  );
+                  return ready ? (
+                    button
+                  ) : (
+                    <Tooltip title="Formatting in progress..." arrow>
+                      <span>{button}</span>
+                    </Tooltip>
+                  );
+                })()}
+              </ToggleButtonGroup>
             </Box>
           </Box>
           <Box sx={{ 
@@ -879,53 +1078,60 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            {displayFormattedInput ? (
-              <Box sx={{
-                '& p': {
-                  margin: '0.5em 0',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word'
-                },
-                '& code': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  padding: '2px 4px',
-                  borderRadius: '3px',
-                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                  fontSize: '0.9em',
-                  whiteSpace: 'pre-wrap'
-                },
-                '& pre': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-                  padding: '12px',
-                  borderRadius: '6px',
-                  overflow: 'auto',
+            {(() => {
+              const overlay = formattedBySpanId?.[currentSpan.id];
+              const formatted = overlay?.formattedInput ?? currentSpan.formattedInput;
+              if (displayFormattedInput) {
+                return (
+                  <Box sx={{
+                    '& p': {
+                      margin: '0.5em 0',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word'
+                    },
+                    '& code': {
+                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                      padding: '2px 4px',
+                      borderRadius: '3px',
+                      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                      fontSize: '0.9em',
+                      whiteSpace: 'pre-wrap'
+                    },
+                    '& pre': {
+                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      padding: '12px',
+                      borderRadius: '6px',
+                      overflow: 'auto',
+                      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                      fontSize: '0.9rem',
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre',
+                      wordBreak: 'normal',
+                      overflowWrap: 'normal'
+                    },
+                    '& pre code': {
+                      backgroundColor: 'transparent',
+                      padding: 0,
+                      whiteSpace: 'pre'
+                    }
+                  }}>
+                    <ReactMarkdown>{formatted || ''}</ReactMarkdown>
+                  </Box>
+                );
+              }
+              return (
+                <pre style={{ 
+                  whiteSpace: 'pre-wrap', 
+                  margin: 0, 
                   fontFamily: 'Consolas, Monaco, "Courier New", monospace',
                   fontSize: '0.9rem',
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre',
-                  wordBreak: 'normal',
-                  overflowWrap: 'normal'
-                },
-                '& pre code': {
-                  backgroundColor: 'transparent',
-                  padding: 0,
-                  whiteSpace: 'pre'
-                }
-              }}>
-                <ReactMarkdown>{currentSpan.formattedInput || ''}</ReactMarkdown>
-              </Box>
-            ) : (
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                margin: 0, 
-                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                fontSize: '0.9rem',
-                lineHeight: 1.5
-              }}>
-                {currentSpan.input}
-              </pre>
-            )}
+                  lineHeight: 1.5
+                }}>
+                  {currentSpan.input}
+                </pre>
+              );
+            })()}
           </Box>
         </Paper>
 
@@ -941,7 +1147,7 @@ const Annotation = ({ onSave}: Props) => {
         >
           <Box sx={{ 
             p: 2, 
-            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#fff3e0',
+            backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#c2c0c0',
             borderBottom: '1px solid',
             borderBottomColor: 'divider',
             display: 'flex',
@@ -951,70 +1157,55 @@ const Annotation = ({ onSave}: Props) => {
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
               Output
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button 
-                variant={!displayFormattedOutput ? "contained" : "outlined"}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <ToggleButtonGroup
+                exclusive
                 size="small"
+                value={displayFormattedOutput ? 'formatted' : 'raw'}
+                onChange={(_e, val) => {
+                  if (val === 'raw') setDisplayFormattedOutput(false);
+                  if (val === 'formatted') setDisplayFormattedOutput(true);
+                }}
                 sx={{
-                  px: 3,
-                  minWidth: 100,
                   borderColor: 'secondary.main',
-                  color: !displayFormattedOutput 
-                    ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
-                    : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
-                  backgroundColor: !displayFormattedOutput 
-                    ? 'secondary.main'
-                    : 'transparent',
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: 'secondary.dark',
-                    backgroundColor: !displayFormattedOutput 
-                      ? 'secondary.dark'
-                      : 'rgba(255, 235, 59, 0.1)',
+                  '& .MuiToggleButton-root': {
+                    px: 1,
+                    py: 0.5,
+                    minWidth: 36,
+                    lineHeight: 1.2,
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    borderColor: 'secondary.main',
+                  },
+                  '& .Mui-selected': {
+                    backgroundColor: 'rgba(255, 235, 59, 0.1)'
+                  },
+                  animation: highlightOutputToggle ? 'pulse 1s ease-in-out 2' : 'none',
+                  '@keyframes pulse': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(255, 235, 59, 0.6)' },
+                    '70%': { boxShadow: '0 0 0 10px rgba(255, 235, 59, 0)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(255, 235, 59, 0)' }
                   }
                 }}
-                onClick={() => setDisplayFormattedOutput(false)}
               >
-                Raw
-              </Button>
-              <Tooltip 
-                title={!currentSpan.formattedOutput ? "Formatting in process..." : "View formatted output"}
-                arrow
-              >
-                <span>
-                  <Button 
-                    variant={displayFormattedOutput ? "contained" : "outlined"}
-                    size="small"
-                    disabled={!currentSpan.formattedOutput}
-                    sx={{
-                      px: 3,
-                      minWidth: 100,
-                      borderColor: 'secondary.main',
-                      color: displayFormattedOutput 
-                        ? (theme.palette.mode === 'dark' ? '#000000' : '#FFFFFF')
-                        : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000'),
-                      backgroundColor: displayFormattedOutput 
-                        ? 'secondary.main'
-                        : 'transparent',
-                      fontWeight: 600,
-                      '&:hover': {
-                        borderColor: 'secondary.dark',
-                        backgroundColor: displayFormattedOutput 
-                          ? 'secondary.dark'
-                          : 'rgba(255, 235, 59, 0.1)',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: 'text.disabled',
-                        color: 'text.disabled',
-                        backgroundColor: 'transparent'
-                      }
-                    }}
-                    onClick={() => setDisplayFormattedOutput(true)}
-                  >
-                    Formatted
-                  </Button>
-                </span>
-              </Tooltip>
+                <ToggleButton value="raw">Raw</ToggleButton>
+                {(() => {
+                  const ready = !!(((formattedBySpanId?.[currentSpan.id]?.formattedOutput) ?? currentSpan.formattedOutput));
+                  const button = (
+                    <ToggleButton value="formatted" disabled={!ready}>
+                      {ready ? 'Format' : 'Format'}
+                    </ToggleButton>
+                  );
+                  return ready ? (
+                    button
+                  ) : (
+                    <Tooltip title="Formatting in progress..." arrow>
+                      <span>{button}</span>
+                    </Tooltip>
+                  );
+                })()}
+              </ToggleButtonGroup>
             </Box>
           </Box>
           <Box sx={{ 
@@ -1023,21 +1214,94 @@ const Annotation = ({ onSave}: Props) => {
             overflow: 'auto',
             backgroundColor: theme.palette.background.paper
           }}>
-            {displayFormattedOutput ? (
-              <ReactMarkdown>{currentSpan.formattedOutput || ''}</ReactMarkdown>
-            ) : (
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                margin: 0,
-                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                fontSize: '0.9rem',
-                lineHeight: 1.5
-              }}>
-                {currentSpan.output}
-              </pre>
-            )}
+            {(() => {
+              const overlay = formattedBySpanId?.[currentSpan.id];
+              const formatted = overlay?.formattedOutput ?? currentSpan.formattedOutput;
+              if (displayFormattedOutput) {
+                return <ReactMarkdown>{formatted || ''}</ReactMarkdown>;
+              }
+              return (
+                <pre style={{ 
+                  whiteSpace: 'pre-wrap', 
+                  margin: 0,
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.5
+                }}>
+                  {currentSpan.output}
+                </pre>
+              );
+            })()}
           </Box>
         </Paper>
+
+        {/* Context Section */}
+        {isContextPanelVisible && 
+          <Paper
+            elevation={2}
+            sx={{
+              gridArea: 'context',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
+            <Box sx={{ 
+              p: 2, 
+              backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#c2c0c0',
+              borderBottom: '1px solid',
+              borderBottomColor: 'divider',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121' }}>
+                Context
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {file && (
+                  <Tooltip title="Remove file" arrow>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DeleteIcon />}
+                      onClick={handleRemoveFile}
+                      sx={{
+                        borderColor: 'secondary.main',
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                        '&:hover': {
+                          borderColor: 'error.dark',
+                          backgroundColor: 'rgba(255, 130, 130, 0.1)',
+                        }
+                      }}
+                    >
+                      Remove File
+                    </Button>
+                  </Tooltip>
+                )}
+                <Tooltip title="Hide Context Panel" arrow>
+                  <IconButton 
+                    onClick={() => setIsContextPanelVisible(false)}
+                    size="small"
+                    sx={{
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000',
+                    }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+            <Box sx={{ 
+              p: 2, 
+              flex: 1, 
+              overflow: 'auto',
+              backgroundColor: theme.palette.background.paper
+            }}>
+              <Context />
+            </Box>
+          </Paper>
+        }
 
         {/* Annotation Section */}
         <Paper

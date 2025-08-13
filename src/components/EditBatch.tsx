@@ -19,6 +19,7 @@ import {
   Modal,
   Backdrop,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -32,7 +33,7 @@ import SortIcon from '@mui/icons-material/Sort';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { DataGrid, getGridDateOperators } from "@mui/x-data-grid";
 import type { GridColDef, GridRowParams } from "@mui/x-data-grid";
-import { useRootSpanMutations, useEditBatchSpans, useUniqueSpanNames, useRandomSpans, useRootSpansByBatch } from "../hooks/useRootSpans";
+import { useEditBatchSpans, useUniqueSpanNames, useRandomSpans, useRootSpansByBatch } from "../hooks/useRootSpans";
 
 interface FilterFormData {
   searchText: string;
@@ -59,6 +60,8 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
   const theme = muiUseTheme();
   const [displaySpanDetails, setDisplaySpanDetails] = useState(false);
   const [selectedSpanForModal, setSelectedSpanForModal] = useState<any>(null);
+  const MAX_SPANS_PER_BATCH = 150;
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // Filter form setup
   const { control, handleSubmit, watch, reset, setValue } = useForm<FilterFormData>({
@@ -80,11 +83,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
     startDate: null,
     endDate: null,
   });
-  const [showSelectedFirst, setShowSelectedFirst] = useState(true);
   
-  // Get the invalidation functions from the mutations hook
-  const { invalidateBatch, invalidateProject } = useRootSpanMutations();
-
   // Fetch current batch information
   const { data: batchData, isLoading: batchLoading } = useRootSpansByBatch(batchId || null);
 
@@ -135,7 +134,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
   
   // Sort spans to show selected ones first if enabled
   const annotatedRootSpans = useMemo(() => {
-    if (!showSelectedFirst) return rawRootSpans;
     
     return [...rawRootSpans].sort((a, b) => {
       const aSelected = selectedSet.has(a.id);
@@ -148,20 +146,12 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
       // Within each group, maintain original order
       return 0;
     });
-  }, [rawRootSpans, selectedSet, showSelectedFirst]);
+  }, [rawRootSpans, selectedSet]);
   
   const totalCount = currentData?.totalCount || 0;
   
   // Use the loading state to prevent DataGrid resets, but don't show completely empty data
-  const stableLoading = (isRandomMode ? isRandomLoading : isLoading) && !currentData;
-
-  const updateBatchSpans = useCallback((batchId: string) => {
-    // Invalidate both the batch and project queries to refresh data
-    invalidateBatch(batchId);
-    if (projectId) {
-      invalidateProject(projectId);
-    }
-  }, [invalidateBatch, invalidateProject, projectId]);
+  const stableLoading = (isRandomMode ? isRandomLoading : isLoading || batchLoading) && !currentData;
 
   // Filter form handlers
   const onFilterSubmit = useCallback((data: FilterFormData) => {
@@ -170,20 +160,6 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
     setAppliedFilters(data); // Update applied filters state
     setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
   }, [paginationModel.pageSize]);
-
-  const handleRandomSpans = useCallback(() => {
-    console.log('Random spans requested');
-    setIsRandomMode(true);
-    // Clear applied filters when switching to random mode
-    setAppliedFilters({
-      searchText: '',
-      spanName: '',
-      dateFilter: 'all',
-      startDate: null,
-      endDate: null,
-    });
-    setPaginationModel({ page: 0, pageSize: 50 });
-  }, []);
 
   const handleClearFilters = useCallback(() => {
     reset();
@@ -199,11 +175,20 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
   }, [reset, paginationModel.pageSize]);
 
   const handleUpdateBatch = useCallback(async () => {
+    if (isUpdating) return;
     if (!name || selectedRootSpanIds.length === 0 || !batchId) return;
     
     try {
+      setIsUpdating(true);
       await onUpdateBatch(batchId, name, selectedRootSpanIds);
       
+      // Store success toast for RootSpans to display after navigation
+      sessionStorage.setItem('pendingToast', JSON.stringify({
+        open: true,
+        message: `Batch update successful`,
+        severity: 'success'
+      }));
+
       // Navigate back to the batch view
       navigate(`/projects/${projectId}/batches/${batchId}`, { 
         state: { projectName: projectName, projectId: projectId, batchName: name } 
@@ -211,8 +196,10 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
       
     } catch (error) {
       console.error("Failed to update batch:", error);
+    } finally {
+      setIsUpdating(false);
     }
-  }, [name, selectedRootSpanIds, onUpdateBatch, navigate, batchId, projectId, projectName]);
+  }, [name, selectedRootSpanIds, onUpdateBatch, navigate, batchId, projectId, projectName, isUpdating]);
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -233,9 +220,14 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
 
   // Handle individual row selection (from checkbox clicks)
   const handleRowSelectionChange = useCallback((spanId: string, isSelected: boolean) => {
+    if (isUpdating) return;
     setSelectedSet(prevSelected => {
       const newSelected = new Set(prevSelected);
       if (isSelected) {
+        if (newSelected.size >= MAX_SPANS_PER_BATCH) {
+          console.warn(`Selection limit reached (${MAX_SPANS_PER_BATCH}). Deselect some spans to add new ones.`);
+          return newSelected;
+        }
         newSelected.add(spanId);
       } else {
         newSelected.delete(spanId);
@@ -243,10 +235,11 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
       
       return newSelected;
     });
-  }, []);
+  }, [isUpdating]);
 
   // Handle select all for current page
   const handleSelectAllCurrentPage = useCallback(() => {
+    if (isUpdating) return;
     const currentPageIds = annotatedRootSpans.map(span => span.id);
     const selectedOnCurrentPage = currentPageIds.filter(id => selectedSet.has(id));
     const shouldSelectAll = selectedOnCurrentPage.length < currentPageIds.length;
@@ -255,8 +248,10 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
       const newSelected = new Set(prevSelected);
       
       if (shouldSelectAll) {
-        // Select all on current page
-        currentPageIds.forEach(id => newSelected.add(id));
+        // Select up to remaining capacity
+        const remaining = Math.max(0, MAX_SPANS_PER_BATCH - newSelected.size);
+        const idsToAdd = currentPageIds.filter(id => !newSelected.has(id)).slice(0, remaining);
+        idsToAdd.forEach(id => newSelected.add(id));
       } else {
         // Deselect all on current page
         currentPageIds.forEach(id => newSelected.delete(id));
@@ -264,7 +259,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
       
       return newSelected;
     });
-  }, [annotatedRootSpans, selectedSet]);
+  }, [annotatedRootSpans, selectedSet, isUpdating]);
 
   // Truncate text for display in columns
   const truncateText = (text: string, maxLength: number = 100) => {
@@ -293,6 +288,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
   const isSomeCurrentPageSelected = selectedOnCurrentPage.length > 0 && selectedOnCurrentPage.length < currentPageIds.length;
 
   const handleRowClick = (params: GridRowParams) => {
+    if (isUpdating) return;
     setSelectedSpanForModal(params.row);
     setDisplaySpanDetails(true);
   };
@@ -302,14 +298,8 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
     setSelectedSpanForModal(null);
   };
 
-  // Show loading state while batch data is loading
-  if (batchLoading) {
-    return (
-      <Container maxWidth={false} sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <Typography variant="h6">Loading batch information...</Typography>
-      </Container>
-    );
-  }
+  // Whether to show the "Selected spans first" indicator
+  const showSelectedFirst = true;
 
   const columns: GridColDef[] = [
     {
@@ -440,7 +430,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
 
   return (
     <Container maxWidth={false} sx={{ mt: 1.5, mb: 1.5, px: 3 }}>
-      <Box sx={{ mb: 1.5, position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+      <Box sx={{ mb: 2.5, position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', minHeight: 120 }}>
         {/* Breadcrumbs - Far Left */}
         <Box sx={{ 
           position: 'absolute',
@@ -583,105 +573,111 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           transform: 'translateY(-50%)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 1,
+          alignItems: 'center',
+          gap: 0.5,
         }}>
-          <Tooltip
-            title={
-              !name && selectedRootSpanIds.length === 0 
-                ? "Enter a batch name and select spans to update the batch"
-                : !name 
-                  ? "Enter a batch name to update the batch"
-                  : selectedRootSpanIds.length === 0
-                    ? "Select at least one span to update the batch"
-                    : "Update batch with selected spans"
-            }
-            arrow
-            placement="left"
-          >
-            <span>
-              <Button
-                variant="contained"
-                onClick={handleUpdateBatch}
-                disabled={!name || selectedRootSpanIds.length === 0}
-                size="large"
-                sx={{ 
-                  px: 3, 
-                  minWidth: 200,
-                  maxHeight: 40,
-                  mt: 3,
-                  backgroundColor: 'secondary.main',
-                  color: 'black',
-                  fontWeight: 600,
-                  '&:hover': {
-                    backgroundColor: 'secondary.dark',
-                  },
-                  '&.Mui-disabled': {
-                    backgroundColor: 'grey.400',
-                    color: 'grey.600',
-                  }
-                }}
-              >
-                Update Batch ({selectedRootSpanIds.length})
-              </Button>
-            </span>
-          </Tooltip>
-          
-          <Button
-            variant="outlined"
-            onClick={() => navigate(`/projects/${projectId}`, { 
-              state: { projectName: projectName, projectId: projectId, batchId: batchId, batchName: batchName } 
-            })}
-            size="large"
+          <TextField
+            label="Batch Name"
+            value={name}
+            onChange={handleNameChange}
             sx={{ 
-              px: 3, 
-              minWidth: 200,
-              maxHeight: 40,
-              borderColor: 'grey.400',
-              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-              fontWeight: 600,
-              '&:hover': {
-                borderColor: 'grey.600',
-                backgroundColor: theme.palette.mode === 'dark' 
-                  ? 'rgba(255, 255, 255, 0.08)' 
-                  : 'rgba(0, 0, 0, 0.04)',
-              }
+              width: '100%',
+              mb: 1,
+              '& .MuiOutlinedInput-root': {
+                height: 40,
+                '& fieldset': {
+                  borderColor: 'secondary.main',
+                  borderWidth: '2px',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'secondary.dark',
+                  borderWidth: '2px',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'secondary.main',
+                  borderWidth: '3px',
+                },
+              },
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: 'secondary.main',
+              },
             }}
-          >
-            Cancel
-          </Button>
+            size="small"
+            required
+            error={!name && name !== ""}
+            disabled={isUpdating}
+          />
+          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
+            <Tooltip
+              title={
+                isUpdating
+                  ? "Updating batch..."
+                  : (!name && selectedRootSpanIds.length === 0
+                    ? "Enter a batch name and select spans to update the batch"
+                    : !name
+                      ? "Enter a batch name to update the batch"
+                      : selectedRootSpanIds.length === 0
+                        ? "Select at least one span to update the batch"
+                        : selectedRootSpanIds.length > MAX_SPANS_PER_BATCH
+                          ? `You can select up to ${MAX_SPANS_PER_BATCH} spans`
+                          : "Update batch with selected spans")
+              }
+              arrow
+              placement="bottom"
+            >
+              <span>
+                <Button
+                  variant="contained"
+                  onClick={handleUpdateBatch}
+                  disabled={isUpdating || !name || selectedRootSpanIds.length === 0 || selectedRootSpanIds.length > MAX_SPANS_PER_BATCH}
+                  size="large"
+                  sx={{ 
+                    px: 3, 
+                    minWidth: 200,
+                    height: 40,
+                    backgroundColor: 'secondary.main',
+                    color: 'black',
+                    fontWeight: 600,
+                    '&:hover': {
+                      backgroundColor: 'secondary.dark',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: 'grey.400',
+                      color: 'grey.600',
+                    }
+                  }}
+                >
+                  {isUpdating ? 'Updating…' : `Update Batch (${selectedRootSpanIds.length}${selectedRootSpanIds.length > MAX_SPANS_PER_BATCH ? ` / ${MAX_SPANS_PER_BATCH}` : ''})`}
+                </Button>
+              </span>
+            </Tooltip>
+            
+            <Button
+              variant="outlined"
+              onClick={() => navigate(`/projects/${projectId}`, { 
+                state: { projectName: projectName, projectId: projectId, batchId: batchId, batchName: batchName } 
+              })}
+              size="large"
+              disabled={isUpdating}
+              sx={{ 
+                px: 3, 
+                minWidth: 200,
+                height: 40,
+                borderColor: 'grey.400',
+                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                fontWeight: 600,
+                '&:hover': {
+                  borderColor: 'grey.600',
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.08)' 
+                    : 'rgba(0, 0, 0, 0.04)',
+                }
+              }}
+            >
+              Cancel
+            </Button>
+          </Box>
         </Box>
-      </Box>
-
-      {/* Batch Name Control */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 3, alignItems: 'flex-end' }}>
-        <TextField
-          label="Batch Name"
-          value={name}
-          onChange={handleNameChange}
-          sx={{ 
-            minWidth: 300,
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: 'secondary.main',
-                borderWidth: '2px',
-              },
-              '&:hover fieldset': {
-                borderColor: 'secondary.dark',
-                borderWidth: '2px',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: 'secondary.main',
-                borderWidth: '3px',
-              },
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: 'secondary.main',
-            },
-          }}
-          size="medium"
-          required
-          error={!name && name !== ""}
-        />
       </Box>
 
       {/* Filter Form */}
@@ -711,6 +707,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                     size="small"
                     placeholder="Search spans by input, output, or span ID..."
                     fullWidth
+                    disabled={isUpdating}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -723,6 +720,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                             size="small"
                             onClick={() => setValue('searchText', '')}
                             edge="end"
+                            disabled={isUpdating}
                           >
                             <ClearIcon fontSize="small" />
                           </IconButton>
@@ -739,7 +737,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                   name="spanName"
                   control={control}
                   render={({ field }) => (
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <FormControl size="small" sx={{ minWidth: 200 }} disabled={isUpdating}>
                       <InputLabel>Span Name</InputLabel>
                       <Select {...field} label="Span Name">
                         <MenuItem value="">All Spans</MenuItem>
@@ -757,7 +755,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                   name="dateFilter"
                   control={control}
                   render={({ field }) => (
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <FormControl size="small" sx={{ minWidth: 160 }} disabled={isUpdating}>
                       <InputLabel>Time Period</InputLabel>
                       <Select {...field} label="Time Period">
                         <MenuItem value="all">All Time</MenuItem>
@@ -784,6 +782,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                             textField: {
                               size: 'small',
                               sx: { minWidth: 140 },
+                              disabled: isUpdating,
                             },
                           }}
                         />
@@ -800,6 +799,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                             textField: {
                               size: 'small',
                               sx: { minWidth: 140 },
+                              disabled: isUpdating,
                             },
                           }}
                         />
@@ -810,37 +810,12 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
 
                 {/* Action Buttons */}
                 <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
-                <Button
-                    type="button"
-                    variant={showSelectedFirst ? "contained" : "outlined"}
-                    size="small"
-                    startIcon={<SortIcon />}
-                    onClick={() => setShowSelectedFirst(!showSelectedFirst)}
-                    sx={{
-                      borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
-                      color: showSelectedFirst 
-                        ? (theme.palette.mode === 'dark' ? 'black' : 'white')
-                        : (theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main'),
-                      backgroundColor: showSelectedFirst 
-                        ? (theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main')
-                        : 'transparent',
-                      '&:hover': {
-                        borderColor: theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark',
-                        backgroundColor: showSelectedFirst
-                          ? (theme.palette.mode === 'dark' ? 'secondary.dark' : 'primary.dark')
-                          : (theme.palette.mode === 'dark' 
-                              ? 'rgba(255, 235, 59, 0.1)' 
-                              : 'rgba(25, 118, 210, 0.1)'),
-                      },
-                    }}
-                  >
-                    Selected Spans First
-                  </Button>
                   <Button
                     type="submit"
                     variant="outlined"
                     size="small"
                     startIcon={<FilterListIcon />}
+                    disabled={isUpdating}
                     sx={{
                       borderColor: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
                       color: theme.palette.mode === 'dark' ? 'secondary.main' : 'primary.main',
@@ -859,6 +834,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                     variant="text"
                     size="small"
                     onClick={handleClearFilters}
+                    disabled={isUpdating}
                     sx={{ color: 'text.secondary' }}
                   >
                     Clear
@@ -872,7 +848,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           {/* Filter Status Indicator */}
           {(isRandomMode || Object.values(appliedFilters).some(value => 
             value && value !== '' && value !== 'all'
-          ) || showSelectedFirst) && (
+          )) && (
             <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               {isRandomMode ? (
                 <>
@@ -1059,7 +1035,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
           },
         }}
       >
-        <Box sx={{ height: 'calc(100vh - 600px)' }}>
+        <Box sx={{ height: 'calc(100vh - 490px)' }}>
           <DataGrid
             rows={annotatedRootSpans}
             columns={columns}
@@ -1123,6 +1099,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
                 value={paginationModel.pageSize}
                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 sx={{ color: 'text.primary' }}
+                disabled={isUpdating}
               >
                 <MenuItem value={25}>25</MenuItem>
                 <MenuItem value={50}>50</MenuItem>
@@ -1145,18 +1122,18 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
               
               {selectedSet.size > 0 && (
                 <Typography variant="body2" sx={{ 
-                  color: 'secondary.main',
+                  color: selectedSet.size > MAX_SPANS_PER_BATCH ? 'error.main' : 'secondary.main',
                   fontWeight: 'bold',
                   backgroundColor: theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 235, 59, 0.1)' 
-                    : 'rgba(255, 235, 59, 0.2)',
+                    ? (selectedSet.size > MAX_SPANS_PER_BATCH ? 'rgba(244, 67, 54, 0.12)' : 'rgba(255, 235, 59, 0.1)')
+                    : (selectedSet.size > MAX_SPANS_PER_BATCH ? 'rgba(244, 67, 54, 0.12)' : 'rgba(255, 235, 59, 0.2)'),
                   px: 1,
                   py: 0.25,
                   borderRadius: 1,
                   border: '1px solid',
-                  borderColor: 'secondary.main'
+                  borderColor: selectedSet.size > MAX_SPANS_PER_BATCH ? 'error.main' : 'secondary.main'
                 }}>
-                  {selectedSet.size} selected across pages
+                  {selectedSet.size} selected across pages{selectedSet.size > MAX_SPANS_PER_BATCH ? ` (max ${MAX_SPANS_PER_BATCH})` : ''}
                 </Typography>
               )}
             </Box>
@@ -1165,7 +1142,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
               <Button
                 size="small"
                 onClick={() => handlePageChange(0)}
-                disabled={paginationModel.page === 0 || stableLoading}
+                disabled={paginationModel.page === 0 || stableLoading || isUpdating}
                 sx={{ minWidth: 'auto', px: 1 }}
               >
                 ⟪
@@ -1173,7 +1150,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
               <Button
                 size="small"
                 onClick={() => handlePageChange(paginationModel.page - 1)}
-                disabled={paginationModel.page === 0 || stableLoading}
+                disabled={paginationModel.page === 0 || stableLoading || isUpdating}
                 sx={{ minWidth: 'auto', px: 1 }}
               >
                 ⟨
@@ -1184,7 +1161,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
               <Button
                 size="small"
                 onClick={() => handlePageChange(paginationModel.page + 1)}
-                disabled={paginationModel.page >= Math.ceil(totalCount / paginationModel.pageSize) - 1 || stableLoading}
+                disabled={paginationModel.page >= Math.ceil(totalCount / paginationModel.pageSize) - 1 || stableLoading || isUpdating}
                 sx={{ minWidth: 'auto', px: 1 }}
               >
                 ⟩
@@ -1192,7 +1169,7 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
               <Button
                 size="small"
                 onClick={() => handlePageChange(Math.ceil(totalCount / paginationModel.pageSize) - 1)}
-                disabled={paginationModel.page >= Math.ceil(totalCount / paginationModel.pageSize) - 1 || stableLoading}
+                disabled={paginationModel.page >= Math.ceil(totalCount / paginationModel.pageSize) - 1 || stableLoading || isUpdating}
                 sx={{ minWidth: 'auto', px: 1 }}
               >
                 ⟫
@@ -1200,117 +1177,182 @@ const EditBatch = ({ onUpdateBatch }: EditBatchProps) => {
             </Box>
           </Box>
         </Box>
+
+        {/* Span Details Modal */}
+        <Modal
+          open={displaySpanDetails}
+          onClose={handleCloseModal}
+          closeAfterTransition
+          BackdropComponent={Backdrop}
+          BackdropProps={{
+            timeout: 500,
+          }}
+        >
+          <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '80%',
+            maxWidth: 800,
+            maxHeight: '80vh',
+            bgcolor: 'background.paper',
+            border: '2px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            overflow: 'auto',
+          }}>
+            {selectedSpanForModal && (
+              <>
+                <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 'bold' }}>
+                  Span Details
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                      Span Name
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      borderRadius: 1 
+                    }}>
+                      {selectedSpanForModal.spanName}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                      Date
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      borderRadius: 1 
+                    }}>
+                      {formatDateTime(selectedSpanForModal.startTime)}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                      Input
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      borderRadius: 1,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}>
+                      {selectedSpanForModal.input || 'No input data'}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
+                      Output
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      borderRadius: 1,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}>
+                      {selectedSpanForModal.output || 'No output data'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                  <Button 
+                    onClick={handleCloseModal}
+                    variant="contained"
+                    sx={{
+                      backgroundColor: 'secondary.main',
+                      color: 'black',
+                      '&:hover': {
+                        backgroundColor: 'secondary.dark',
+                      }
+                    }}
+                  >
+                    Close
+                  </Button>
+                </Box>
+              </>
+            )}
+          </Box>
+        </Modal>
       </Paper>
 
-      {/* Span Details Modal */}
-      <Modal
-        open={displaySpanDetails}
-        onClose={handleCloseModal}
-        closeAfterTransition
-        BackdropComponent={Backdrop}
-        BackdropProps={{
-          timeout: 500,
+      {/* Updating Backdrop */}
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
         }}
+        open={isUpdating}
+        onClick={(e) => e.stopPropagation()}
       >
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '80%',
-          maxWidth: 800,
-          maxHeight: '80vh',
-          bgcolor: 'background.paper',
-          border: '2px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          boxShadow: 24,
-          p: 4,
-          overflow: 'auto',
-        }}>
-          {selectedSpanForModal && (
-            <>
-              <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 'bold' }}>
-                Span Details
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
-                    Span Name
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    p: 2, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    borderRadius: 1 
-                  }}>
-                    {selectedSpanForModal.spanName}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
-                    Date
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    p: 2, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    borderRadius: 1 
-                  }}>
-                    {formatDateTime(selectedSpanForModal.startTime)}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
-                    Input
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    p: 2, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    borderRadius: 1,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word'
-                  }}>
-                    {selectedSpanForModal.input || 'No input data'}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1 }}>
-                    Output
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    p: 2, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    borderRadius: 1,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word'
-                  }}>
-                    {selectedSpanForModal.output || 'No output data'}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                <Button 
-                  onClick={handleCloseModal}
-                  variant="contained"
-                  sx={{
-                    backgroundColor: 'secondary.main',
-                    color: 'black',
-                    '&:hover': {
-                      backgroundColor: 'secondary.dark',
-                    }
-                  }}
-                >
-                  Close
-                </Button>
-              </Box>
-            </>
-          )}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            p: 4,
+            borderRadius: 2,
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(40, 40, 40, 0.95)' 
+              : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid',
+            borderColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            minWidth: 300,
+          }}
+        >
+          <CircularProgress 
+            size={60} 
+            thickness={4}
+            sx={{ 
+              color: 'secondary.main',
+              mb: 3 
+            }} 
+          />
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 'bold',
+              mb: 1,
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#212121'
+            }}
+          >
+            Updating Batch
+          </Typography>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.7)' 
+                : 'rgba(0, 0, 0, 0.6)',
+              maxWidth: 400,
+              lineHeight: 1.5
+            }}
+          >
+            Please wait a moment while your batch is being updated…
+          </Typography>
         </Box>
-      </Modal>
+      </Backdrop>
     </Container>
   );
 };

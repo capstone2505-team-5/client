@@ -1,5 +1,5 @@
 // src/components/Projects.tsx
-import { useState, useEffect, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { Container, Typography, Box, Paper, TextField, InputAdornment, IconButton, Button, useTheme } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -37,7 +37,6 @@ const Projects = () => {
 
   const {
     data: phoenixDashboardUrl = '',
-    isLoading: urlLoading,
   } = useQuery({
     queryKey: ['phoenixDashboardUrl'],
     queryFn: getPhoenixDashboardUrl,
