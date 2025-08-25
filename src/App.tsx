@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Box, ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { DocumentProvider } from "./contexts/DocumentContext";
 import { useTheme } from "./contexts/ThemeContext";
 import { darkTheme, lightTheme } from "./theme/theme";
 import Annotation from "./components/Annotation";
@@ -10,7 +11,6 @@ import Projects from "./components/Projects";
 import Batches from "./components/Batches";
 import NavBar from "./components/NavBar";
 import CreateBatch from "./components/CreateBatch";
-import RootSpanDetails from "./components/RootSpanDetails";
 import Footer from "./components/Footer";
 import RootSpans from "./components/RootSpans";
 import { createAnnotation, updateAnnotation, createBatch, updateBatch } from "./services/services";
@@ -21,7 +21,7 @@ import { useRootSpansContext, useRootSpanMutations } from "./hooks/useRootSpans"
 
 const queryClient = new QueryClient();
 
-const AppWithQuery = () => {
+function AppContent() {
   // Keep track of current context for the unified query
   const [currentContext, setCurrentContext] = useState<{
     type: 'batch' | 'project';
@@ -30,7 +30,7 @@ const AppWithQuery = () => {
 
   // Use TanStack Query instead of manual state management
   // Always call the hook - handle null context inside the hook
-  const { data: annotatedRootSpans = [], isLoading, error } = useRootSpansContext(currentContext);
+  const { data: annotatedRootSpans = [], isLoading } = useRootSpansContext(currentContext);
   const { invalidateBatch, invalidateProject } = useRootSpanMutations();
   
   // Add the queryClient hook
@@ -38,7 +38,6 @@ const AppWithQuery = () => {
 
   // Track last fetched IDs to maintain your existing logic
   const lastFetchedBatchId = useRef<string | null>(null);
-  const lastFetchedProjectId = useRef<string | null>(null);
 
   // Functions that child components can call - now just update context for TanStack Query
   const loadRootSpansByBatch = useCallback((batchId: string) => {
@@ -50,16 +49,6 @@ const AppWithQuery = () => {
       console.log('App level: Skipping batch fetch, already loaded:', batchId);
     }
   }, []);
-
-  const loadRootSpansByProject = useCallback((projectId: string) => {
-    // Used by EditBatch component - keeping for backwards compatibility
-    if (currentContext?.type !== 'project' || currentContext?.id !== projectId) {
-      setCurrentContext({ type: 'project', id: projectId });
-    }
-    
-    // Update the last fetched tracker
-    lastFetchedProjectId.current = projectId;
-  }, [currentContext]);
 
   const handleSaveAnnotation = async (
     annotationId: string,
@@ -135,16 +124,15 @@ const AppWithQuery = () => {
 
   // handleSpansOnDeleteBatch function removed - database handles cleanup automatically
 
-  const AppContent = () => {
-    const { isDarkMode } = useTheme();
-    const showNavBar = true; // Always show NavBar now
+  const { isDarkMode } = useTheme();
+  const showNavBar = true; // Always show NavBar now
 
-    return (
-      <MuiThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-        <CssBaseline />
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          {showNavBar && <NavBar />}
-          <Box component="main" sx={{ flex: 1 }}>
+  return (
+    <MuiThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <CssBaseline />
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {showNavBar && <NavBar />}
+        <Box component="main" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
@@ -176,7 +164,6 @@ const AppWithQuery = () => {
             }
           />
 
-          <Route path="/projects/:projectId/batches/:batchId/rootSpans/:rootSpanId" element={<RootSpanDetails />} />
           <Route
             path="/projects/:projectId/batches/:batchId/annotation/:rootSpanId"
             element={
@@ -186,32 +173,25 @@ const AppWithQuery = () => {
             }
           />
             </Routes>
-          </Box>
-          <Footer />
         </Box>
-      </MuiThemeProvider>
-    );
-  };
+        <Footer />
+      </Box>
+    </MuiThemeProvider>
+  );
+}
 
-  if (error) {
-    return <>Error loading data: {error.message}</>
-  }
-
+function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <DocumentProvider>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </QueryClientProvider>
+      </DocumentProvider>
     </ThemeProvider>
   );
-};
-
-const App = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AppWithQuery />
-    </QueryClientProvider>
-  );
-};
+}
 
 export default App;

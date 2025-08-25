@@ -39,7 +39,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import type { AnnotatedRootSpan } from "../types/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { categorizeAnnotations, deleteRootSpan, deleteAnnotation } from "../services/services";
+import { categorizeAnnotations, deleteRootSpan } from "../services/services";
 
 // Custom Rating Filter Component
 const RatingFilterInputValue = (props: GridFilterInputValueProps) => {
@@ -81,7 +81,15 @@ const RatingFilterInputValue = (props: GridFilterInputValueProps) => {
         value={item.value || ''}
         onChange={handleFilterChange}
         displayEmpty
-        sx={{ minWidth: 120 }}
+        size="small"
+        sx={{ 
+          minWidth: 140,
+          '& .MuiSelect-select': { py: 0.5, minHeight: 0 },
+        }}
+        MenuProps={{
+          MenuListProps: { dense: true },
+          PaperProps: { sx: { maxHeight: 240 } }
+        }}
       >
         <MenuItem value="">
           <ListItemText primary="All" />
@@ -304,13 +312,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     navigate(`annotation/${annotatedRootSpan.id}`, { state: { projectName, projectId, batchName, batchId: batchId, annotatedRootSpan } });
   };
 
-  const allSpansFormatted = useMemo(() => {
-    if (annotatedRootSpans.length === 0) return false;
-    return annotatedRootSpans.every(
-      span => span.formattedInput && span.formattedOutput
-    );
-  }, [annotatedRootSpans]);
-
   const handleCategorize = async () => {
     // Prevent multiple simultaneous categorization calls
     if (isCategorizing) {
@@ -368,14 +369,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       
       // Delete root span from batch (always succeeds)
       await deleteRootSpan(batchId, rootSpanId);
-      
-      // Try to delete annotation (may not exist)
-      // try {
-      //   await deleteAnnotation(rootSpanId);
-      // } catch (annotationError) {
-      //   // Ignore if annotation doesn't exist
-      //   console.log("No annotation to delete for span:", rootSpanId);
-      // }
       
       handleClose();
       
@@ -476,15 +469,16 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
       align: 'center',
       sortable: true,
       filterable: true,
+      filterOperators: ratingFilterOperators,
       type: 'singleSelect',
       valueOptions: [
         { value: 'good', label: 'Good' },
         { value: 'bad', label: 'Bad' },
         { value: 'none', label: 'Not Rated' },
       ],
-        valueGetter: (value, row) => row.annotation?.rating || 'none',
-       renderCell: (params) => {
-         const rating = params.value as string;
+      valueGetter: (_, row) => row.annotation?.rating || 'none',
+      renderCell: (params) => {
+        const rating = params.value as string;
         const getStatusIcon = () => {
           switch (rating) {
             case 'good':
@@ -649,20 +643,6 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
     );
   }, [annotatedRootSpans]);
 
-  // Calculate dynamic height based on rows per page
-  const getDataGridHeight = () => {
-    const headerHeight = 56;
-    const footerHeight = 56;
-    const rowHeight = 56;
-    const padding = 20;
-    
-    // Ensure minimum height to show pagination
-    const minRows = Math.min(pageSize, annotatedRootSpans.length);
-    const displayRows = Math.max(minRows, 5); // Show at least 5 rows worth of space
-    
-    return headerHeight + (displayRows * rowHeight) + footerHeight + padding;
-  };
-
   return (
     <Container maxWidth={false} sx={{ mt: 1.5, mb: 1.5, px: 3 }}>
       <Box sx={{ mb: 1.5, position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
@@ -769,14 +749,14 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
           gap: 1,
         }}>
           <Tooltip
-            title={!allSpansFormatted ? "Formatting in progress... Cannot grade yet." : "Start grading this batch"}
+            title={"Start grading this batch"}
             arrow
           >
             <span>
               <Button
                 variant="contained"
                 startIcon={<RateReviewIcon />}
-                disabled={!allSpansFormatted}
+                disabled={annotatedRootSpans.length === 0}
                 onClick={() => navigate(`/projects/${projectId}/batches/${batchId}/annotation/${annotatedRootSpans[0].id}`, { 
                   state: { projectName: projectName || annotatedRootSpans[0]?.projectName, projectId, batchName } 
                 })}
@@ -1009,19 +989,18 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
             columns={columns}
             initialState={{
               pagination: {
-                paginationModel: { page: 0, pageSize: 25 },
+                paginationModel: { page: 0, pageSize: pageSize },
               },
             }}
-            pageSizeOptions={[5, 10, 25]}
+            pageSizeOptions={[25, 50, 100]}
             disableRowSelectionOnClick
             getRowHeight={() => 56}
             paginationMode="client"
             onRowClick={(params) => {
-              if (!allSpansFormatted) return;
               handleView(params.row);
             }}
-            getRowClassName={(params) => {
-              return !allSpansFormatted ? 'row-disabled' : '';
+            getRowClassName={() => {
+              return '';
             }}
             onPaginationModelChange={(model) => {
               setPageSize(model.pageSize);
@@ -1034,6 +1013,13 @@ const RootSpans = ({ annotatedRootSpans, onLoadRootSpans, isLoading }: RootSpans
                   },
                   '& .MuiFormControl-root': {
                     margin: 1,
+                  },
+                  '& .MuiFormControl-root .MuiInputBase-root': {
+                    height: 36,
+                  },
+                  '& .MuiFormControl-root .MuiInputBase-input': {
+                    paddingTop: 6,
+                    paddingBottom: 6,
                   },
                 },
               },

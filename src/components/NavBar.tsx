@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, Button, Box, IconButton } from "@mui/material";
+import { AppBar, Toolbar, Button, Box, IconButton } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { useTheme } from "../contexts/ThemeContext";

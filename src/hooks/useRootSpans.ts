@@ -26,6 +26,63 @@ export const useRootSpansByBatch = (batchId: string | null) => {
   });
 };
 
+// Separate cache for formatted fields keyed by batch
+export const formattedKeys = {
+  batch: (batchId: string) => ['formatted', 'batch', batchId] as const,
+};
+
+/**
+ * Holds a per-batch map of spanId to formatted strings, independent of the main root spans query.
+ * Provides a refresh function that fetches the batch spans once and extracts formatted fields.
+ */
+export const useFormattedFields = (batchId: string | null) => {
+  const queryClient = useQueryClient();
+
+  // Subscribe to the formatted map so components re-render when it changes
+  const formattedQuery = useQuery({
+    queryKey: batchId ? formattedKeys.batch(batchId) : ['formatted', 'batch', 'null'],
+    queryFn: async () => {
+      if (!batchId) return {} as Record<string, { formattedInput?: string; formattedOutput?: string }>;
+      // Return existing cache or empty; we only update via setQueryData/refresh
+      return (
+        queryClient.getQueryData<Record<string, { formattedInput?: string; formattedOutput?: string }>>(
+          formattedKeys.batch(batchId)
+        ) || {}
+      );
+    },
+    enabled: !!batchId,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+  });
+
+  const setFormattedMap = (map: Record<string, { formattedInput?: string; formattedOutput?: string }>, targetBatchId?: string) => {
+    const keyBatchId = targetBatchId ?? batchId;
+    if (!keyBatchId) return;
+    queryClient.setQueryData(formattedKeys.batch(keyBatchId), map);
+  };
+
+  const refreshFormatted = async (targetBatchId?: string) => {
+    const keyBatchId = targetBatchId ?? batchId;
+    if (!keyBatchId) return;
+    const data = await fetchRootSpansByBatch(keyBatchId);
+    const map: Record<string, { formattedInput?: string; formattedOutput?: string }> = {};
+    for (const span of data.rootSpans) {
+      map[span.id] = {
+        formattedInput: span.formattedInput,
+        formattedOutput: span.formattedOutput,
+      };
+    }
+    setFormattedMap(map, keyBatchId);
+  };
+
+  return {
+    formattedBySpanId: (formattedQuery.data || {}) as Record<string, { formattedInput?: string; formattedOutput?: string }>,
+    refreshFormatted,
+    setFormattedMap,
+  };
+};
+
 // Hook for fetching root spans by project
 export const useRootSpansByProject = (projectId: string | null) => {
   return useQuery({
